@@ -1,0 +1,27 @@
+{
+  "name": "zumynexy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ZumyNexy Discord bot with modular architecture",
+  "type": "module",
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "imports": {
+    "#config/*": "./src/config/*",
+    "#core/*": "./src/core/*",
+    "#services/*": "./src/services/*",
+    "#utils/*": "./src/utils/*",
+    "#app/*": "./src/*"
+  },
+  "scripts": {
+    "start": "bun run src/main.js",
+    "dev": "bun --watch run src/main.js",
+    "dev:hot": "ZUMY_HOT_RELOAD=1 bun run src/main.js",
+    "deploy:guild": "bun run scripts/deploy-commands.js --guild",
+    "deploy:global": "bun run scripts/deploy-commands.js --global"
+  },
+  "dependencies": {
+    "discord.js": "^14.25.1"
+  }
+}
