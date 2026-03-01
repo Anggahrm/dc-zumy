@@ -1,8 +1,8 @@
 {
-  "name": "zumynexy",
+  "name": "zumynext",
   "version": "1.0.0",
   "private": true,
-  "description": "ZumyNexy Discord bot with modular architecture",
+  "description": "ZumyNext Discord bot with modular architecture",
   "type": "module",
   "engines": {
     "bun": ">=1.1.0"

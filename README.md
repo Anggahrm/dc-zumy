@@ -124,6 +124,13 @@ docs/
 - Use global deploy only when behavior is stable (`bun run deploy:global`).
 - Use `--dry-run` to validate command registration payload before sending to Discord.
 
+### Heroku (Bun buildpack)
+
+- Add buildpack URL in Heroku app settings: `https://github.com/jakeg/heroku-buildpack-bun`
+- This bot runs as a worker dyno using `Procfile` (`worker: bun run start`)
+- Set required config vars on Heroku: `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`
+- Optional config vars: `DISCORD_GUILD_ID`, `BOT_OWNERS`, `LOG_LEVEL`, `BUN_VERSION`
+
 ## Troubleshooting
 
 - `Missing required environment variables`: check `.env` against `.env.example`.
