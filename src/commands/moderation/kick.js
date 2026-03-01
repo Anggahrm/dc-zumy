@@ -18,7 +18,7 @@ export default {
     .addUserOption((option) =>
       option
         .setName("target")
-        .setDescription("User to kick (required)")
+        .setDescription("User to kick")
         .setRequired(true),
     )
     .addStringOption((option) =>
