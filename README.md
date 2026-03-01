@@ -65,7 +65,7 @@ Reference template: `.env.example`
 
 - `info`: `/ping`, `/help`
 - `utility`: `/userinfo`
-- `moderation`: `/clear` (admin + guild only, optional `target` user filter), `/ban` (admin + guild only, optional `days` and `reason`)
+- `moderation`: `/clear` (admin + guild only, optional `target` user filter), `/kick` (admin + guild only, required `target`, optional `reason`), `/ban` (admin + guild only, optional `days` and `reason`)
 - `owner`: `/reloadcommands` (owner only, requires user ID in `BOT_OWNERS`)
 
 ## Hot reload workflows
