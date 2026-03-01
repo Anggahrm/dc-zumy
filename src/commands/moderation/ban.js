@@ -77,7 +77,11 @@ export default {
     }
 
     const targetMember = await guild.members.fetch(target.id).catch(() => null);
-    if (targetMember && targetMember.roles.highest.position >= actorMember.roles.highest.position) {
+    if (
+      targetMember
+      && interaction.user.id !== guild.ownerId
+      && targetMember.roles.highest.position >= actorMember.roles.highest.position
+    ) {
       const card = createCard({
         color: 0xed4245,
         title: "Moderation",
@@ -98,7 +102,7 @@ export default {
     }
 
     await interaction.deferReply({
-      flags: MessageFlags.Ephemeral,
+      flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
     });
 
     try {
