@@ -72,7 +72,10 @@ export default {
       return;
     }
 
-    if (targetMember.roles.highest.position >= actorMember.roles.highest.position) {
+    if (
+      interaction.user.id !== guild.ownerId
+      && targetMember.roles.highest.position >= actorMember.roles.highest.position
+    ) {
       const card = createCard({
         color: 0xed4245,
         title: "Moderation",
