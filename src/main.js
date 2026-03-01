@@ -8,6 +8,26 @@ import { createCooldownService } from "#services/cooldown.js";
 import { createLogger } from "#services/logger.js";
 import { createPermissionService } from "#services/permission.js";
 import { PROJECT_ROOT } from "#utils/paths.js";
+import { REST, Routes } from "discord.js";
+
+async function deployGlobalCommandsOnStart({ env, logger, registry }) {
+  const body = registry.allAsJson();
+  const rest = new REST({ version: "10" }).setToken(env.token);
+
+  logger.info("Deploying slash commands", { mode: "global", trigger: "startup", count: body.length });
+  try {
+    const result = await rest.put(Routes.applicationCommands(env.clientId), { body });
+    logger.info("Slash commands deployed", { mode: "global", trigger: "startup", registered: result.length });
+  } catch (error) {
+    logger.warn("Slash command deploy failed, continuing startup", {
+      mode: "global",
+      trigger: "startup",
+      message: error?.message || String(error),
+      code: error?.code,
+      status: error?.status,
+    });
+  }
+}
 
 function setupHotReload({ client, logger, registry }) {
   if (!process.env.ZUMY_HOT_RELOAD || process.env.ZUMY_HOT_RELOAD === "0") {
@@ -57,6 +77,7 @@ async function bootstrap() {
   };
 
   await reloadCommands(false);
+  await deployGlobalCommandsOnStart({ env, logger, registry });
 
   const onInteraction = createInteractionHandler({
     registry,

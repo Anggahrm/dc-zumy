@@ -14,16 +14,27 @@ Copy `.env.example` to `.env`, then fill in:
 - `DISCORD_CLIENT_ID`
 - `DISCORD_GUILD_ID`
 
-## 3) Deploy slash commands (guild)
-
-```bash
-bun run deploy:guild
-```
-
-## 4) Start the bot
+## 3) Start the bot
 
 ```bash
 bun run start
+```
+
+On startup, the bot automatically deploys slash commands in global mode before logging in.
+If deploy fails (for example API/network/token issues), bot startup continues and error is logged as warning.
+
+## 4) Optional manual deploy
+
+- Global deploy:
+
+```bash
+bun run deploy:global
+```
+
+- Guild deploy:
+
+```bash
+bun run deploy:guild
 ```
 
 ## Development modes
@@ -49,15 +60,9 @@ Use `/reloadcommands` from a user whose ID exists in `BOT_OWNERS`.
 
 - `/clear` supports an optional `target` argument to delete only recent messages from one user.
 
-## Optional
+## Optional checks
 
-- Deploy global command:
-
-```bash
-bun run deploy:global
-```
-
-- Check deploy without sending an API request:
+- Check deploy payload without sending an API request:
 
 ```bash
 bun run scripts/deploy-commands.js --guild --dry-run
