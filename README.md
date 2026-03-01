@@ -96,6 +96,31 @@ guild.welcome.message = "Welcome, {user}.";
 global.db.bot.maintenance = true;
 ```
 
+Command context preload (recommended):
+
+```js
+// inside command execute({ interaction, ctx })
+global.db.data.users[ctx.user].money += 5000;
+
+if (ctx.guild) {
+  global.db.data.guilds[ctx.guild].mode = "normal";
+}
+
+if (ctx.mention) {
+  global.db.data.users[ctx.mention].money -= 500;
+}
+```
+
+Manual preload helpers (for custom ids):
+
+```js
+await global.db.loadUser(customUserId);
+global.db.data.users[customUserId].money += 5000;
+
+await global.db.loadGuild(customGuildId);
+global.db.data.guilds[customGuildId].mode = "normal";
+```
+
 Database structure:
 
 - `users_data`: `id` + `data` (JSONB)
@@ -107,6 +132,7 @@ Notes:
 - Mutasi object otomatis ke-persist ke PostgreSQL (debounced write).
 - Default object dibuat otomatis saat pertama kali akses key.
 - Inisialisasi dan shutdown DB sudah di-handle di bootstrap runtime.
+- Handler now preloads `ctx.user`, `ctx.guild`, and detected `ctx.mention` automatically.
 
 ## Built-in commands
 

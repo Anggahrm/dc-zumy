@@ -11,8 +11,8 @@ function randomInt(min, max) {
 export default {
   category: "rpg",
   data: new SlashCommandBuilder().setName("daily").setDescription("Claim daily reward (24h cooldown)"),
-  async execute({ interaction }) {
-    const user = global.db.user(interaction.user.id);
+  async execute({ interaction, ctx }) {
+    const user = global.db.data.users[ctx.user];
     const now = Date.now();
     const nextDailyAt = Number(user.nextDailyAt ?? 0);
 

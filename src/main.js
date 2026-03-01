@@ -2,7 +2,7 @@ import { createBotClient } from "#core/client.js";
 import { replaceCommands } from "#core/loader/commands.js";
 import { loadEvents } from "#core/loader/events.js";
 import { createCommandRegistry } from "#core/registry/command-registry.js";
-import { getEnv } from "#config/env.js";
+import { getRuntimeEnv } from "#config/env.js";
 import { createInteractionHandler } from "#app/handler.js";
 import { createCooldownService } from "#services/cooldown.js";
 import { createLogger } from "#services/logger.js";
@@ -41,7 +41,7 @@ function setupHotReload({ client, logger, registry }) {
 }
 
 async function bootstrap() {
-  const env = getEnv();
+  const env = getRuntimeEnv();
   const logger = createLogger(env.logLevel);
   const client = createBotClient();
   const registry = createCommandRegistry();

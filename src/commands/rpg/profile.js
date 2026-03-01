@@ -20,9 +20,14 @@ export default {
         .setDescription("User to inspect")
         .setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const target = interaction.options.getUser("target") ?? interaction.user;
-    const user = global.db.user(target.id);
+    const targetId = target.id;
+    if (targetId !== ctx.user && targetId !== ctx.mention) {
+      await ctx.loadUser(targetId);
+    }
+
+    const user = global.db.data.users[targetId];
     const now = Date.now();
     const nextDailyAt = Number(user.nextDailyAt ?? 0);
     const dailyStatus =

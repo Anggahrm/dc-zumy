@@ -51,8 +51,10 @@ class DatabaseAdapter {
     this.botCache = null;
     this.pendingLoads = new Map();
     this.pendingSaves = new Map();
+    this.saveChain = new Map();
     this.saveTimers = new Map();
     this.dirtyRecords = new Set();
+    this.revisions = new Map();
     this.saveDebounceMs = 300;
     this.validIdPattern = /^\d{5,30}$/;
 
@@ -72,8 +74,30 @@ class DatabaseAdapter {
     return this.data.users[id];
   }
 
+  async loadUser(id) {
+    const safeId = this.normalizeId(id);
+    if (!safeId) {
+      throw new Error("Invalid user id.");
+    }
+
+    this.ensureRecord("users", safeId);
+    await this.loadRecord("users", safeId);
+    return this.user(safeId);
+  }
+
   guild(id) {
     return this.data.guilds[id];
+  }
+
+  async loadGuild(id) {
+    const safeId = this.normalizeId(id);
+    if (!safeId) {
+      throw new Error("Invalid guild id.");
+    }
+
+    this.ensureRecord("guilds", safeId);
+    await this.loadRecord("guilds", safeId);
+    return this.guild(safeId);
   }
 
   get bot() {
@@ -133,10 +157,28 @@ class DatabaseAdapter {
   ensureBotData() {
     if (!this.botCache) {
       this.botCache = createDefaultBotData();
-      this.loadRecord("bot", "global");
+      void this.loadRecord("bot", "global");
     }
 
     return this.botCache;
+  }
+
+  async loadBot() {
+    this.ensureBotData();
+    await this.loadRecord("bot", "global");
+    return this.bot;
+  }
+
+  async userLoaded(id) {
+    return this.loadUser(id);
+  }
+
+  async guildLoaded(id) {
+    return this.loadGuild(id);
+  }
+
+  async botLoaded() {
+    return this.loadBot();
   }
 
   getCollectionCache(collection) {
@@ -216,11 +258,23 @@ class DatabaseAdapter {
     }
   }
 
-  queueSave(collection, id) {
+  getRevision(key) {
+    return this.revisions.get(key) ?? 0;
+  }
+
+  nextRevision(key) {
+    const next = this.getRevision(key) + 1;
+    this.revisions.set(key, next);
+    return next;
+  }
+
+  scheduleSave(collection, id, { markDirty = true } = {}) {
     if (!this.initialized) return;
 
     const key = `${collection}:${id}`;
+    const revision = markDirty ? this.nextRevision(key) : this.getRevision(key);
     this.dirtyRecords.add(key);
+
     const existing = this.saveTimers.get(key);
     if (existing) {
       clearTimeout(existing);
@@ -228,27 +282,47 @@ class DatabaseAdapter {
 
     const timer = setTimeout(() => {
       this.saveTimers.delete(key);
-      const saveTask = this.saveRecord(collection, id)
-        .catch((error) => {
-        console.error("Database save failed", {
-          collection,
-          id,
-          message: error?.message || String(error),
-        });
-        this.queueSave(collection, id);
-        })
-        .finally(() => {
-          this.pendingSaves.delete(key);
-        });
-
-      this.pendingSaves.set(key, saveTask);
+      this.enqueueSave(collection, id, revision);
     }, this.saveDebounceMs);
 
     this.saveTimers.set(key, timer);
   }
 
-  async saveRecord(collection, id) {
+  queueSave(collection, id) {
+    this.scheduleSave(collection, id, { markDirty: true });
+  }
+
+  enqueueSave(collection, id, scheduledRevision) {
+    const key = `${collection}:${id}`;
+    const previous = this.saveChain.get(key) ?? Promise.resolve();
+    const task = previous
+      .catch(() => {})
+      .then(() => this.saveRecord(collection, id, scheduledRevision))
+      .catch((error) => {
+        console.error("Database save failed", {
+          collection,
+          id,
+          message: error?.message || String(error),
+        });
+        this.scheduleSave(collection, id, { markDirty: false });
+      })
+      .finally(() => {
+        if (this.pendingSaves.get(key) === task) {
+          this.pendingSaves.delete(key);
+        }
+        if (this.saveChain.get(key) === task) {
+          this.saveChain.delete(key);
+        }
+      });
+
+    this.saveChain.set(key, task);
+    this.pendingSaves.set(key, task);
+  }
+
+  async saveRecord(collection, id, scheduledRevision) {
     if (!this.initialized) return;
+
+    const key = `${collection}:${id}`;
 
     if (collection === "users") {
       const data = clone(this.usersCache.get(id) ?? createDefaultUserData(id));
@@ -262,7 +336,9 @@ class DatabaseAdapter {
             updatedAt: new Date(),
           },
         });
-      this.dirtyRecords.delete(`${collection}:${id}`);
+      if (this.getRevision(key) === scheduledRevision) {
+        this.dirtyRecords.delete(key);
+      }
       return;
     }
 
@@ -278,7 +354,9 @@ class DatabaseAdapter {
             updatedAt: new Date(),
           },
         });
-      this.dirtyRecords.delete(`${collection}:${id}`);
+      if (this.getRevision(key) === scheduledRevision) {
+        this.dirtyRecords.delete(key);
+      }
       return;
     }
 
@@ -294,7 +372,9 @@ class DatabaseAdapter {
             updatedAt: new Date(),
           },
         });
-      this.dirtyRecords.delete(`${collection}:${id}`);
+      if (this.getRevision(key) === scheduledRevision) {
+        this.dirtyRecords.delete(key);
+      }
     }
   }
 
@@ -308,7 +388,7 @@ class DatabaseAdapter {
       }
 
       const [collection, id] = key.split(":");
-      await this.saveRecord(collection, id).catch((error) => {
+      await this.saveRecord(collection, id, this.getRevision(key)).catch((error) => {
         console.error("Database flush save failed", {
           collection,
           id,

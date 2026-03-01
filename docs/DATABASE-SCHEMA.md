@@ -22,6 +22,20 @@ Helper aliases:
 - `global.db.guild(guildId)`
 - `global.db.bot`
 
+Loaded helpers:
+
+- `await global.db.loadUser(userId)`
+- `await global.db.loadGuild(guildId)`
+- `await global.db.loadBot()`
+
+For command ergonomics, the handler preloads command context keys automatically:
+
+- `ctx.user` (sender)
+- `ctx.guild` (guild id, if present)
+- `ctx.mention` (common mention option keys like `target`, `user`, `mention`, etc.)
+
+That means most commands can directly mutate `global.db.data.*` with ctx ids.
+
 ## Users Schema
 
 Default shape (`src/db/defaults.js`):

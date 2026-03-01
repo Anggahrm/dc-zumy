@@ -2,6 +2,49 @@ import { DEFAULT_COOLDOWN_SECONDS } from "#config/constants.js";
 import { formatError } from "#utils/error.js";
 import { replyError as sendErrorReply } from "#utils/respond.js";
 
+function resolveMentionId(interaction) {
+  if (!interaction.isChatInputCommand()) return null;
+  const getter = interaction.options?.getUser;
+  if (typeof getter !== "function") return null;
+
+  const candidates = ["target", "user", "member", "mention", "receiver"];
+  for (const key of candidates) {
+    const user = interaction.options.getUser(key);
+    if (user?.id) {
+      return user.id;
+    }
+  }
+
+  return null;
+}
+
+async function createContext({ interaction }) {
+  const userId = interaction.user?.id ?? null;
+  const guildId = interaction.guildId ?? null;
+  const mentionId = resolveMentionId(interaction);
+
+  if (userId) {
+    await global.db.loadUser(userId);
+  }
+
+  if (guildId) {
+    await global.db.loadGuild(guildId);
+  }
+
+  if (mentionId && mentionId !== userId) {
+    await global.db.loadUser(mentionId);
+  }
+
+  return {
+    user: userId,
+    guild: guildId,
+    mention: mentionId,
+    loadUser: (id) => global.db.loadUser(id),
+    loadGuild: (id) => global.db.loadGuild(id),
+    loadBot: () => global.db.loadBot(),
+  };
+}
+
 export function createInteractionHandler({ registry, logger, cooldowns, permission }) {
   async function replyError(interaction, message) {
     await sendErrorReply(interaction, message);
@@ -30,7 +73,8 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
     cooldowns.consume(command.data.name, interaction.user.id, cooldownSeconds);
 
     try {
-      await command.execute({ interaction, registry, logger });
+      const ctx = await createContext({ interaction });
+      await command.execute({ interaction, registry, logger, ctx });
     } catch (error) {
       const details = formatError(error);
       logger.error("Command execution failed", {
