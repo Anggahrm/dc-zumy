@@ -68,7 +68,7 @@ Reference template: `.env.example`
 ## Built-in commands
 
 - `info`: `/ping`, `/help`
-- `utility`: `/userinfo`
+- `utility`: `/userinfo`, `/set welcome [channel]`, `/set leave [channel]`
 - `moderation`: `/clear` (admin + guild only, optional `target` user filter), `/kick` (admin + guild only, required `target`, optional `reason`), `/ban` (admin + guild only, optional `days` and `reason`), `/autorole` with subcommands `add/remove/show/blacklist/unblacklist` (admin + guild only)
 - `owner`: `/reloadcommands` (owner only, requires user ID in `BOT_OWNERS`)
 
