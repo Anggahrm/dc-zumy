@@ -23,7 +23,7 @@ bun run deploy:guild
 
 - `info`: `/ping`, `/help`
 - `utility`: `/userinfo`
-- `moderation`: `/clear` (`target` is optional)
+- `moderation`: `/clear` (`target` is optional), `/kick` (`reason` is optional)
 - `owner`: `/reloadcommands`
 
 ## Minimal command example
