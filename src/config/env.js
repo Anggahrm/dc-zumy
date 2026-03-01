@@ -1,4 +1,3 @@
-const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID"];
 const levels = new Set(["debug", "info", "warn", "error"]);
 const startupDeployModes = new Set(["off", "global", "guild"]);
 
@@ -20,12 +19,7 @@ function normalizeStartupDeployMode(value) {
   return startupDeployModes.has(normalized) ? normalized : "global";
 }
 
-export function getEnv() {
-  const missing = required.filter((key) => !process.env[key]);
-  if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
-  }
-
+function getCommonEnv() {
   return {
     token: process.env.DISCORD_TOKEN,
     clientId: process.env.DISCORD_CLIENT_ID,
@@ -33,5 +27,25 @@ export function getEnv() {
     owners: parseOwners(process.env.BOT_OWNERS),
     logLevel: normalizeLogLevel(process.env.LOG_LEVEL),
     startupDeployMode: normalizeStartupDeployMode(process.env.ZUMY_STARTUP_DEPLOY_MODE),
+  };
+}
+
+function requireKeys(requiredKeys) {
+  const missing = requiredKeys.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+  }
+}
+
+export function getDiscordEnv() {
+  requireKeys(["DISCORD_TOKEN", "DISCORD_CLIENT_ID"]);
+  return getCommonEnv();
+}
+
+export function getRuntimeEnv() {
+  requireKeys(["DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DATABASE_URL"]);
+  return {
+    ...getCommonEnv(),
+    databaseUrl: process.env.DATABASE_URL,
   };
 }

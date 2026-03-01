@@ -2,11 +2,12 @@ import { createBotClient } from "#core/client.js";
 import { replaceCommands } from "#core/loader/commands.js";
 import { loadEvents } from "#core/loader/events.js";
 import { createCommandRegistry } from "#core/registry/command-registry.js";
-import { getEnv } from "#config/env.js";
+import { getRuntimeEnv } from "#config/env.js";
 import { createInteractionHandler } from "#app/handler.js";
 import { createCooldownService } from "#services/cooldown.js";
 import { createLogger } from "#services/logger.js";
 import { createPermissionService } from "#services/permission.js";
+import { db } from "#db/index.js";
 import { PROJECT_ROOT } from "#utils/paths.js";
 import { REST, Routes } from "discord.js";
 
@@ -83,12 +84,14 @@ function setupHotReload({ client, logger, registry }) {
 }
 
 async function bootstrap() {
-  const env = getEnv();
+  const env = getRuntimeEnv();
   const logger = createLogger(env.logLevel);
   const client = createBotClient();
   const registry = createCommandRegistry();
   const cooldowns = createCooldownService();
   const permission = createPermissionService({ owners: env.owners });
+
+  await db.init();
 
   const reloadCommands = async (bustCache = false) => {
     await replaceCommands({
@@ -115,6 +118,7 @@ async function bootstrap() {
     registry,
     cooldowns,
     permission,
+    db,
     onInteraction,
     startedAt: Date.now(),
     hotReload: false,
@@ -133,8 +137,21 @@ async function bootstrap() {
   await client.login(env.token);
 }
 
-bootstrap().catch((error) => {
+async function shutdown(signal) {
+  try {
+    await db.close();
+  } catch (error) {
+    console.error("Database shutdown error", error);
+  } finally {
+    if (signal) {
+      process.exit(0);
+    }
+  }
+}
+
+bootstrap().catch(async (error) => {
   console.error("Fatal startup error", error);
+  await shutdown();
   process.exit(1);
 });
 
@@ -144,4 +161,12 @@ process.on("unhandledRejection", (error) => {
 
 process.on("uncaughtException", (error) => {
   console.error("Uncaught exception", error);
+});
+
+process.on("SIGINT", () => {
+  void shutdown("SIGINT");
+});
+
+process.on("SIGTERM", () => {
+  void shutdown("SIGTERM");
 });
