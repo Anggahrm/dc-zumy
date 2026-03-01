@@ -9,6 +9,49 @@ import { createLogger } from "#services/logger.js";
 import { createPermissionService } from "#services/permission.js";
 import { db } from "#db/index.js";
 import { PROJECT_ROOT } from "#utils/paths.js";
+import { REST, Routes } from "discord.js";
+
+function getStartupDeployRoute(env) {
+  if (env.startupDeployMode === "guild") {
+    if (!env.guildId) {
+      throw new Error("ZUMY_STARTUP_DEPLOY_MODE=guild requires DISCORD_GUILD_ID.");
+    }
+    return {
+      mode: "guild",
+      route: Routes.applicationGuildCommands(env.clientId, env.guildId),
+    };
+  }
+
+  return {
+    mode: "global",
+    route: Routes.applicationCommands(env.clientId),
+  };
+}
+
+async function deployCommandsOnStart({ env, logger, registry }) {
+  if (env.startupDeployMode === "off") {
+    logger.info("Skipping slash command deploy", { trigger: "startup", mode: "off" });
+    return;
+  }
+
+  try {
+    const body = registry.allAsJson();
+    const { mode, route } = getStartupDeployRoute(env);
+    const rest = new REST({ version: "10" }).setToken(env.token);
+
+    logger.info("Deploying slash commands", { mode, trigger: "startup", count: body.length });
+    const result = await rest.put(route, { body });
+    logger.info("Slash commands deployed", { mode, trigger: "startup", registered: result.length });
+  } catch (error) {
+    logger.warn("Slash command deploy failed, continuing startup", {
+      mode: env.startupDeployMode,
+      trigger: "startup",
+      message: error?.message || String(error),
+      code: error?.code,
+      status: error?.status,
+    });
+  }
+}
 
 function setupHotReload({ client, logger, registry }) {
   if (!process.env.ZUMY_HOT_RELOAD || process.env.ZUMY_HOT_RELOAD === "0") {
@@ -60,6 +103,7 @@ async function bootstrap() {
   };
 
   await reloadCommands(false);
+  await deployCommandsOnStart({ env, logger, registry });
 
   const onInteraction = createInteractionHandler({
     registry,

@@ -25,7 +25,7 @@ async function main() {
   const logger = createLogger(env.logLevel);
 
   if (mode === "guild" && !env.guildId) {
-    throw new Error("DISCORD_GUILD_ID is required for guild deploy mode.");
+    throw new Error("DISCORD_GUILD_ID is required when using --guild deploy mode.");
   }
 
   const registry = createCommandRegistry();

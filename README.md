@@ -34,9 +34,10 @@ cp .env.example .env
 Set environment values in `.env`, then:
 
 ```bash
-bun run deploy:guild
 bun run start
 ```
+
+`bun run start` automatically deploys slash commands in global mode on startup.
 
 ## Environment variables
 
@@ -50,6 +51,7 @@ Optional:
 - `DISCORD_GUILD_ID`: Needed for `deploy:guild`
 - `BOT_OWNERS`: Comma-separated user IDs allowed to run owner-only commands
 - `LOG_LEVEL`: `debug | info | warn | error` (defaults to `info`)
+- `ZUMY_STARTUP_DEPLOY_MODE`: `off | global | guild` (defaults to `global`)
 
 Required for database runtime + migrations:
 
@@ -60,10 +62,12 @@ Reference template: `.env.example`
 ## Scripts
 
 - `bun run start`: Start bot normally
-- `bun run dev`: Start bot in watch mode (auto-restart)
+- `bun run dev`: Start bot in watch mode (auto-restart, startup deploy off)
+- `bun run dev:global`: Watch mode with startup global deploy enabled
+- `bun run dev:guild`: Watch mode with startup guild deploy enabled
 - `bun run dev:hot`: Start bot with SIGUSR2 command hot reload enabled
-- `bun run deploy:guild`: Deploy slash commands to one guild
-- `bun run deploy:global`: Deploy slash commands globally
+- `bun run deploy:guild`: Manual fallback deploy to one guild
+- `bun run deploy:global`: Manual fallback deploy globally
 - `bun run db:generate`: Generate SQL migrations from `src/db/schema.js`
 - `bun run db:migrate`: Apply generated migrations to PostgreSQL
 - `bun run db:studio`: Open Drizzle Studio against the configured database
@@ -138,7 +142,7 @@ Notes:
 
 - `info`: `/ping`, `/help`
 - `utility`: `/userinfo`
-- `moderation`: `/clear` (admin + guild only, optional `target` user filter)
+- `moderation`: `/clear` (admin + guild only, optional `target` user filter), `/kick` (admin + guild only, required `target`, optional `reason`), `/ban` (admin + guild only, optional `days` and `reason`)
 - `owner`: `/reloadcommands` (owner only, requires user ID in `BOT_OWNERS`)
 - `rpg`: `/daily` (claim money + exp every 24 hours), `/profile` (show RPG stats)
 
@@ -198,9 +202,16 @@ docs/
 
 ## Deployment notes
 
-- Prefer guild deploy while iterating (`bun run deploy:guild`) for faster command propagation.
-- Use global deploy only when behavior is stable (`bun run deploy:global`).
+- On every bot startup, slash commands are deployed automatically in global mode.
+- Manual deploy scripts are optional fallback (`bun run deploy:guild` / `bun run deploy:global`).
 - Use `--dry-run` to validate command registration payload before sending to Discord.
+
+### Heroku (Bun buildpack)
+
+- Add buildpack URL in Heroku app settings: `https://github.com/jakeg/heroku-buildpack-bun`
+- This bot runs as a worker dyno using `Procfile` (`worker: bun run start`)
+- Set required config vars on Heroku: `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`
+- Optional config vars: `DISCORD_GUILD_ID`, `BOT_OWNERS`, `LOG_LEVEL`, `BUN_VERSION`, `DATABASE_URL`, `ZUMY_STARTUP_DEPLOY_MODE`
 
 ## Troubleshooting
 
