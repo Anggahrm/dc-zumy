@@ -1,0 +1,41 @@
+{
+  "name": "zumynexy",
+  "description": "ZumyNext Discord bot running on Bun",
+  "repository": "https://github.com/Anggahrm/dc-zumy",
+  "keywords": [
+    "discord",
+    "bot",
+    "bun"
+  ],
+  "buildpacks": [
+    {
+      "url": "https://github.com/jakeg/heroku-buildpack-bun"
+    }
+  ],
+  "env": {
+    "DISCORD_TOKEN": {
+      "description": "Discord bot token"
+    },
+    "DISCORD_CLIENT_ID": {
+      "description": "Discord application client ID"
+    },
+    "DISCORD_GUILD_ID": {
+      "description": "Discord guild ID for guild command deploy",
+      "required": false
+    },
+    "BOT_OWNERS": {
+      "description": "Comma-separated Discord user IDs allowed for owner commands",
+      "required": false
+    },
+    "LOG_LEVEL": {
+      "description": "Log level: debug|info|warn|error",
+      "value": "info",
+      "required": false
+    },
+    "BUN_VERSION": {
+      "description": "Pinned Bun version",
+      "value": "1.3.10",
+      "required": false
+    }
+  }
+}
