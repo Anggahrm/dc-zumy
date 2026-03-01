@@ -33,9 +33,10 @@ cp .env.example .env
 Set environment values in `.env`, then:
 
 ```bash
-bun run deploy:guild
 bun run start
 ```
+
+`bun run start` automatically deploys slash commands in global mode on startup.
 
 ## Environment variables
 
@@ -49,16 +50,19 @@ Optional:
 - `DISCORD_GUILD_ID`: Needed for `deploy:guild`
 - `BOT_OWNERS`: Comma-separated user IDs allowed to run owner-only commands
 - `LOG_LEVEL`: `debug | info | warn | error` (defaults to `info`)
+- `ZUMY_STARTUP_DEPLOY_MODE`: `off | global | guild` (defaults to `global`)
 
 Reference template: `.env.example`
 
 ## Scripts
 
 - `bun run start`: Start bot normally
-- `bun run dev`: Start bot in watch mode (auto-restart)
+- `bun run dev`: Start bot in watch mode (auto-restart, startup deploy off)
+- `bun run dev:global`: Watch mode with startup global deploy enabled
+- `bun run dev:guild`: Watch mode with startup guild deploy enabled
 - `bun run dev:hot`: Start bot with SIGUSR2 command hot reload enabled
-- `bun run deploy:guild`: Deploy slash commands to one guild
-- `bun run deploy:global`: Deploy slash commands globally
+- `bun run deploy:guild`: Manual fallback deploy to one guild
+- `bun run deploy:global`: Manual fallback deploy globally
 - `bun run scripts/deploy-commands.js --guild --dry-run`: Build and validate command payload without API write
 
 ## Built-in commands
@@ -120,8 +124,8 @@ docs/
 
 ## Deployment notes
 
-- Prefer guild deploy while iterating (`bun run deploy:guild`) for faster command propagation.
-- Use global deploy only when behavior is stable (`bun run deploy:global`).
+- On every bot startup, slash commands are deployed automatically in global mode.
+- Manual deploy scripts are optional fallback (`bun run deploy:guild` / `bun run deploy:global`).
 - Use `--dry-run` to validate command registration payload before sending to Discord.
 
 ### Heroku (Bun buildpack)
