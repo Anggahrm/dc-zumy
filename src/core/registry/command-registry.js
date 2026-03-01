@@ -50,7 +50,17 @@ export function createCommandRegistry() {
   }
 
   function allAsJson() {
-    return all().map((command) => command.data.toJSON());
+    return all().map((command) => {
+      try {
+        return command.data.toJSON();
+      } catch (error) {
+        const commandName = command?.data?.name || "unknown";
+        const source = commandFiles.get(commandName) || "unknown";
+        throw new Error(
+          `Failed to serialize command '${commandName}' from ${source}: ${error?.message || String(error)}`,
+        );
+      }
+    });
   }
 
   function replaceFrom(otherRegistry) {

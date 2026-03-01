@@ -10,17 +10,40 @@ import { createPermissionService } from "#services/permission.js";
 import { PROJECT_ROOT } from "#utils/paths.js";
 import { REST, Routes } from "discord.js";
 
-async function deployGlobalCommandsOnStart({ env, logger, registry }) {
-  const body = registry.allAsJson();
-  const rest = new REST({ version: "10" }).setToken(env.token);
+function getStartupDeployRoute(env) {
+  if (env.startupDeployMode === "guild") {
+    if (!env.guildId) {
+      throw new Error("ZUMY_STARTUP_DEPLOY_MODE=guild requires DISCORD_GUILD_ID.");
+    }
+    return {
+      mode: "guild",
+      route: Routes.applicationGuildCommands(env.clientId, env.guildId),
+    };
+  }
 
-  logger.info("Deploying slash commands", { mode: "global", trigger: "startup", count: body.length });
+  return {
+    mode: "global",
+    route: Routes.applicationCommands(env.clientId),
+  };
+}
+
+async function deployCommandsOnStart({ env, logger, registry }) {
+  if (env.startupDeployMode === "off") {
+    logger.info("Skipping slash command deploy", { trigger: "startup", mode: "off" });
+    return;
+  }
+
   try {
-    const result = await rest.put(Routes.applicationCommands(env.clientId), { body });
-    logger.info("Slash commands deployed", { mode: "global", trigger: "startup", registered: result.length });
+    const body = registry.allAsJson();
+    const { mode, route } = getStartupDeployRoute(env);
+    const rest = new REST({ version: "10" }).setToken(env.token);
+
+    logger.info("Deploying slash commands", { mode, trigger: "startup", count: body.length });
+    const result = await rest.put(route, { body });
+    logger.info("Slash commands deployed", { mode, trigger: "startup", registered: result.length });
   } catch (error) {
     logger.warn("Slash command deploy failed, continuing startup", {
-      mode: "global",
+      mode: env.startupDeployMode,
       trigger: "startup",
       message: error?.message || String(error),
       code: error?.code,
@@ -77,7 +100,7 @@ async function bootstrap() {
   };
 
   await reloadCommands(false);
-  await deployGlobalCommandsOnStart({ env, logger, registry });
+  await deployCommandsOnStart({ env, logger, registry });
 
   const onInteraction = createInteractionHandler({
     registry,

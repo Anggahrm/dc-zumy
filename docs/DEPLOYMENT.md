@@ -12,7 +12,11 @@ Copy `.env.example` to `.env`, then fill in:
 
 - `DISCORD_TOKEN`
 - `DISCORD_CLIENT_ID`
-- `DISCORD_GUILD_ID`
+
+Optional:
+
+- `DISCORD_GUILD_ID` (required only for guild deploy mode)
+- `ZUMY_STARTUP_DEPLOY_MODE` (`off | global | guild`, default: `global`)
 
 ## 3) Start the bot
 
@@ -20,7 +24,7 @@ Copy `.env.example` to `.env`, then fill in:
 bun run start
 ```
 
-On startup, the bot automatically deploys slash commands in global mode before logging in.
+On startup, the bot deploys slash commands based on `ZUMY_STARTUP_DEPLOY_MODE` (default `global`) before logging in.
 If deploy fails (for example API/network/token issues), bot startup continues and error is logged as warning.
 
 ## 4) Optional manual deploy
@@ -45,6 +49,8 @@ bun run deploy:guild
 bun run dev
 ```
 
+`bun run dev` sets `ZUMY_STARTUP_DEPLOY_MODE=off` to avoid repeated deploy calls on every restart.
+
 - Hot reload commands via signal (without restarting the process):
 
 ```bash
@@ -55,6 +61,11 @@ bun run dev:hot
 - Hot reload commands via owner command:
 
 Use `/reloadcommands` from a user whose ID exists in `BOT_OWNERS`.
+
+For startup deploy mode testing in development:
+
+- `bun run dev:global` to test startup global deploy on restart
+- `bun run dev:guild` to test startup guild deploy on restart (requires `DISCORD_GUILD_ID`)
 
 ## Built-in moderation note
 
@@ -85,7 +96,7 @@ heroku config:set DISCORD_TOKEN=<token> DISCORD_CLIENT_ID=<client-id> -a <app-na
 3. Optional config vars:
 
 ```bash
-heroku config:set DISCORD_GUILD_ID=<guild-id> BOT_OWNERS=<id1,id2> LOG_LEVEL=info BUN_VERSION=1.3.10 -a <app-name>
+heroku config:set DISCORD_GUILD_ID=<guild-id> BOT_OWNERS=<id1,id2> LOG_LEVEL=info BUN_VERSION=1.3.10 ZUMY_STARTUP_DEPLOY_MODE=global -a <app-name>
 ```
 
 4. Deploy branch to Heroku app. Process type comes from `Procfile` (`worker: bun run start`).

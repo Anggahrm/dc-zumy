@@ -50,13 +50,16 @@ Optional:
 - `DISCORD_GUILD_ID`: Needed for `deploy:guild`
 - `BOT_OWNERS`: Comma-separated user IDs allowed to run owner-only commands
 - `LOG_LEVEL`: `debug | info | warn | error` (defaults to `info`)
+- `ZUMY_STARTUP_DEPLOY_MODE`: `off | global | guild` (defaults to `global`)
 
 Reference template: `.env.example`
 
 ## Scripts
 
 - `bun run start`: Start bot normally
-- `bun run dev`: Start bot in watch mode (auto-restart)
+- `bun run dev`: Start bot in watch mode (auto-restart, startup deploy off)
+- `bun run dev:global`: Watch mode with startup global deploy enabled
+- `bun run dev:guild`: Watch mode with startup guild deploy enabled
 - `bun run dev:hot`: Start bot with SIGUSR2 command hot reload enabled
 - `bun run deploy:guild`: Manual fallback deploy to one guild
 - `bun run deploy:global`: Manual fallback deploy globally

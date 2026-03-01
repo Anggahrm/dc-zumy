@@ -16,7 +16,9 @@
   },
   "scripts": {
     "start": "bun run src/main.js",
-    "dev": "bun --watch run src/main.js",
+    "dev": "ZUMY_STARTUP_DEPLOY_MODE=off bun --watch run src/main.js",
+    "dev:global": "ZUMY_STARTUP_DEPLOY_MODE=global bun --watch run src/main.js",
+    "dev:guild": "ZUMY_STARTUP_DEPLOY_MODE=guild bun --watch run src/main.js",
     "dev:hot": "ZUMY_HOT_RELOAD=1 bun run src/main.js",
     "deploy:guild": "bun run scripts/deploy-commands.js --guild",
     "deploy:global": "bun run scripts/deploy-commands.js --global"
