@@ -134,16 +134,17 @@ export default {
         .setName("show")
         .setDescription("Show current autorole and blacklist config"),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for autorole command.");
     }
 
+    const guildId = ctx.guild ?? guild.id;
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === "show") {
-      const config = await getAutoroleConfig(guild.id);
+      const config = await getAutoroleConfig(guildId);
       await replyCard(interaction, showConfigCard(guild, config), { ephemeral: true });
       return;
     }
@@ -157,7 +158,7 @@ export default {
         return;
       }
 
-      const config = await getAutoroleConfig(guild.id);
+      const config = await getAutoroleConfig(guildId);
       if (config.blacklist.includes(role.id)) {
         await replyCard(
           interaction,
@@ -167,7 +168,7 @@ export default {
         return;
       }
 
-      const { added } = await addAutoroleRole(guild.id, role.id);
+      const { added } = await addAutoroleRole(guildId, role.id);
       await replyCard(
         interaction,
         added
@@ -179,7 +180,7 @@ export default {
     }
 
     if (subcommand === "remove") {
-      const { removed } = await removeAutoroleRole(guild.id, role.id);
+      const { removed } = await removeAutoroleRole(guildId, role.id);
       await replyCard(
         interaction,
         removed
@@ -196,7 +197,7 @@ export default {
         return;
       }
 
-      const { added, removedFromRoles } = await addAutoroleBlacklist(guild.id, role.id);
+      const { added, removedFromRoles } = await addAutoroleBlacklist(guildId, role.id);
       const lines = [];
       lines.push(
         added
@@ -212,7 +213,7 @@ export default {
     }
 
     if (subcommand === "unblacklist") {
-      const { removed } = await removeAutoroleBlacklist(guild.id, role.id);
+      const { removed } = await removeAutoroleBlacklist(guildId, role.id);
       await replyCard(
         interaction,
         removed

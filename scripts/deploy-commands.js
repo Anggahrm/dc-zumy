@@ -1,5 +1,5 @@
 import { REST, Routes } from "discord.js";
-import { getEnv } from "#config/env.js";
+import { getDiscordEnv } from "#config/env.js";
 import { replaceCommands } from "#core/loader/commands.js";
 import { createCommandRegistry } from "#core/registry/command-registry.js";
 import { createLogger } from "#services/logger.js";
@@ -21,7 +21,7 @@ async function main() {
   const args = parseArgs(process.argv);
   const mode = args.global ? "global" : "guild";
 
-  const env = getEnv();
+  const env = getDiscordEnv();
   const logger = createLogger(env.logLevel);
 
   if (mode === "guild" && !env.guildId) {
