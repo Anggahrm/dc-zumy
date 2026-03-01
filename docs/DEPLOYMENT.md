@@ -85,10 +85,13 @@ heroku config:set DISCORD_GUILD_ID=<guild-id> BOT_OWNERS=<id1,id2> LOG_LEVEL=inf
 
 4. Deploy branch to Heroku app. Process type comes from `Procfile` (`worker: bun run start`).
 
-5. Scale worker dyno:
+5. If using `app.json` / Deploy to Heroku flow, worker dyno is auto-provisioned as `standard-2x` (`formation.worker.quantity=1`, `formation.worker.size=standard-2x`).
+
+6. If needed, you can still set scaling and dyno type manually:
 
 ```bash
 heroku ps:scale worker=1 -a <app-name>
+heroku ps:type worker=standard-2x -a <app-name>
 ```
 
 ### Deploy slash commands from Heroku

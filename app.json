@@ -1,5 +1,5 @@
 {
-  "name": "zumynexy",
+  "name": "zumynext",
   "description": "ZumyNext Discord bot running on Bun",
   "repository": "https://github.com/Anggahrm/dc-zumy",
   "keywords": [
@@ -12,6 +12,12 @@
       "url": "https://github.com/jakeg/heroku-buildpack-bun"
     }
   ],
+  "formation": {
+    "worker": {
+      "quantity": 1,
+      "size": "standard-2x"
+    }
+  },
   "env": {
     "DISCORD_TOKEN": {
       "description": "Discord bot token"
