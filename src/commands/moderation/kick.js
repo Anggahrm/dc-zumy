@@ -28,9 +28,19 @@ export default {
         .setRequired(false),
     ),
   async execute({ interaction }) {
+    const guild = interaction.guild;
+    if (!guild) {
+      throw new Error("Guild context is required for kick command.");
+    }
+
     const target = interaction.options.getUser("target", true);
     const reason = normalizeReason(interaction.options.getString("reason"));
-    const targetMember = interaction.options.getMember("target");
+    const actorMember = await guild.members.fetch(interaction.user.id).catch(() => null);
+    if (!actorMember) {
+      throw new Error("Failed to resolve invoking member.");
+    }
+
+    const targetMember = await guild.members.fetch(target.id).catch(() => null);
 
     if (!targetMember) {
       const card = createCard({
@@ -52,6 +62,26 @@ export default {
       return;
     }
 
+    if (target.id === guild.ownerId) {
+      const card = createCard({
+        color: 0xed4245,
+        title: "Moderation",
+        body: "You cannot kick the server owner.",
+      });
+      await replyCard(interaction, card, { ephemeral: true });
+      return;
+    }
+
+    if (targetMember.roles.highest.position >= actorMember.roles.highest.position) {
+      const card = createCard({
+        color: 0xed4245,
+        title: "Moderation",
+        body: "You cannot kick a member with an equal or higher role than yours.",
+      });
+      await replyCard(interaction, card, { ephemeral: true });
+      return;
+    }
+
     if (!targetMember.kickable) {
       const card = createCard({
         color: 0xed4245,
@@ -62,7 +92,17 @@ export default {
       return;
     }
 
-    await targetMember.kick(reason);
+    try {
+      await targetMember.kick(reason);
+    } catch {
+      const card = createCard({
+        color: 0xed4245,
+        title: "Moderation",
+        body: "Kick failed. Please check role hierarchy and bot permissions.",
+      });
+      await replyCard(interaction, card, { ephemeral: true });
+      return;
+    }
 
     const card = createCard({
       color: 0xf1c40f,
