@@ -1,5 +1,3 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 import {
   ContainerBuilder,
   MessageFlags,
@@ -9,44 +7,23 @@ import {
   TextDisplayBuilder,
 } from "discord.js";
 import { formatError } from "#utils/error.js";
-import { PROJECT_ROOT } from "#utils/paths.js";
-
-const STORE_PATH = path.join(PROJECT_ROOT, "data", "greeter.json");
-let mutationQueue = Promise.resolve();
 
 function sanitizeChannelId(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function normalizeGuildConfig(config) {
-  if (!config || typeof config !== "object" || Array.isArray(config)) {
-    return {
+function ensureGuildEntry(guildId) {
+  const guild = global.db.data.guilds[guildId];
+  if (!guild.greeter || typeof guild.greeter !== "object" || Array.isArray(guild.greeter)) {
+    guild.greeter = {
       welcomeChannelId: null,
       leaveChannelId: null,
     };
   }
 
-  return {
-    welcomeChannelId: sanitizeChannelId(config.welcomeChannelId),
-    leaveChannelId: sanitizeChannelId(config.leaveChannelId),
-  };
-}
-
-function normalizeDb(raw) {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { guilds: {} };
-  }
-
-  const guilds = {};
-  const source = raw.guilds;
-  if (source && typeof source === "object" && !Array.isArray(source)) {
-    for (const [guildId, config] of Object.entries(source)) {
-      if (!guildId) continue;
-      guilds[guildId] = normalizeGuildConfig(config);
-    }
-  }
-
-  return { guilds };
+  guild.greeter.welcomeChannelId = sanitizeChannelId(guild.greeter.welcomeChannelId);
+  guild.greeter.leaveChannelId = sanitizeChannelId(guild.greeter.leaveChannelId);
+  return guild.greeter;
 }
 
 function cloneConfig(config) {
@@ -54,41 +31,6 @@ function cloneConfig(config) {
     welcomeChannelId: config.welcomeChannelId,
     leaveChannelId: config.leaveChannelId,
   };
-}
-
-async function readDb() {
-  try {
-    const raw = await readFile(STORE_PATH, "utf8");
-    return normalizeDb(JSON.parse(raw));
-  } catch (error) {
-    if (error?.code === "ENOENT") {
-      return { guilds: {} };
-    }
-    throw error;
-  }
-}
-
-async function writeDb(db) {
-  await mkdir(path.dirname(STORE_PATH), { recursive: true });
-  await writeFile(STORE_PATH, `${JSON.stringify(db, null, 2)}\n`, "utf8");
-}
-
-function ensureGuildConfig(db, guildId) {
-  if (!db.guilds[guildId]) {
-    db.guilds[guildId] = {
-      welcomeChannelId: null,
-      leaveChannelId: null,
-    };
-  } else {
-    db.guilds[guildId] = normalizeGuildConfig(db.guilds[guildId]);
-  }
-  return db.guilds[guildId];
-}
-
-function runMutation(task) {
-  const pending = mutationQueue.then(task, task);
-  mutationQueue = pending.catch(() => {});
-  return pending;
 }
 
 function formatFooterTimestamp(now = new Date()) {
@@ -133,23 +75,19 @@ function createGreeterCard({ type, guildName, user }) {
     ? `Hi <@${user.id}> Welcome to ${guildName}, Have a nice day`
     : `Bye <@${user.id}> from ${guildName}, Have a nice day`;
 
-  const headline = new TextDisplayBuilder().setContent(
-    [
-      `## ${title}`,
-      description,
-    ].join("\n"),
-  );
+  const headline = new TextDisplayBuilder().setContent([
+    `## ${title}`,
+    description,
+  ].join("\n"));
 
   const detailsSection = new SectionBuilder()
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        [
-          "**Details Info**",
-          `Username : ${user.tag}`,
-          `UserID : ${user.id}`,
-          `Since at : <t:${unixCreatedAt}:F>`,
-        ].join("\n"),
-      ),
+      new TextDisplayBuilder().setContent([
+        "**Details Info**",
+        `Username : ${user.tag}`,
+        `UserID : ${user.id}`,
+        `Since at : <t:${unixCreatedAt}:F>`,
+      ].join("\n")),
     )
     .setThumbnailAccessory((thumbnail) =>
       thumbnail
@@ -210,23 +148,23 @@ async function sendGreeterMessage({ guild, user, type, channelId, logger }) {
 }
 
 export async function getGreeterConfig(guildId) {
-  const db = await readDb();
-  return normalizeGuildConfig(db.guilds[guildId]);
+  await global.db.loadGuild(guildId);
+  return cloneConfig(ensureGuildEntry(guildId));
 }
 
 export async function setGreeterChannel(guildId, type, channelId) {
-  if (!["welcome", "leave"].includes(type)) {
+  if (![
+    "welcome",
+    "leave",
+  ].includes(type)) {
     throw new Error(`Invalid greeter type: ${type}`);
   }
 
-  return runMutation(async () => {
-    const db = await readDb();
-    const config = ensureGuildConfig(db, guildId);
-    const key = type === "welcome" ? "welcomeChannelId" : "leaveChannelId";
-    config[key] = sanitizeChannelId(channelId);
-    await writeDb(db);
-    return cloneConfig(config);
-  });
+  await global.db.loadGuild(guildId);
+  const config = ensureGuildEntry(guildId);
+  const key = type === "welcome" ? "welcomeChannelId" : "leaveChannelId";
+  config[key] = sanitizeChannelId(channelId);
+  return cloneConfig(config);
 }
 
 export async function sendWelcomeGreeting(member, logger) {

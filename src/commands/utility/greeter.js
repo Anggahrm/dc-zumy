@@ -44,7 +44,7 @@ export default {
             .setRequired(false),
         ),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for set command.");
@@ -73,8 +73,9 @@ export default {
       return;
     }
 
-    await setGreeterChannel(guild.id, subcommand, selectedChannel.id);
-    const config = await getGreeterConfig(guild.id);
+    const guildId = ctx.guild ?? guild.id;
+    await setGreeterChannel(guildId, subcommand, selectedChannel.id);
+    const config = global.db.data.guilds[guildId].greeter;
 
     const card = createCard({
       color: 0x57f287,

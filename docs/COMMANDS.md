@@ -18,6 +18,7 @@ bun run deploy:guild
 - `utility`
 - `owner`
 - `moderation`
+- `rpg`
 
 ## Current built-in commands
 
@@ -25,6 +26,7 @@ bun run deploy:guild
 - `utility`: `/userinfo`, `/set welcome [channel]`, `/set leave [channel]`
 - `moderation`: `/clear` (`target` is optional), `/kick` (`target` is required, `reason` is optional), `/ban` (`days` and `reason` are optional), `/autorole` (`add/remove/show/blacklist/unblacklist`)
 - `owner`: `/reloadcommands`
+- `rpg`: `/daily`, `/profile`
 
 ## Minimal command example
 
