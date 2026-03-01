@@ -18,6 +18,7 @@ bun run deploy:guild
 - `utility`
 - `owner`
 - `moderation`
+- `rpg`
 
 ## Current built-in commands
 
@@ -25,6 +26,7 @@ bun run deploy:guild
 - `utility`: `/userinfo`
 - `moderation`: `/clear` (`target` is optional)
 - `owner`: `/reloadcommands`
+- `rpg`: `/daily`, `/profile`
 
 ## Minimal command example
 

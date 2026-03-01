@@ -1,4 +1,4 @@
-const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID"];
+const required = ["DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DATABASE_URL"];
 const levels = new Set(["debug", "info", "warn", "error"]);
 
 function parseOwners(raw) {
@@ -26,5 +26,6 @@ export function getEnv() {
     guildId: process.env.DISCORD_GUILD_ID,
     owners: parseOwners(process.env.BOT_OWNERS),
     logLevel: normalizeLogLevel(process.env.LOG_LEVEL),
+    databaseUrl: process.env.DATABASE_URL,
   };
 }

@@ -21,7 +21,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
     }
 
     const cooldownSeconds = command.cooldown ?? DEFAULT_COOLDOWN_SECONDS;
-    const remaining = cooldowns.getRemaining(command.data.name, interaction.user.id, cooldownSeconds);
+    const remaining = cooldowns.getRemaining(command.data.name, interaction.user.id);
     if (remaining > 0) {
       await replyError(interaction, `You're a bit fast. Try again in ${remaining}s.`);
       return;

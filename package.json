@@ -10,6 +10,7 @@
   "imports": {
     "#config/*": "./src/config/*",
     "#core/*": "./src/core/*",
+    "#db/*": "./src/db/*",
     "#services/*": "./src/services/*",
     "#utils/*": "./src/utils/*",
     "#app/*": "./src/*"
@@ -19,9 +20,18 @@
     "dev": "bun --watch run src/main.js",
     "dev:hot": "ZUMY_HOT_RELOAD=1 bun run src/main.js",
     "deploy:guild": "bun run scripts/deploy-commands.js --guild",
-    "deploy:global": "bun run scripts/deploy-commands.js --global"
+    "deploy:global": "bun run scripts/deploy-commands.js --global",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "discord.js": "^14.25.1"
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.1",
+    "pg": "^8.19.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.9"
   }
 }

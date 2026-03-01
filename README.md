@@ -15,6 +15,7 @@ ZumyNext is a modular `discord.js` bot runtime built for long-term maintainabili
 - Runtime: Bun (`>=1.1.0`)
 - Language/runtime model: JavaScript ESM
 - Discord library: `discord.js` v14
+- Database: PostgreSQL + Drizzle ORM
 - UI response mode: Components v2 (no embeds)
 
 ## Prerequisites
@@ -50,6 +51,10 @@ Optional:
 - `BOT_OWNERS`: Comma-separated user IDs allowed to run owner-only commands
 - `LOG_LEVEL`: `debug | info | warn | error` (defaults to `info`)
 
+Required for database runtime + migrations:
+
+- `DATABASE_URL`: PostgreSQL connection string
+
 Reference template: `.env.example`
 
 ## Scripts
@@ -59,7 +64,49 @@ Reference template: `.env.example`
 - `bun run dev:hot`: Start bot with SIGUSR2 command hot reload enabled
 - `bun run deploy:guild`: Deploy slash commands to one guild
 - `bun run deploy:global`: Deploy slash commands globally
+- `bun run db:generate`: Generate SQL migrations from `src/db/schema.js`
+- `bun run db:migrate`: Apply generated migrations to PostgreSQL
+- `bun run db:studio`: Open Drizzle Studio against the configured database
 - `bun run scripts/deploy-commands.js --guild --dry-run`: Build and validate command payload without API write
+
+## Database usage (global style)
+
+The database API is designed to be consistent and simple for contributors.
+
+```js
+// user data
+global.db.data.users[interaction.user.id].money += 5000;
+
+// guild data
+global.db.data.guilds[interaction.guildId].welcome.enabled = true;
+
+// bot data
+global.db.data.bot.mode = "maintenance";
+```
+
+Equivalent helper shortcuts:
+
+```js
+const user = global.db.user(interaction.user.id);
+user.money += 5000;
+
+const guild = global.db.guild(interaction.guildId);
+guild.welcome.message = "Welcome, {user}.";
+
+global.db.bot.maintenance = true;
+```
+
+Database structure:
+
+- `users_data`: `id` + `data` (JSONB)
+- `guilds_data`: `id` + `data` (JSONB)
+- `bot_data`: `key` + `data` (JSONB)
+
+Notes:
+
+- Mutasi object otomatis ke-persist ke PostgreSQL (debounced write).
+- Default object dibuat otomatis saat pertama kali akses key.
+- Inisialisasi dan shutdown DB sudah di-handle di bootstrap runtime.
 
 ## Built-in commands
 
@@ -67,6 +114,7 @@ Reference template: `.env.example`
 - `utility`: `/userinfo`
 - `moderation`: `/clear` (admin + guild only, optional `target` user filter)
 - `owner`: `/reloadcommands` (owner only, requires user ID in `BOT_OWNERS`)
+- `rpg`: `/daily` (claim money + exp every 24 hours), `/profile` (show RPG stats)
 
 ## Hot reload workflows
 
@@ -105,6 +153,9 @@ src/
   main.js                  # Runtime bootstrap
 scripts/
   deploy-commands.js       # Slash command deployment script
+drizzle/
+  *.sql                    # Generated SQL migrations
+  meta/                    # Drizzle migration metadata
 docs/
   ARCHITECTURE.md
   COMMANDS.md
@@ -114,8 +165,9 @@ docs/
 ## Architecture and conventions
 
 - Import aliases from `package.json#imports`:
-  - `#config/*`, `#core/*`, `#services/*`, `#utils/*`, `#app/*`
+  - `#config/*`, `#core/*`, `#db/*`, `#services/*`, `#utils/*`, `#app/*`
 - Command modules must follow the contract documented in `docs/ARCHITECTURE.md`.
+- Database adapter lives in `src/db/adapter.js`, schema in `src/db/schema.js`, and Drizzle config in `drizzle.config.js`.
 - Responses should use helper utilities in `src/utils/respond.js` for consistent Components v2 composition.
 
 ## Deployment notes
@@ -136,3 +188,4 @@ docs/
 - `docs/ARCHITECTURE.md`
 - `docs/COMMANDS.md`
 - `docs/DEPLOYMENT.md`
+- `docs/DATABASE-SCHEMA.md`
