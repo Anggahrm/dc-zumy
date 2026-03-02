@@ -27,34 +27,7 @@ function cloneConfig(config) {
 }
 
 function formatFooterTimestamp(now = new Date()) {
-  const timeOnly = new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-  const fullDate = new Intl.DateTimeFormat("en-US", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const targetStart = new Date(now);
-  targetStart.setHours(0, 0, 0, 0);
-
-  const daysDiff = Math.floor((todayStart.getTime() - targetStart.getTime()) / 86_400_000);
-  if (daysDiff === 0) {
-    return timeOnly.format(now);
-  }
-  if (daysDiff === 1) {
-    return `Yesterday ${timeOnly.format(now)}`;
-  }
-  return fullDate.format(now);
+  return `<t:${Math.floor(now.getTime() / 1000)}:F>`;
 }
 
 function createGreeterCard({ type, guildName, user }) {
