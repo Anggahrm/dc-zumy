@@ -16,6 +16,14 @@ export function createDefaultGuildData(id) {
       channelId: null,
       message: "Welcome, {user}.",
     },
+    greeter: {
+      welcomeChannelId: null,
+      leaveChannelId: null,
+    },
+    autorole: {
+      roles: [],
+      blacklist: [],
+    },
     mode: "normal",
   };
 }

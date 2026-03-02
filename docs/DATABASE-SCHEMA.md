@@ -69,6 +69,14 @@ Default shape (`src/db/defaults.js`):
     channelId: null,
     message: "Welcome, {user}."
   },
+  greeter: {
+    welcomeChannelId: null,
+    leaveChannelId: null
+  },
+  autorole: {
+    roles: [],
+    blacklist: []
+  },
   mode: "normal"
 }
 ```
@@ -76,6 +84,8 @@ Default shape (`src/db/defaults.js`):
 Field notes:
 
 - `welcome`: guild welcome message settings.
+- `greeter`: guild channel targets for welcome/leave broadcast cards.
+- `autorole`: guild autorole assignment list and role blacklist.
 - `mode`: guild mode toggle for future feature switches.
 
 ## Bot Schema
