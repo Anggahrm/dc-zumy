@@ -1,5 +1,6 @@
 import { Events } from "discord.js";
 import { sendLeaveGreeting } from "#services/greeter.js";
+import { sendGuildLog } from "#services/logging.js";
 import { formatError } from "#utils/error.js";
 
 export default {
@@ -16,5 +17,17 @@ export default {
         message: details.message,
       });
     }
+
+    await sendGuildLog({
+      guild: member.guild,
+      eventKey: "leaves",
+      title: "Member Left",
+      color: 0xed4245,
+      lines: [
+        `- User: **${member.user?.tag ?? "Unknown user"}**`,
+        `- User ID: \`${member.id}\``,
+      ],
+      logger,
+    });
   },
 };

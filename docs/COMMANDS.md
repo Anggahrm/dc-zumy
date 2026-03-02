@@ -23,7 +23,7 @@ bun run deploy:guild
 ## Current built-in commands
 
 - `info`: `/ping`, `/help`
-- `utility`: `/userinfo`, `/set welcome [channel]`, `/set leave [channel]`
+- `utility`: `/userinfo`, `/set welcome [channel]`, `/set leave [channel]`, `/log channel [channel]`, `/log config [event]`
 - `moderation`: `/clear` (`target` is optional), `/kick` (`target` is required, `reason` is optional), `/ban` (`days` and `reason` are optional), `/autorole` (`add/remove/show/blacklist/unblacklist`)
 - `owner`: `/reloadcommands`
 - `rpg`: `/daily`, `/profile`
