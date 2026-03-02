@@ -1,7 +1,5 @@
 import {
   ChannelType,
-  MessageFlags,
-  PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
 import { getGreeterConfig, setGreeterChannel } from "#services/greeter.js";
@@ -16,6 +14,7 @@ export default {
   cooldown: 2,
   permissions: {
     guildOnly: true,
+    admin: true,
   },
   data: new SlashCommandBuilder()
     .setName("set")
@@ -48,15 +47,6 @@ export default {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for set command.");
-    }
-
-    const isAdmin = interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
-    if (!isAdmin) {
-      await interaction.reply({
-        content: "Sorry this command only for administrator.",
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
     }
 
     const guildId = ctx.guild ?? guild.id;
