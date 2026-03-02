@@ -141,7 +141,7 @@ Notes:
 ## Built-in commands
 
 - `info`: `/ping`, `/help`
-- `utility`: `/userinfo`, `/set welcome [channel]`, `/set leave [channel]`
+- `utility`: `/userinfo`, `/set welcome [channel]`, `/set leave [channel]`, `/log channel [channel]`, `/log config [event]`
 - `moderation`: `/purge` (admin + guild only, subcommands: `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`; supports optional `prefix` for `bot` and optional `count` for `contains`/`user`), `/kick` (admin + guild only, required `target`, optional `reason`), `/ban` (admin + guild only, optional `days` and `reason`), `/autorole` with subcommands `add/remove/show/blacklist/unblacklist` (admin + guild only)
 - `owner`: `/reloadcommands` (owner only, requires user ID in `BOT_OWNERS`)
 - `rpg`: `/daily` (claim money + exp every 24 hours), `/profile` (show RPG stats)
