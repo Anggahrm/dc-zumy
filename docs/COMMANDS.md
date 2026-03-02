@@ -24,7 +24,7 @@ bun run deploy:guild
 
 - `info`: `/ping`, `/help`
 - `utility`: `/userinfo`, `/set welcome [channel]`, `/set leave [channel]`, `/log channel [channel]`, `/log config [event]`
-- `moderation`: `/clear` (`target` is optional), `/kick` (`target` is required, `reason` is optional), `/ban` (`days` and `reason` are optional), `/autorole` (`add/remove/show/blacklist/unblacklist`)
+- `moderation`: `/purge` (`all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`), `/kick` (`target` is required, `reason` is optional), `/ban` (`days` and `reason` are optional), `/autorole` (`add/remove/show/blacklist/unblacklist`)
 - `owner`: `/reloadcommands`
 - `rpg`: `/daily`, `/profile`
 

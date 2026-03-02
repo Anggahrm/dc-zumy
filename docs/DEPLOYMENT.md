@@ -69,7 +69,7 @@ For startup deploy mode testing in development:
 
 ## Built-in moderation note
 
-- `/clear` supports an optional `target` argument to delete only recent messages from one user.
+- `/purge` supports multiple moderation filters: `all`, `bot`, `contains`, `embeds`, `emoji`, `files`, `human`, `images`, `link`, `mentions`, `reactions`, and `user`.
 
 ## Optional checks
 
