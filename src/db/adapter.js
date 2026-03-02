@@ -98,12 +98,12 @@ class DatabaseAdapter {
 
     const cached = this.guildsCache.get(safeId);
     if (preferCache && cached) {
-      return cached;
+      return this.guild(safeId);
     }
 
-    const record = this.ensureRecord("guilds", safeId);
+    this.ensureRecord("guilds", safeId);
     await this.loadRecord("guilds", safeId);
-    return record;
+    return this.guild(safeId);
   }
 
   get bot() {
