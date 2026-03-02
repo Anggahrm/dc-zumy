@@ -18,6 +18,7 @@ export async function replyCard(interaction, card, { ephemeral = false } = {}) {
   if (interaction.deferred && !interaction.replied) {
     await interaction.editReply({
       components: [card],
+      flags: MessageFlags.IsComponentsV2,
     });
     return;
   }
