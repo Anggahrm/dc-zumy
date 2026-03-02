@@ -15,6 +15,21 @@ export function createCard({ color, title, body }) {
 }
 
 export async function replyCard(interaction, card, { ephemeral = false } = {}) {
+  if (interaction.deferred && !interaction.replied) {
+    await interaction.editReply({
+      components: [card],
+    });
+    return;
+  }
+
+  if (interaction.replied) {
+    await interaction.followUp({
+      components: [card],
+      flags: MessageFlags.IsComponentsV2 | (ephemeral ? MessageFlags.Ephemeral : 0),
+    });
+    return;
+  }
+
   await interaction.reply({
     components: [card],
     flags: MessageFlags.IsComponentsV2 | (ephemeral ? MessageFlags.Ephemeral : 0),

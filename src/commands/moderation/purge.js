@@ -1,8 +1,15 @@
-import { SlashCommandBuilder } from "discord.js";
+import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
 const DEFAULT_LIMIT = 50;
 const MAX_FETCH_LIMIT = 100;
+
+class PurgeUserError extends Error {
+  constructor(message) {
+    super(message);
+    this.exposeToUser = true;
+  }
+}
 
 function makeCountOption(option, required = true) {
   return option
@@ -95,6 +102,22 @@ function buildErrorCard(message) {
   });
 }
 
+function toPurgeUserError(error) {
+  if (error?.exposeToUser) {
+    return error;
+  }
+
+  if (error?.code === 50013) {
+    return new PurgeUserError("I need **Manage Messages** permission to purge in this channel.");
+  }
+
+  if (error?.code === 50001) {
+    return new PurgeUserError("I can't access this channel to purge messages.");
+  }
+
+  return error;
+}
+
 async function executeFilteredPurge({ interaction, modeLabel, count, detail, predicate }) {
   const fetched = await fetchRecentMessages(interaction.channel);
   const targets = pickMessages(fetched, predicate, count);
@@ -119,7 +142,7 @@ async function executeFilteredPurge({ interaction, modeLabel, count, detail, pre
 
 function ensureBulkDeleteChannel(interaction) {
   if (!interaction.channel || typeof interaction.channel.bulkDelete !== "function") {
-    throw new Error("Can't bulk delete in this channel.");
+    throw new PurgeUserError("This channel doesn't support bulk message deletion.");
   }
 }
 
@@ -225,168 +248,172 @@ export default {
     ),
   async execute({ interaction }) {
     ensureBulkDeleteChannel(interaction);
+    await interaction.deferReply({
+      flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+    });
 
-    const subcommand = interaction.options.getSubcommand();
+    try {
+      const subcommand = interaction.options.getSubcommand();
 
-    if (subcommand === "all") {
-      const count = interaction.options.getInteger("count", true);
-      const deleted = await interaction.channel.bulkDelete(count, true);
-      await replyCard(
-        interaction,
-        buildResultCard({
-          modeLabel: "all",
-          requested: count,
-          deleted: deleted.size,
-        }),
-        { ephemeral: true },
-      );
-      return;
-    }
+      if (subcommand === "all") {
+        const count = interaction.options.getInteger("count", true);
+        const deleted = await interaction.channel.bulkDelete(count, true);
+        await replyCard(
+          interaction,
+          buildResultCard({
+            modeLabel: "all",
+            requested: count,
+            deleted: deleted.size,
+          }),
+          { ephemeral: true },
+        );
+        return;
+      }
 
-    if (subcommand === "bot") {
-      const count = interaction.options.getInteger("count", true);
-      const prefix = parsePrefix(interaction.options.getString("prefix"));
+      if (subcommand === "bot") {
+        const count = interaction.options.getInteger("count", true);
+        const prefix = parsePrefix(interaction.options.getString("prefix"));
 
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "bot",
-        count,
-        detail: prefix ? `prefix starts with \`${prefix}\`` : null,
-        predicate: (message) => {
-          if (!message.author?.bot) return false;
-          if (!prefix) return true;
-          return message.content?.startsWith(prefix) ?? false;
-        },
-      });
-      return;
-    }
-
-    if (subcommand === "contains") {
-      const substringRaw = interaction.options.getString("substring", true);
-      const substring = parseSubstring(substringRaw);
-      if (!substring) {
-        await replyCard(interaction, buildErrorCard("Please provide a non-empty substring filter."), {
-          ephemeral: true,
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "bot",
+          count,
+          detail: prefix ? `prefix starts with \`${prefix}\`` : null,
+          predicate: (message) => {
+            if (!message.author?.bot) return false;
+            if (!prefix) return true;
+            return message.content?.startsWith(prefix) ?? false;
+          },
         });
         return;
       }
 
-      const count = interaction.options.getInteger("count") ?? DEFAULT_LIMIT;
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "contains",
-        count,
-        detail: `contains \`${substringRaw}\``,
-        predicate: (message) => {
-          const content = message.content?.toLowerCase();
-          return Boolean(content && content.includes(substring));
-        },
-      });
-      return;
-    }
+      if (subcommand === "contains") {
+        const substringRaw = interaction.options.getString("substring", true);
+        const substring = parseSubstring(substringRaw);
+        if (!substring) {
+          throw new PurgeUserError("Please provide a non-empty substring filter.");
+        }
 
-    if (subcommand === "embeds") {
-      const count = interaction.options.getInteger("count", true);
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "embeds",
-        count,
-        predicate: (message) => (message.embeds?.length ?? 0) > 0,
-      });
-      return;
-    }
+        const count = interaction.options.getInteger("count") ?? DEFAULT_LIMIT;
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "contains",
+          count,
+          detail: `contains \`${substringRaw}\``,
+          predicate: (message) => {
+            const content = message.content?.toLowerCase();
+            return Boolean(content && content.includes(substring));
+          },
+        });
+        return;
+      }
 
-    if (subcommand === "emoji") {
-      const count = interaction.options.getInteger("count", true);
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "emoji",
-        count,
-        predicate: (message) => hasEmoji(message.content),
-      });
-      return;
-    }
+      if (subcommand === "embeds") {
+        const count = interaction.options.getInteger("count", true);
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "embeds",
+          count,
+          predicate: (message) => (message.embeds?.length ?? 0) > 0,
+        });
+        return;
+      }
 
-    if (subcommand === "files") {
-      const count = interaction.options.getInteger("count", true);
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "files",
-        count,
-        predicate: (message) => (message.attachments?.size ?? 0) > 0,
-      });
-      return;
-    }
+      if (subcommand === "emoji") {
+        const count = interaction.options.getInteger("count", true);
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "emoji",
+          count,
+          predicate: (message) => hasEmoji(message.content),
+        });
+        return;
+      }
 
-    if (subcommand === "human") {
-      const count = interaction.options.getInteger("count", true);
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "human",
-        count,
-        predicate: (message) => !message.author?.bot,
-      });
-      return;
-    }
+      if (subcommand === "files") {
+        const count = interaction.options.getInteger("count", true);
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "files",
+          count,
+          predicate: (message) => (message.attachments?.size ?? 0) > 0,
+        });
+        return;
+      }
 
-    if (subcommand === "images") {
-      const count = interaction.options.getInteger("count", true);
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "images",
-        count,
-        predicate: (message) => {
-          if ((message.attachments?.size ?? 0) === 0) return false;
-          return message.attachments.some((attachment) => attachment.contentType?.startsWith("image/"));
-        },
-      });
-      return;
-    }
+      if (subcommand === "human") {
+        const count = interaction.options.getInteger("count", true);
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "human",
+          count,
+          predicate: (message) => !message.author?.bot,
+        });
+        return;
+      }
 
-    if (subcommand === "link") {
-      const count = interaction.options.getInteger("count", true);
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "link",
-        count,
-        predicate: (message) => hasLink(message.content),
-      });
-      return;
-    }
+      if (subcommand === "images") {
+        const count = interaction.options.getInteger("count", true);
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "images",
+          count,
+          predicate: (message) => {
+            if ((message.attachments?.size ?? 0) === 0) return false;
+            return message.attachments.some((attachment) => attachment.contentType?.startsWith("image/"));
+          },
+        });
+        return;
+      }
 
-    if (subcommand === "mentions") {
-      const count = interaction.options.getInteger("count", true);
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "mentions",
-        count,
-        predicate: (message) => hasMention(message),
-      });
-      return;
-    }
+      if (subcommand === "link") {
+        const count = interaction.options.getInteger("count", true);
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "link",
+          count,
+          predicate: (message) => hasLink(message.content),
+        });
+        return;
+      }
 
-    if (subcommand === "reactions") {
-      const count = interaction.options.getInteger("count", true);
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "reactions",
-        count,
-        predicate: (message) => (message.reactions?.cache?.size ?? 0) > 0,
-      });
-      return;
-    }
+      if (subcommand === "mentions") {
+        const count = interaction.options.getInteger("count", true);
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "mentions",
+          count,
+          predicate: (message) => hasMention(message),
+        });
+        return;
+      }
 
-    if (subcommand === "user") {
-      const member = interaction.options.getUser("member", true);
-      const count = interaction.options.getInteger("count") ?? DEFAULT_LIMIT;
+      if (subcommand === "reactions") {
+        const count = interaction.options.getInteger("count", true);
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "reactions",
+          count,
+          predicate: (message) => (message.reactions?.cache?.size ?? 0) > 0,
+        });
+        return;
+      }
 
-      await executeFilteredPurge({
-        interaction,
-        modeLabel: "user",
-        count,
-        detail: `member **${member.tag}**`,
-        predicate: (message) => message.author?.id === member.id,
-      });
+      if (subcommand === "user") {
+        const member = interaction.options.getUser("member", true);
+        const count = interaction.options.getInteger("count") ?? DEFAULT_LIMIT;
+
+        await executeFilteredPurge({
+          interaction,
+          modeLabel: "user",
+          count,
+          detail: `member **${member.tag}**`,
+          predicate: (message) => message.author?.id === member.id,
+        });
+      }
+    } catch (error) {
+      throw toPurgeUserError(error);
     }
   },
 };

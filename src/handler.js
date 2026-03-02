@@ -83,6 +83,11 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
         message: details.message,
         stack: details.stack,
       });
+      if (error?.exposeToUser && typeof error.message === "string" && error.message.trim()) {
+        await replyError(interaction, error.message);
+        return;
+      }
+
       await replyError(interaction, "Something went wrong while running that command.");
     }
   }
