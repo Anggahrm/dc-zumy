@@ -5,9 +5,26 @@ const AUTOROLE_DEFAULTS = {
   blacklist: [],
 };
 
+function sameStringArray(a, b) {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 function normalizeAutorole(config) {
-  config.roles = guildFeatureUtils.normalizeRoleIds(config.roles);
-  config.blacklist = guildFeatureUtils.normalizeRoleIds(config.blacklist);
+  const normalizedRoles = guildFeatureUtils.normalizeRoleIds(config.roles);
+  if (!sameStringArray(config.roles, normalizedRoles)) {
+    config.roles = normalizedRoles;
+  }
+
+  const normalizedBlacklist = guildFeatureUtils.normalizeRoleIds(config.blacklist);
+  if (!sameStringArray(config.blacklist, normalizedBlacklist)) {
+    config.blacklist = normalizedBlacklist;
+  }
 }
 
 function cloneConfig(config) {
