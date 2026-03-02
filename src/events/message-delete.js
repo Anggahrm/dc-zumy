@@ -14,6 +14,13 @@ function formatContent(content) {
   return text ? text.slice(0, 900) : "(no text content)";
 }
 
+function resolveContentLabel(message) {
+  if (typeof message.content === "string") {
+    return formatContent(message.content);
+  }
+  return "(content unavailable: Message Content intent or cache miss)";
+}
+
 export default {
   name: Events.MessageDelete,
   async execute(message) {
@@ -30,7 +37,7 @@ export default {
         `- Author: **${resolveAuthorTag(message)}**`,
         `- Channel: ${resolveChannelLabel(message)}`,
         `- Message ID: \`${message.id}\``,
-        `- Content: ${formatContent(message.content)}`,
+        `- Content: ${resolveContentLabel(message)}`,
       ],
       logger,
     });

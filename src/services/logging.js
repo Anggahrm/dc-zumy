@@ -116,8 +116,8 @@ export function isValidLogEventKey(eventKey) {
   return LOG_EVENT_ORDER.includes(eventKey);
 }
 
-export async function getLoggingConfig(guildId) {
-  const config = await loadGuildFeature(guildId, "logging", LOGGING_DEFAULTS, normalizeLogging);
+export async function getLoggingConfig(guildId, options = {}) {
+  const config = await loadGuildFeature(guildId, "logging", LOGGING_DEFAULTS, normalizeLogging, options);
   return cloneConfig(config);
 }
 
@@ -138,7 +138,7 @@ export async function setLoggingEvent(guildId, eventKey, enabled) {
 }
 
 export async function resolveLoggingTarget(guild) {
-  const config = await getLoggingConfig(guild.id);
+  const config = await getLoggingConfig(guild.id, { preferCache: true });
   if (!config.channelId) {
     return { config, channel: null };
   }
@@ -173,6 +173,9 @@ export async function sendGuildLog({ guild, eventKey, title, lines, color = 0x34
     await channel.send({
       components: [card],
       flags: MessageFlags.IsComponentsV2,
+      allowedMentions: {
+        parse: [],
+      },
     });
     return true;
   } catch (error) {

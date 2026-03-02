@@ -10,13 +10,9 @@ export default {
   async execute(oldUser, newUser) {
     const client = newUser.client;
     const logger = client.zumy?.logger;
-    const guilds = Array.from(client.guilds.cache.values());
+    const guilds = Array.from(client.guilds.cache.values()).filter((guild) => guild.members.cache.has(newUser.id));
 
     for (const guild of guilds) {
-      const hasMember = guild.members.cache.has(newUser.id)
-        || Boolean(await guild.members.fetch(newUser.id).catch(() => null));
-      if (!hasMember) continue;
-
       if (oldUser.username !== newUser.username) {
         await sendGuildLog({
           guild,

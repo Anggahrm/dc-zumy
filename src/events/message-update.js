@@ -6,14 +6,23 @@ function formatContent(value) {
   return text ? text.slice(0, 900) : "(no text content)";
 }
 
+function resolveContent(value) {
+  return typeof value === "string" ? value : null;
+}
+
 export default {
   name: Events.MessageUpdate,
   async execute(oldMessage, newMessage) {
     const guild = newMessage.guild ?? oldMessage.guild;
     if (!guild || !newMessage.id) return;
 
-    const oldContent = oldMessage.content ?? "";
-    const nextContent = newMessage.content ?? "";
+    const oldContent = resolveContent(oldMessage.content);
+    const nextContent = resolveContent(newMessage.content);
+
+    if (oldContent == null || nextContent == null) {
+      return;
+    }
+
     if (oldContent === nextContent) return;
 
     const logger = newMessage.client.zumy?.logger;

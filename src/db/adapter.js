@@ -89,15 +89,21 @@ class DatabaseAdapter {
     return this.data.guilds[id];
   }
 
-  async loadGuild(id) {
+  async loadGuild(id, options = {}) {
+    const { preferCache = false } = options;
     const safeId = this.normalizeId(id);
     if (!safeId) {
       throw new Error("Invalid guild id.");
     }
 
-    this.ensureRecord("guilds", safeId);
+    const cached = this.guildsCache.get(safeId);
+    if (preferCache && cached) {
+      return cached;
+    }
+
+    const record = this.ensureRecord("guilds", safeId);
     await this.loadRecord("guilds", safeId);
-    return this.guild(safeId);
+    return record;
   }
 
   get bot() {
