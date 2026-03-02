@@ -37,7 +37,12 @@ async function validateRoleForAutorole(guild, role) {
   }
 
   if (role.position >= me.roles.highest.position) {
-    return "I can't assign that role because it is equal to or higher than my highest role.";
+    return [
+      "I can't assign that role because it is equal to or higher than my highest role.",
+      "Move my bot role above the target role in Server Settings -> Roles.",
+      `Target role: **${role.name}** (position ${role.position})`,
+      `My highest role: **${me.roles.highest.name}** (position ${me.roles.highest.position})`,
+    ].join("\n");
   }
 
   return null;
