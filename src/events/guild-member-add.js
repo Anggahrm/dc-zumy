@@ -1,6 +1,7 @@
 import { Events } from "discord.js";
 import { getAutoroleConfig } from "#services/autorole.js";
 import { sendWelcomeGreeting } from "#services/greeter.js";
+import { sendGuildLog } from "#services/logging.js";
 import { formatError } from "#utils/error.js";
 
 async function resolveRole(guild, roleId) {
@@ -79,5 +80,18 @@ export default {
         message: details.message,
       });
     }
+
+    await sendGuildLog({
+      guild: member.guild,
+      eventKey: "joins",
+      title: "Member Joined",
+      color: 0x57f287,
+      lines: [
+        `- Member: <@${member.id}>`,
+        `- User: **${member.user.tag}**`,
+        `- User ID: \`${member.id}\``,
+      ],
+      logger,
+    });
   },
 };

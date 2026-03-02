@@ -22,8 +22,8 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-export async function loadGuildFeature(guildId, featureKey, defaults, normalize) {
-  await global.db.loadGuild(guildId);
+export async function loadGuildFeature(guildId, featureKey, defaults, normalize, options = {}) {
+  await global.db.loadGuild(guildId, options);
   const guild = global.db.data.guilds[guildId];
 
   if (!guild[featureKey] || typeof guild[featureKey] !== "object" || Array.isArray(guild[featureKey])) {
