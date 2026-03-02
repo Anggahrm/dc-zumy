@@ -59,17 +59,17 @@ export const LOG_EVENT_ORDER = [
 const LOGGING_DEFAULTS = {
   channelId: null,
   events: {
-    deleted_messages: true,
-    edited_messages: true,
+    deleted_messages: false,
+    edited_messages: false,
     purged_messages: false,
     discord_invites: false,
-    member_roles: true,
-    name_updates: true,
-    avatar_updates: true,
-    bans: true,
-    unbans: true,
-    joins: true,
-    leaves: true,
+    member_roles: false,
+    name_updates: false,
+    avatar_updates: false,
+    bans: false,
+    unbans: false,
+    joins: false,
+    leaves: false,
     timeouts: false,
     remove_timeouts: false,
     voice_join: false,
@@ -137,8 +137,8 @@ export async function setLoggingEvent(guildId, eventKey, enabled) {
   return cloneConfig(config);
 }
 
-export async function resolveLoggingTarget(guild) {
-  const config = await getLoggingConfig(guild.id, { preferCache: true });
+export async function resolveLoggingTarget(guild, configOverride = null) {
+  const config = configOverride ?? await getLoggingConfig(guild.id, { preferCache: true });
   if (!config.channelId) {
     return { config, channel: null };
   }
@@ -158,8 +158,13 @@ export async function sendGuildLog({ guild, eventKey, title, lines, color = 0x34
     return false;
   }
 
-  const { config, channel } = await resolveLoggingTarget(guild);
-  if (!config.events[eventKey] || !channel) {
+  const config = await getLoggingConfig(guild.id, { preferCache: true });
+  if (!config.events[eventKey]) {
+    return false;
+  }
+
+  const { channel } = await resolveLoggingTarget(guild, config);
+  if (!channel) {
     return false;
   }
 

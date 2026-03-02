@@ -1,5 +1,5 @@
 import { Events } from "discord.js";
-import { sendGuildLog } from "#services/logging.js";
+import { getLoggingConfig, sendGuildLog } from "#services/logging.js";
 
 function formatAvatar(user) {
   return user.avatarURL({ extension: "png", size: 512 }) ?? "(no avatar)";
@@ -10,10 +10,29 @@ export default {
   async execute(oldUser, newUser) {
     const client = newUser.client;
     const logger = client.zumy?.logger;
-    const guilds = Array.from(client.guilds.cache.values()).filter((guild) => guild.members.cache.has(newUser.id));
+    const usernameChanged = oldUser.username !== newUser.username;
+    const avatarChanged = oldUser.avatar !== newUser.avatar;
+    if (!usernameChanged && !avatarChanged) {
+      return;
+    }
+
+    const guilds = Array.from(client.guilds.cache.values());
 
     for (const guild of guilds) {
-      if (oldUser.username !== newUser.username) {
+      const config = await getLoggingConfig(guild.id, { preferCache: true });
+      const shouldLogName = usernameChanged && config.events.name_updates;
+      const shouldLogAvatar = avatarChanged && config.events.avatar_updates;
+      if (!shouldLogName && !shouldLogAvatar) {
+        continue;
+      }
+
+      const hasMember = guild.members.cache.has(newUser.id)
+        || Boolean(await guild.members.fetch(newUser.id).catch(() => null));
+      if (!hasMember) {
+        continue;
+      }
+
+      if (shouldLogName) {
         await sendGuildLog({
           guild,
           eventKey: "name_updates",
@@ -29,7 +48,7 @@ export default {
         });
       }
 
-      if (oldUser.avatar !== newUser.avatar) {
+      if (shouldLogAvatar) {
         await sendGuildLog({
           guild,
           eventKey: "avatar_updates",
