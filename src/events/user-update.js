@@ -5,6 +5,14 @@ function formatAvatar(user) {
   return user.avatarURL({ extension: "png", size: 512 }) ?? "(no avatar)";
 }
 
+function formatAvatarFooter(userId, now = new Date()) {
+  const timeText = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(now);
+  return `ID: ${userId} | Today at ${timeText}`;
+}
+
 export default {
   name: Events.UserUpdate,
   async execute(oldUser, newUser) {
@@ -49,6 +57,7 @@ export default {
       }
 
       if (shouldLogAvatar) {
+        const newAvatar = formatAvatar(newUser);
         await sendGuildLog({
           guild,
           eventKey: "avatar_updates",
@@ -57,9 +66,10 @@ export default {
           lines: [
             `- User: <@${newUser.id}>`,
             `- User ID: \`${newUser.id}\``,
-            `- Old avatar: ${formatAvatar(oldUser)}`,
-            `- New avatar: ${formatAvatar(newUser)}`,
           ],
+          thumbnailUrl: newAvatar === "(no avatar)" ? null : newAvatar,
+          thumbnailDescription: `${newUser.tag} avatar`,
+          footer: formatAvatarFooter(newUser.id),
           logger,
         });
       }

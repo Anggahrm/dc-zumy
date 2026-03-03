@@ -153,7 +153,17 @@ export async function resolveLoggingTarget(guild, configOverride = null) {
   return { config, channel };
 }
 
-export async function sendGuildLog({ guild, eventKey, title, lines, color = 0x3498db, logger }) {
+export async function sendGuildLog({
+  guild,
+  eventKey,
+  title,
+  lines,
+  color = 0x3498db,
+  thumbnailUrl = null,
+  thumbnailDescription = null,
+  footer = null,
+  logger,
+}) {
   if (!guild || !eventKey || !Array.isArray(lines) || lines.length === 0) {
     return false;
   }
@@ -172,6 +182,9 @@ export async function sendGuildLog({ guild, eventKey, title, lines, color = 0x34
     color,
     title,
     body: lines.join("\n"),
+    thumbnailUrl,
+    thumbnailDescription,
+    footer,
   });
 
   try {

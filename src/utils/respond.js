@@ -1,17 +1,46 @@
 import {
   ContainerBuilder,
   MessageFlags,
+  SectionBuilder,
   SeparatorBuilder,
   SeparatorSpacingSize,
   TextDisplayBuilder,
 } from "discord.js";
 
-export function createCard({ color, title, body }) {
+export function createCard({
+  color,
+  title,
+  body,
+  thumbnailUrl = null,
+  thumbnailDescription = null,
+  footer = null,
+}) {
   const heading = title?.trim() ? `## ${title}\n` : "";
-  return new ContainerBuilder()
-    .setAccentColor(typeof color === "number" ? color : 0x5865f2)
-    .addTextDisplayComponents(new TextDisplayBuilder().setContent(`${heading}${body}`.trim()))
-    .addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+  const card = new ContainerBuilder()
+    .setAccentColor(typeof color === "number" ? color : 0x5865f2);
+
+  const content = `${heading}${body}`.trim();
+  if (thumbnailUrl) {
+    card.addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+        .setThumbnailAccessory((thumbnail) =>
+          thumbnail
+            .setURL(thumbnailUrl)
+            .setDescription(thumbnailDescription ?? "log thumbnail"),
+        ),
+    );
+  } else {
+    card.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+  }
+
+  card.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+
+  if (footer?.trim()) {
+    card.addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# ${footer.trim()}`));
+  }
+
+  return card;
 }
 
 export async function replyCard(interaction, card, { ephemeral = false } = {}) {
