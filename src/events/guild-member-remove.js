@@ -2,6 +2,16 @@ import { Events } from "discord.js";
 import { sendLeaveGreeting } from "#services/greeter.js";
 import { sendGuildLog } from "#services/logging.js";
 import { formatError } from "#utils/error.js";
+import { formatElapsedSince } from "#utils/time.js";
+
+function formatRoleList(roles) {
+  const roleMentions = roles
+    .filter((role) => role.id !== role.guild.id)
+    .sort((a, b) => b.position - a.position)
+    .map((role) => `<@&${role.id}>`);
+
+  return roleMentions.length > 0 ? roleMentions.join(", ") : "(none)";
+}
 
 export default {
   name: Events.GuildMemberRemove,
@@ -24,9 +34,13 @@ export default {
       title: "Member Left",
       color: 0xed4245,
       lines: [
-        `- User: **${member.user?.tag ?? "Unknown user"}**`,
-        `- User ID: \`${member.id}\``,
+        `- <@${member.id}> joined ${formatElapsedSince(member.joinedTimestamp)} ago`,
+        `- **Roles:** ${formatRoleList(Array.from(member.roles.cache.values()))}`,
       ],
+      actorId: member.id,
+      actorName: member.user?.tag ?? member.id,
+      actorAvatarUrl: member.user?.displayAvatarURL({ extension: "png", size: 128 }) ?? null,
+      actorAvatarDescription: `${member.user?.tag ?? member.id} avatar`,
       logger,
     });
   },

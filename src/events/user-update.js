@@ -2,7 +2,7 @@ import { Events } from "discord.js";
 import { getLoggingConfig, sendGuildLog } from "#services/logging.js";
 
 function formatAvatar(user) {
-  return user.avatarURL({ extension: "png", size: 512 }) ?? "(no avatar)";
+  return user.displayAvatarURL({ extension: "png", size: 512 });
 }
 
 export default {
@@ -44,11 +44,16 @@ export default {
             `- Before: ${oldUser.username}`,
             `- After: ${newUser.username}`,
           ],
+          actorId: newUser.id,
+          actorName: newUser.tag,
+          actorAvatarUrl: newUser.displayAvatarURL({ extension: "png", size: 128 }),
+          actorAvatarDescription: `${newUser.tag} avatar`,
           logger,
         });
       }
 
       if (shouldLogAvatar) {
+        const newAvatar = formatAvatar(newUser);
         await sendGuildLog({
           guild,
           eventKey: "avatar_updates",
@@ -57,9 +62,11 @@ export default {
           lines: [
             `- User: <@${newUser.id}>`,
             `- User ID: \`${newUser.id}\``,
-            `- Old avatar: ${formatAvatar(oldUser)}`,
-            `- New avatar: ${formatAvatar(newUser)}`,
           ],
+          actorId: newUser.id,
+          actorName: newUser.tag,
+          actorAvatarUrl: newUser.displayAvatarURL({ extension: "png", size: 128 }),
+          actorAvatarDescription: `${newUser.tag} avatar`,
           logger,
         });
       }

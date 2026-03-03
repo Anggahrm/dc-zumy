@@ -24,10 +24,20 @@ function memberTag(member) {
   return member.user?.tag ?? member.id;
 }
 
+function memberActor(member) {
+  return {
+    actorId: member.id,
+    actorName: member.user?.tag ?? member.id,
+    actorAvatarUrl: member.user?.displayAvatarURL({ extension: "png", size: 128 }) ?? null,
+    actorAvatarDescription: `${member.user?.tag ?? member.id} avatar`,
+  };
+}
+
 export default {
   name: Events.GuildMemberUpdate,
   async execute(oldMember, newMember) {
     const logger = newMember.client.zumy?.logger;
+    const actor = memberActor(newMember);
     const oldName = oldMember.displayName;
     const newName = newMember.displayName;
     if (oldName !== newName) {
@@ -42,6 +52,7 @@ export default {
           `- Before: ${oldName || "(none)"}`,
           `- After: ${newName || "(none)"}`,
         ],
+        ...actor,
         logger,
       });
     }
@@ -62,6 +73,7 @@ export default {
           `- Added: ${formatRoleList(roleChanges.added)}`,
           `- Removed: ${formatRoleList(roleChanges.removed)}`,
         ],
+        ...actor,
         logger,
       });
     }
@@ -80,6 +92,7 @@ export default {
           `- User ID: \`${newMember.id}\``,
           `- Until: ${newTimedOutUntil ? `<t:${Math.floor(newTimedOutUntil / 1000)}:F>` : "Removed"}`,
         ],
+        ...actor,
         logger,
       });
     }

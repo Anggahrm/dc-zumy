@@ -9,6 +9,16 @@ function resolveMemberTag(oldState, newState) {
   return oldState.member?.user?.tag ?? newState.member?.user?.tag ?? newState.id;
 }
 
+function resolveActor(oldState, newState) {
+  const user = oldState.member?.user ?? newState.member?.user ?? null;
+  return {
+    actorId: user?.id ?? newState.id,
+    actorName: user?.tag ?? newState.id,
+    actorAvatarUrl: user?.displayAvatarURL({ extension: "png", size: 128 }) ?? null,
+    actorAvatarDescription: `${user?.tag ?? newState.id} avatar`,
+  };
+}
+
 export default {
   name: Events.VoiceStateUpdate,
   async execute(oldState, newState) {
@@ -20,6 +30,7 @@ export default {
     if (oldChannelId === newChannelId) return;
 
     const logger = newState.client.zumy?.logger;
+    const actor = resolveActor(oldState, newState);
     const baseLines = [
       `- Member: **${resolveMemberTag(oldState, newState)}**`,
       `- User ID: \`${newState.id}\``,
@@ -32,6 +43,7 @@ export default {
         title: "Voice Join",
         color: 0x57f287,
         lines: [...baseLines, `- Channel: ${describeChannel(newState.channel)}`],
+        ...actor,
         logger,
       });
       return;
@@ -44,6 +56,7 @@ export default {
         title: "Voice Leave",
         color: 0xed4245,
         lines: [...baseLines, `- Channel: ${describeChannel(oldState.channel)}`],
+        ...actor,
         logger,
       });
       return;
@@ -59,6 +72,7 @@ export default {
         `- From: ${describeChannel(oldState.channel)}`,
         `- To: ${describeChannel(newState.channel)}`,
       ],
+      ...actor,
       logger,
     });
   },

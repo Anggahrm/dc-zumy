@@ -3,6 +3,17 @@ import { getAutoroleConfig } from "#services/autorole.js";
 import { sendWelcomeGreeting } from "#services/greeter.js";
 import { sendGuildLog } from "#services/logging.js";
 import { formatError } from "#utils/error.js";
+import { formatElapsedSince } from "#utils/time.js";
+
+function formatOrdinal(value) {
+  const mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${value}th`;
+  const mod10 = value % 10;
+  if (mod10 === 1) return `${value}st`;
+  if (mod10 === 2) return `${value}nd`;
+  if (mod10 === 3) return `${value}rd`;
+  return `${value}th`;
+}
 
 async function resolveRole(guild, roleId) {
   const cached = guild.roles.cache.get(roleId);
@@ -87,10 +98,13 @@ export default {
       title: "Member Joined",
       color: 0x57f287,
       lines: [
-        `- Member: <@${member.id}>`,
-        `- User: **${member.user.tag}**`,
-        `- User ID: \`${member.id}\``,
+        `- <@${member.id}> ${formatOrdinal(member.guild.memberCount)} to join`,
+        `- created ${formatElapsedSince(member.user.createdTimestamp)} ago`,
       ],
+      actorId: member.id,
+      actorName: member.user.tag,
+      actorAvatarUrl: member.user.displayAvatarURL({ extension: "png", size: 128 }),
+      actorAvatarDescription: `${member.user.tag} avatar`,
       logger,
     });
   },

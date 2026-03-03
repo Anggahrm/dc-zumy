@@ -28,6 +28,7 @@ export default {
     if (!guild || !message.id) return;
 
     const logger = message.client.zumy?.logger;
+    const author = message.author ?? null;
     await sendGuildLog({
       guild,
       eventKey: "deleted_messages",
@@ -39,6 +40,10 @@ export default {
         `- Message ID: \`${message.id}\``,
         `- Content: ${resolveContentLabel(message)}`,
       ],
+      actorId: author?.id ?? null,
+      actorName: author?.tag ?? null,
+      actorAvatarUrl: author?.displayAvatarURL({ extension: "png", size: 128 }) ?? null,
+      actorAvatarDescription: author?.tag ? `${author.tag} avatar` : null,
       logger,
     });
   },

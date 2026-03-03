@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import { formatError } from "#utils/error.js";
 import { guildFeatureUtils, loadGuildFeature } from "#services/guild-config.js";
+import { formatDiscordTimestamp } from "#utils/time.js";
 
 const GREETER_DEFAULTS = {
   welcomeChannelId: null,
@@ -27,7 +28,7 @@ function cloneConfig(config) {
 }
 
 function formatFooterTimestamp(now = new Date()) {
-  return `<t:${Math.floor(now.getTime() / 1000)}:F>`;
+  return formatDiscordTimestamp(now, "F");
 }
 
 function createGreeterCard({ type, guildName, user }) {

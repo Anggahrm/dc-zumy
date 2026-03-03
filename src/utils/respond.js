@@ -1,17 +1,68 @@
 import {
   ContainerBuilder,
   MessageFlags,
+  SectionBuilder,
   SeparatorBuilder,
   SeparatorSpacingSize,
   TextDisplayBuilder,
 } from "discord.js";
 
-export function createCard({ color, title, body }) {
+export function createCard({
+  color,
+  title,
+  body,
+  actorName = null,
+  actorAvatarUrl = null,
+  actorAvatarDescription = null,
+  thumbnailUrl = null,
+  thumbnailDescription = null,
+  footer = null,
+}) {
   const heading = title?.trim() ? `## ${title}\n` : "";
-  return new ContainerBuilder()
-    .setAccentColor(typeof color === "number" ? color : 0x5865f2)
-    .addTextDisplayComponents(new TextDisplayBuilder().setContent(`${heading}${body}`.trim()))
-    .addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+  const card = new ContainerBuilder()
+    .setAccentColor(typeof color === "number" ? color : 0x5865f2);
+
+  if (actorName?.trim()) {
+    if (actorAvatarUrl) {
+      card.addSectionComponents(
+        new SectionBuilder()
+          .addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# ${actorName.trim()}`))
+          .setThumbnailAccessory((thumbnail) =>
+            thumbnail
+              .setURL(actorAvatarUrl)
+              .setDescription(actorAvatarDescription ?? `${actorName.trim()} avatar`),
+          ),
+      );
+    } else {
+      card.addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# ${actorName.trim()}`));
+    }
+
+    card.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+  }
+
+  const content = `${heading}${body}`.trim();
+  const shouldShowBodyThumbnail = Boolean(thumbnailUrl) && !actorAvatarUrl;
+  if (shouldShowBodyThumbnail) {
+    card.addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+        .setThumbnailAccessory((thumbnail) =>
+          thumbnail
+            .setURL(thumbnailUrl)
+            .setDescription(thumbnailDescription ?? "log thumbnail"),
+        ),
+    );
+  } else {
+    card.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+  }
+
+  card.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+
+  if (footer?.trim()) {
+    card.addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# ${footer.trim()}`));
+  }
+
+  return card;
 }
 
 export async function replyCard(interaction, card, { ephemeral = false } = {}) {
