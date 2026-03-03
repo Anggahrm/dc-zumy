@@ -41,7 +41,8 @@ export function createCard({
   }
 
   const content = `${heading}${body}`.trim();
-  if (thumbnailUrl) {
+  const shouldShowBodyThumbnail = Boolean(thumbnailUrl) && !actorAvatarUrl;
+  if (shouldShowBodyThumbnail) {
     card.addSectionComponents(
       new SectionBuilder()
         .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))

@@ -67,8 +67,6 @@ export default {
           actorName: newUser.tag,
           actorAvatarUrl: newUser.displayAvatarURL({ extension: "png", size: 128 }),
           actorAvatarDescription: `${newUser.tag} avatar`,
-          thumbnailUrl: newAvatar,
-          thumbnailDescription: `${newUser.tag} avatar`,
           logger,
         });
       }
