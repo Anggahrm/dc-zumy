@@ -1,6 +1,7 @@
 import { guildFeatureUtils, loadGuildFeature } from "#services/guild-config.js";
 import { MessageFlags } from "discord.js";
 import { createCard } from "#utils/respond.js";
+import { formatDiscordTimestamp } from "#utils/time.js";
 
 const LOG_EVENT_META = {
   deleted_messages: { key: "deleted_messages", label: "Deleted messages" },
@@ -159,6 +160,10 @@ export async function sendGuildLog({
   title,
   lines,
   color = 0x3498db,
+  actorId = null,
+  actorName = null,
+  actorAvatarUrl = null,
+  actorAvatarDescription = null,
   thumbnailUrl = null,
   thumbnailDescription = null,
   footer = null,
@@ -182,9 +187,14 @@ export async function sendGuildLog({
     color,
     title,
     body: lines.join("\n"),
+    actorName,
+    actorAvatarUrl,
+    actorAvatarDescription,
     thumbnailUrl,
     thumbnailDescription,
-    footer,
+    footer: footer?.trim()
+      ? footer
+      : (actorId ? `ID: ${actorId} | ` : "") + formatDiscordTimestamp(new Date(), "F"),
   });
 
   try {

@@ -26,6 +26,7 @@ export default {
     if (oldContent === nextContent) return;
 
     const logger = newMessage.client.zumy?.logger;
+    const author = newMessage.author ?? oldMessage.author ?? null;
     await sendGuildLog({
       guild,
       eventKey: "edited_messages",
@@ -38,6 +39,10 @@ export default {
         `- Before: ${formatContent(oldContent)}`,
         `- After: ${formatContent(nextContent)}`,
       ],
+      actorId: author?.id ?? null,
+      actorName: author?.tag ?? null,
+      actorAvatarUrl: author?.displayAvatarURL({ extension: "png", size: 128 }) ?? null,
+      actorAvatarDescription: author?.tag ? `${author.tag} avatar` : null,
       logger,
     });
   },

@@ -5,6 +5,7 @@ export default {
   name: Events.GuildBanAdd,
   async execute(ban) {
     const logger = ban.client.zumy?.logger;
+    const user = ban.user ?? null;
     await sendGuildLog({
       guild: ban.guild,
       eventKey: "bans",
@@ -15,6 +16,10 @@ export default {
         `- User ID: \`${ban.user?.id ?? "unknown"}\``,
         `- Reason: ${ban.reason?.trim() || "No reason provided."}`,
       ],
+      actorId: user?.id ?? null,
+      actorName: user?.tag ?? null,
+      actorAvatarUrl: user?.displayAvatarURL({ extension: "png", size: 128 }) ?? null,
+      actorAvatarDescription: user?.tag ? `${user.tag} avatar` : null,
       logger,
     });
   },

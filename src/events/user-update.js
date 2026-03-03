@@ -1,13 +1,8 @@
 import { Events } from "discord.js";
 import { getLoggingConfig, sendGuildLog } from "#services/logging.js";
-import { formatDiscordTimestamp } from "#utils/time.js";
 
 function formatAvatar(user) {
   return user.displayAvatarURL({ extension: "png", size: 512 });
-}
-
-function formatAvatarFooter(userId, now = new Date()) {
-  return `ID: ${userId} | ${formatDiscordTimestamp(now, "F")}`;
 }
 
 export default {
@@ -49,6 +44,10 @@ export default {
             `- Before: ${oldUser.username}`,
             `- After: ${newUser.username}`,
           ],
+          actorId: newUser.id,
+          actorName: newUser.tag,
+          actorAvatarUrl: newUser.displayAvatarURL({ extension: "png", size: 128 }),
+          actorAvatarDescription: `${newUser.tag} avatar`,
           logger,
         });
       }
@@ -64,9 +63,12 @@ export default {
             `- User: <@${newUser.id}>`,
             `- User ID: \`${newUser.id}\``,
           ],
+          actorId: newUser.id,
+          actorName: newUser.tag,
+          actorAvatarUrl: newUser.displayAvatarURL({ extension: "png", size: 128 }),
+          actorAvatarDescription: `${newUser.tag} avatar`,
           thumbnailUrl: newAvatar,
           thumbnailDescription: `${newUser.tag} avatar`,
-          footer: formatAvatarFooter(newUser.id),
           logger,
         });
       }

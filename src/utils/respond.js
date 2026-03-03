@@ -11,6 +11,9 @@ export function createCard({
   color,
   title,
   body,
+  actorName = null,
+  actorAvatarUrl = null,
+  actorAvatarDescription = null,
   thumbnailUrl = null,
   thumbnailDescription = null,
   footer = null,
@@ -18,6 +21,24 @@ export function createCard({
   const heading = title?.trim() ? `## ${title}\n` : "";
   const card = new ContainerBuilder()
     .setAccentColor(typeof color === "number" ? color : 0x5865f2);
+
+  if (actorName?.trim()) {
+    if (actorAvatarUrl) {
+      card.addSectionComponents(
+        new SectionBuilder()
+          .addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# ${actorName.trim()}`))
+          .setThumbnailAccessory((thumbnail) =>
+            thumbnail
+              .setURL(actorAvatarUrl)
+              .setDescription(actorAvatarDescription ?? `${actorName.trim()} avatar`),
+          ),
+      );
+    } else {
+      card.addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# ${actorName.trim()}`));
+    }
+
+    card.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+  }
 
   const content = `${heading}${body}`.trim();
   if (thumbnailUrl) {
