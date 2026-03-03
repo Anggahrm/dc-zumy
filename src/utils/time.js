@@ -9,3 +9,7 @@ export function formatDuration(seconds) {
   parts.push(`${sec}s`);
   return parts.join(" ");
 }
+
+export function formatDiscordTimestamp(now = new Date(), style = "F") {
+  return `<t:${Math.floor(now.getTime() / 1000)}:${style}>`;
+}

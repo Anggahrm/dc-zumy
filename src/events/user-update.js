@@ -1,13 +1,13 @@
 import { Events } from "discord.js";
 import { getLoggingConfig, sendGuildLog } from "#services/logging.js";
+import { formatDiscordTimestamp } from "#utils/time.js";
 
 function formatAvatar(user) {
-  return user.avatarURL({ extension: "png", size: 512 }) ?? "(no avatar)";
+  return user.displayAvatarURL({ extension: "png", size: 512 });
 }
 
 function formatAvatarFooter(userId, now = new Date()) {
-  const unixNow = Math.floor(now.getTime() / 1000);
-  return `ID: ${userId} | Today at <t:${unixNow}:t>`;
+  return `ID: ${userId} | ${formatDiscordTimestamp(now, "F")}`;
 }
 
 export default {
@@ -64,7 +64,7 @@ export default {
             `- User: <@${newUser.id}>`,
             `- User ID: \`${newUser.id}\``,
           ],
-          thumbnailUrl: newAvatar === "(no avatar)" ? null : newAvatar,
+          thumbnailUrl: newAvatar,
           thumbnailDescription: `${newUser.tag} avatar`,
           footer: formatAvatarFooter(newUser.id),
           logger,
