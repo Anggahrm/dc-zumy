@@ -6,11 +6,8 @@ function formatAvatar(user) {
 }
 
 function formatAvatarFooter(userId, now = new Date()) {
-  const timeText = new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(now);
-  return `ID: ${userId} | Today at ${timeText}`;
+  const unixNow = Math.floor(now.getTime() / 1000);
+  return `ID: ${userId} | Today at <t:${unixNow}:t>`;
 }
 
 export default {
