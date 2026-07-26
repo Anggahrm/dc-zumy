@@ -5,6 +5,7 @@ import { sendWelcomeGreeting } from "#services/greeter.js";
 import { checkJoin, getJoinguardConfig, isJoinguardActive } from "#services/joinguard.js";
 import { sendGuildLog } from "#services/logging.js";
 import { getModConfig } from "#services/mod-config.js";
+import { takeRoleSnapshot } from "#services/rolepersist.js";
 import { dmModerationNotice } from "#utils/moderation.js";
 import { formatError } from "#utils/error.js";
 import { formatElapsedSince } from "#utils/time.js";
@@ -113,6 +114,32 @@ export default {
     } catch (error) {
       const details = formatError(error);
       logger?.warn("Join guard failed", {
+        guildId: member.guild.id,
+        userId: member.id,
+        message: details.message,
+      });
+    }
+
+    try {
+      const snapshot = await takeRoleSnapshot(member.guild.id, member.id);
+      if (snapshot && snapshot.length > 0) {
+        const me = member.guild.members.me;
+        const restorable = snapshot.filter((roleId) => {
+          const role = member.guild.roles.cache.get(roleId);
+          return role && !role.managed && me && role.position < me.roles.highest.position;
+        });
+        if (restorable.length > 0) {
+          await member.roles.add(restorable, "Role persist: restored on rejoin").catch(() => {});
+          logger?.info("Role persist restored roles", {
+            guildId: member.guild.id,
+            userId: member.id,
+            restored: restorable.length,
+          });
+        }
+      }
+    } catch (error) {
+      const details = formatError(error);
+      logger?.warn("Role persist restore failed", {
         guildId: member.guild.id,
         userId: member.id,
         message: details.message,
