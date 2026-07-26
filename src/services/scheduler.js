@@ -4,6 +4,8 @@ import { scheduledJobs } from "#db/schema.js";
 
 const TICK_INTERVAL_MS = 15_000;
 const BATCH_SIZE = 20;
+const MAX_ATTEMPTS = 5;
+const RETRY_BASE_MS = 60_000;
 
 export function createScheduler({ logger }) {
   const handlers = new Map();
@@ -54,23 +56,46 @@ export function createScheduler({ logger }) {
         .limit(BATCH_SIZE);
 
       for (const job of due) {
-        // Claim before running so a crash mid-handler can't cause a tight
-        // rerun loop; jobs are best-effort, not exactly-once.
-        await db.delete(scheduledJobs).where(eq(scheduledJobs.id, job.id));
+        const attempts = Number(job.payload?._attempts ?? 0);
+
+        if (attempts >= MAX_ATTEMPTS) {
+          await db.delete(scheduledJobs).where(eq(scheduledJobs.id, job.id));
+          logger?.error("Scheduled job gave up after max attempts", {
+            jobId: job.id,
+            type: job.type,
+            guildId: job.guildId,
+            attempts,
+          });
+          continue;
+        }
 
         const handler = handlers.get(job.type);
         if (!handler) {
+          await db.delete(scheduledJobs).where(eq(scheduledJobs.id, job.id));
           logger?.warn("No handler for scheduled job", { jobId: job.id, type: job.type });
           continue;
         }
 
+        // Claim by pushing runAt into the future: a crash mid-handler leaves
+        // the row behind for a retry instead of dropping the job, and a
+        // successful run deletes it below. At-least-once, not exactly-once.
+        await db
+          .update(scheduledJobs)
+          .set({
+            runAt: new Date(Date.now() + RETRY_BASE_MS * (attempts + 1)),
+            payload: { ...job.payload, _attempts: attempts + 1 },
+          })
+          .where(eq(scheduledJobs.id, job.id));
+
         try {
           await handler(job);
+          await db.delete(scheduledJobs).where(eq(scheduledJobs.id, job.id));
         } catch (error) {
-          logger?.error("Scheduled job failed", {
+          logger?.error("Scheduled job failed, will retry", {
             jobId: job.id,
             type: job.type,
             guildId: job.guildId,
+            attempt: attempts + 1,
             message: error?.message || String(error),
           });
         }

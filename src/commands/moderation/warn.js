@@ -104,6 +104,7 @@ export default {
     const target = interaction.options.getUser("target", true);
 
     if (subcommand === "add") {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       const actorMember = await guild.members.fetch(interaction.user.id).catch(() => null);
       if (!actorMember) {
         throw new Error("Failed to resolve invoking member.");

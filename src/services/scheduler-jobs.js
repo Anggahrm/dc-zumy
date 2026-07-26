@@ -14,9 +14,25 @@ export function unmuteJobKey(guildId, userId) {
   return `unmute:${guildId}:${userId}`;
 }
 
+const UNKNOWN_GUILD = 10004;
+const UNKNOWN_MEMBER = 10007;
+const UNKNOWN_BAN = 10026;
+
+// Distinguishes "target is gone, job is moot" (returns null) from transient
+// failures (throws, so the scheduler retries).
+async function fetchOrNull(promise, goneCodes) {
+  try {
+    return await promise;
+  } catch (error) {
+    if (goneCodes.includes(error?.code)) return null;
+    throw error;
+  }
+}
+
 async function resolveGuild(client, guildId) {
   if (!guildId) return null;
-  return client.guilds.cache.get(guildId) ?? (await client.guilds.fetch(guildId).catch(() => null));
+  return client.guilds.cache.get(guildId)
+    ?? (await fetchOrNull(client.guilds.fetch(guildId), [UNKNOWN_GUILD]));
 }
 
 export function registerDefaultJobs({ scheduler, client, logger }) {
@@ -27,7 +43,7 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
     const userId = job.payload?.userId;
     if (!userId) return;
 
-    const ban = await guild.bans.fetch(userId).catch(() => null);
+    const ban = await fetchOrNull(guild.bans.fetch(userId), [UNKNOWN_BAN]);
     if (!ban) return;
 
     await guild.bans.remove(userId, "Tempban expired");
@@ -83,7 +99,7 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
     const { muteRoleId } = await getModConfig(guild.id);
     if (!muteRoleId) return;
 
-    const member = await guild.members.fetch(userId).catch(() => null);
+    const member = await fetchOrNull(guild.members.fetch(userId), [UNKNOWN_MEMBER]);
     if (!member || !member.roles.cache.has(muteRoleId)) return;
 
     await member.roles.remove(muteRoleId, "Mute expired");

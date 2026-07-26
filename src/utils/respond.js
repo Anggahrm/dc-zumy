@@ -65,11 +65,16 @@ export function createCard({
   return card;
 }
 
+// Cards frequently echo user- or moderator-supplied text (reasons, tag
+// content, filters), so mention parsing is suppressed across the board.
+const NO_MENTIONS = { parse: [] };
+
 export async function replyCard(interaction, card, { ephemeral = false } = {}) {
   if (interaction.deferred && !interaction.replied) {
     await interaction.editReply({
       components: [card],
       flags: MessageFlags.IsComponentsV2,
+      allowedMentions: NO_MENTIONS,
     });
     return;
   }
@@ -78,6 +83,7 @@ export async function replyCard(interaction, card, { ephemeral = false } = {}) {
     await interaction.followUp({
       components: [card],
       flags: MessageFlags.IsComponentsV2 | (ephemeral ? MessageFlags.Ephemeral : 0),
+      allowedMentions: NO_MENTIONS,
     });
     return;
   }
@@ -85,6 +91,7 @@ export async function replyCard(interaction, card, { ephemeral = false } = {}) {
   await interaction.reply({
     components: [card],
     flags: MessageFlags.IsComponentsV2 | (ephemeral ? MessageFlags.Ephemeral : 0),
+    allowedMentions: NO_MENTIONS,
   });
 }
 
@@ -104,6 +111,7 @@ export async function replyError(interaction, message) {
   const payload = {
     components: [card],
     flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+    allowedMentions: NO_MENTIONS,
   };
 
   try {

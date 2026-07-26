@@ -167,6 +167,13 @@ async function handleButton(interaction) {
   }
 
   const menu = menuName ? await getMenu(guild.id, menuName) : null;
+  // Refuse buttons on orphaned messages: menu deleted, or role removed from
+  // the menu after posting.
+  if (menuName && (!menu || !menu.roles.includes(role.id))) {
+    await replyError(interaction, "This role menu is outdated. Ask an admin to repost or remove it.");
+    return true;
+  }
+
   const hasRole = member.roles.cache.has(role.id);
 
   try {
@@ -500,6 +507,14 @@ export default {
       }
 
       if (!updated) {
+        // Posting to a new channel: remove the old message so no orphaned
+        // button message keeps floating around.
+        if (menu.messageId && menu.channelId && menu.channelId !== channel.id) {
+          const oldChannel = guild.channels.cache.get(menu.channelId);
+          const oldMessage = await oldChannel?.messages.fetch(menu.messageId).catch(() => null);
+          await oldMessage?.delete().catch(() => {});
+        }
+
         const message = await channel.send(payload);
         await setMenuMessage(guildId, name, channel.id, message.id);
       }

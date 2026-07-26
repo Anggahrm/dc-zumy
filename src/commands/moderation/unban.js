@@ -1,5 +1,6 @@
 import { InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { recordCase } from "#services/cases.js";
+import { unbanJobKey } from "#services/scheduler-jobs.js";
 import { normalizeReason } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
@@ -53,6 +54,9 @@ export default {
       await replyCard(interaction, errorCard("Unban failed. Please check bot permissions."), { ephemeral: true });
       return;
     }
+
+    // Clear any pending tempban auto-unban so a stale job can't fire later.
+    await interaction.client.zumy?.scheduler?.cancelByKey(unbanJobKey(guild.id, userId)).catch(() => {});
 
     const caseRow = await recordCase({
       guild,

@@ -1,4 +1,4 @@
-import { InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { recordCase } from "#services/cases.js";
 import { getModConfig } from "#services/mod-config.js";
 import { unmuteJobKey } from "#services/scheduler-jobs.js";
@@ -39,6 +39,8 @@ export default {
     if (!guild) {
       throw new Error("Guild context is required for mute command.");
     }
+
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const target = interaction.options.getUser("target", true);
     const reason = normalizeReason(interaction.options.getString("reason"));
@@ -106,14 +108,19 @@ export default {
 
     const scheduler = interaction.client.zumy?.scheduler;
     const durationLabel = durationMs ? formatDuration(durationMs / 1000) : null;
-    if (durationMs && scheduler) {
-      await scheduler.schedule({
-        type: "unmute",
-        runAt: new Date(Date.now() + durationMs),
-        guildId: guild.id,
-        payload: { userId: target.id },
-        dedupeKey: unmuteJobKey(guild.id, target.id),
-      });
+    if (scheduler) {
+      if (durationMs) {
+        await scheduler.schedule({
+          type: "unmute",
+          runAt: new Date(Date.now() + durationMs),
+          guildId: guild.id,
+          payload: { userId: target.id },
+          dedupeKey: unmuteJobKey(guild.id, target.id),
+        });
+      } else {
+        // An indefinite mute must clear any stale timed-unmute job.
+        await scheduler.cancelByKey(unmuteJobKey(guild.id, target.id)).catch(() => {});
+      }
     }
 
     const caseRow = await recordCase({

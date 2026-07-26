@@ -158,6 +158,11 @@ Notes:
   - `/starboard channel|threshold|emoji|selfstar|ignore|show` (Manage Server) — community-curated highlights: reactions past the threshold repost the message to the starboard with a live star count, custom emoji support, self-star rule, and ignored channels
   - `/suggest` + `/suggestion channel|approve|deny|consider` — numbered suggestion cards with 👍/👎 vote buttons and staff review states
   - `/giveaway start|end|reroll|list` (Manage Server) — button-entry giveaways that survive restarts (scheduler-backed), random winner picks and rerolls
+  - `/trigger add|remove|channel|list` (Manage Server) — autoresponders with contains/exact/wildcard matching, reply chance, cooldowns, and channel restrictions
+  - `/remind set|list|cancel` — personal reminders (1m-90d) that survive restarts, channel delivery with DM fallback
+  - `/poll` — native Discord polls (2-5 answers, 1h-1w, optional multiselect)
+  - `/afk` — away status with reason; mentions get a notice, your next message clears it
+  - `/snipe` (Manage Messages) — peek at the most recently deleted message in a channel (5-minute window)
 - `moderation` (each gated by the matching Discord permission, both in the client UI and at runtime):
   - `/purge` (Manage Messages) — subcommands `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`
   - `/kick` (Kick Members), `/ban` (Ban Members), `/tempban` (Ban Members, auto-unban via scheduler), `/unban` (Ban Members, by user ID) — kick/ban DM the target first

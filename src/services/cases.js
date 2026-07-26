@@ -54,8 +54,10 @@ export async function createCase({
       return row;
     } catch (error) {
       // 23505 = unique_violation on (guild_id, case_number): two cases raced
-      // for the same number — retry with a fresh max().
-      if (error?.code === "23505" && attempt < MAX_CREATE_RETRIES) continue;
+      // for the same number — retry with a fresh max(). Drizzle may wrap the
+      // pg error, so check the cause chain too.
+      const code = error?.code ?? error?.cause?.code;
+      if (code === "23505" && attempt < MAX_CREATE_RETRIES) continue;
       throw error;
     }
   }

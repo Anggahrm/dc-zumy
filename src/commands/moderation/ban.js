@@ -1,5 +1,6 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { recordCase } from "#services/cases.js";
+import { unbanJobKey } from "#services/scheduler-jobs.js";
 import { dmModerationNotice } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
@@ -136,6 +137,9 @@ export default {
       });
       return;
     }
+
+    // A permanent ban supersedes any pending tempban auto-unban.
+    await interaction.client.zumy?.scheduler?.cancelByKey(unbanJobKey(guild.id, target.id)).catch(() => {});
 
     const caseRow = await recordCase({
       guild,
