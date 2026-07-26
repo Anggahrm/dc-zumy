@@ -1,4 +1,4 @@
-import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import {
   addAutoroleBlacklist,
   addAutoroleRole,
@@ -80,11 +80,13 @@ export default {
   cooldown: 3,
   permissions: {
     guildOnly: true,
-    admin: true,
+    member: [PermissionFlagsBits.ManageRoles],
   },
   data: new SlashCommandBuilder()
     .setName("autorole")
     .setDescription("Manage automatic role assignment")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
+    .setContexts(InteractionContextType.Guild)
     .addSubcommand((subcommand) =>
       subcommand
         .setName("add")

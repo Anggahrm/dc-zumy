@@ -1,4 +1,4 @@
-import { ChannelType, SlashCommandBuilder } from "discord.js";
+import { ChannelType, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import {
   getLoggingConfig,
   getLogEventMeta,
@@ -50,11 +50,13 @@ export default {
   cooldown: 2,
   permissions: {
     guildOnly: true,
-    admin: true,
+    member: [PermissionFlagsBits.ManageGuild],
   },
   data: new SlashCommandBuilder()
     .setName("log")
     .setDescription("Manage server logging")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .setContexts(InteractionContextType.Guild)
     .addSubcommand((subcommand) =>
       subcommand
         .setName("channel")

@@ -2,6 +2,31 @@
 
 Audit date: 2026-07-26 · Commit audited: `d1ef25f` (main)
 
+> **Remediation status: ALL FINDINGS FIXED** on branch `claude/full-audit-95ztq0`.
+>
+> - H1 → unloaded records now throw `RecordNotLoadedError` instead of silently
+>   losing data; saves of evicted records are refused; README corrected.
+> - H2 → `app.json` declares `DATABASE_URL`, `ZUMY_STARTUP_DEPLOY_MODE`, and
+>   provisions a `heroku-postgresql` addon.
+> - H3 → failed saves retry with exponential backoff (300 ms → 30 s cap).
+> - M1 → single source of truth in `src/config/log-events.js` (all events
+>   default off).
+> - M2 → dead config removed; welcome/leave message templating implemented
+>   (`/set welcome-message`), maintenance mode implemented (`/maintenance`).
+> - M3 → `/reloadcommands` re-deploys the slash payload to Discord.
+> - M4 → `Partials.GuildMember`/`Partials.User` enabled; uncached edits log
+>   with "(content unavailable)" instead of being dropped.
+> - M5 → `userUpdate` fan-out parallelized, skips fetch when no toggle/channel.
+> - M6 → every privileged command sets `setDefaultMemberPermissions` +
+>   guild-only contexts, with matching granular runtime checks.
+> - M7 → idle cache eviction sweeper, cooldown sweeper, save-skip for evicted
+>   records.
+> - L1-L10 → all applied (cooldown refund, chained flush, graceful shutdown
+>   with timeouts + `client.destroy()`, `\p{Extended_Pictographic}` emoji
+>   matching, sanitized purge filters, owner-filtered help, negative cache for
+>   missing log channels, record-shape validation, `/kick` defers, smoke tests
+>   + GitHub Actions CI).
+
 Scope: all runtime source (`src/`), deploy scripts, migrations, docs, deployment
 config (`Procfile`, `app.json`), dependency manifest, and full git history
 (secret scan). No automated tests exist in the repository, so all findings are

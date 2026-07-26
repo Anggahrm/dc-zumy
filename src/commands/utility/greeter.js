@@ -1,12 +1,41 @@
 import {
   ChannelType,
+  InteractionContextType,
+  PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
-import { getGreeterConfig, setGreeterChannel } from "#services/greeter.js";
+import {
+  getGreeterConfig,
+  GREETER_MESSAGE_MAX_LENGTH,
+  setGreeterChannel,
+  setGreeterMessage,
+} from "#services/greeter.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
 function formatChannel(channelId) {
-  return channelId ? `<#${channelId}>` : "- (not set)";
+  return channelId ? `<#${channelId}>` : "(not set)";
+}
+
+function formatMessage(message) {
+  return message ? message : "(default)";
+}
+
+function configLines(config) {
+  return [
+    "**Current config**",
+    `- Welcome channel: ${formatChannel(config.welcomeChannelId)}`,
+    `- Leave channel: ${formatChannel(config.leaveChannelId)}`,
+    `- Welcome message: ${formatMessage(config.welcomeMessage)}`,
+    `- Leave message: ${formatMessage(config.leaveMessage)}`,
+  ];
+}
+
+function makeMessageOption(option) {
+  return option
+    .setName("message")
+    .setDescription("Template ({user} {username} {server} {count}); leave empty to reset")
+    .setMaxLength(GREETER_MESSAGE_MAX_LENGTH)
+    .setRequired(false);
 }
 
 export default {
@@ -14,11 +43,13 @@ export default {
   cooldown: 2,
   permissions: {
     guildOnly: true,
-    admin: true,
+    member: [PermissionFlagsBits.ManageGuild],
   },
   data: new SlashCommandBuilder()
     .setName("set")
-    .setDescription("Set greeter channels")
+    .setDescription("Configure greeter channels and messages")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .setContexts(InteractionContextType.Guild)
     .addSubcommand((subcommand) =>
       subcommand
         .setName("welcome")
@@ -42,6 +73,23 @@ export default {
             .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
             .setRequired(false),
         ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("welcome-message")
+        .setDescription("Set custom welcome message template")
+        .addStringOption(makeMessageOption),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("leave-message")
+        .setDescription("Set custom leave message template")
+        .addStringOption(makeMessageOption),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("show")
+        .setDescription("Show current greeter configuration"),
     ),
   async execute({ interaction, ctx }) {
     const guild = interaction.guild;
@@ -51,6 +99,43 @@ export default {
 
     const guildId = ctx.guild ?? guild.id;
     const subcommand = interaction.options.getSubcommand();
+
+    if (subcommand === "show") {
+      const config = await getGreeterConfig(guildId);
+      const card = createCard({
+        color: 0x3498db,
+        title: "Greeter",
+        body: [
+          ...configLines(config),
+          "",
+          "**Template variables**",
+          "- `{user}` mention, `{username}` name, `{server}` server name, `{count}` member count",
+        ].join("\n"),
+      });
+      await replyCard(interaction, card, { ephemeral: true });
+      return;
+    }
+
+    if (subcommand === "welcome-message" || subcommand === "leave-message") {
+      const type = subcommand === "welcome-message" ? "welcome" : "leave";
+      const message = interaction.options.getString("message");
+      const config = await setGreeterMessage(guildId, type, message);
+      const updated = type === "welcome" ? config.welcomeMessage : config.leaveMessage;
+
+      const card = createCard({
+        color: 0x57f287,
+        title: "Greeter",
+        body: [
+          `**${type === "welcome" ? "Welcome" : "Leave"} message ${updated ? "updated" : "reset to default"}**`,
+          ...(updated ? [`- Template: ${updated}`] : []),
+          "",
+          ...configLines(config),
+        ].join("\n"),
+      });
+      await replyCard(interaction, card, { ephemeral: true });
+      return;
+    }
+
     const providedChannel = interaction.options.getChannel("channel");
     const selectedChannel = providedChannel ?? interaction.channel;
 
@@ -74,9 +159,7 @@ export default {
         "**Channel updated**",
         `- ${subcommand === "welcome" ? "Welcome" : "Leave"} channel: <#${selectedChannel.id}>`,
         "",
-        "**Current config**",
-        `- Welcome: ${formatChannel(config.welcomeChannelId)}`,
-        `- Leave: ${formatChannel(config.leaveChannelId)}`,
+        ...configLines(config),
       ].join("\n"),
     });
 

@@ -16,14 +16,16 @@ export default {
     const guild = newMessage.guild ?? oldMessage.guild;
     if (!guild || !newMessage.id) return;
 
+    // Embed resolution and other non-edit updates don't set editedTimestamp;
+    // real user edits always do.
+    if (!newMessage.editedTimestamp) return;
+    if (newMessage.author?.bot) return;
+
     const oldContent = resolveContent(oldMessage.content);
     const nextContent = resolveContent(newMessage.content);
 
-    if (oldContent == null || nextContent == null) {
-      return;
-    }
-
-    if (oldContent === nextContent) return;
+    if (nextContent == null) return;
+    if (oldContent != null && oldContent === nextContent) return;
 
     const logger = newMessage.client.zumy?.logger;
     const author = newMessage.author ?? oldMessage.author ?? null;
@@ -36,7 +38,7 @@ export default {
         `- Author: **${newMessage.author?.tag ?? oldMessage.author?.tag ?? "Unknown user"}**`,
         `- Channel: ${newMessage.channelId ? `<#${newMessage.channelId}>` : "Unknown channel"}`,
         `- Message ID: \`${newMessage.id}\``,
-        `- Before: ${formatContent(oldContent)}`,
+        `- Before: ${oldContent == null ? "(content unavailable: not cached)" : formatContent(oldContent)}`,
         `- After: ${formatContent(nextContent)}`,
       ],
       actorId: author?.id ?? null,

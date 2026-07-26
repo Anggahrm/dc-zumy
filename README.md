@@ -9,6 +9,8 @@ ZumyNext is a modular `discord.js` bot runtime built for long-term maintainabili
 - Safety guards at load time: duplicate slash command names and duplicate component `customId` values are rejected.
 - Unified Components v2 UI helper layer in `src/utils/respond.js`.
 - Owner-triggered and signal-triggered command reload without full process restart.
+- Full moderation suite: kick, ban, unban, timeout, warnings, purge filters, slowmode, channel lock.
+- Automod (anti-invite, banned words, mention spam), button role menus, custom tags, configurable welcome/leave messages, and 25 toggleable log events.
 
 ## Tech stack
 
@@ -71,21 +73,28 @@ Reference template: `.env.example`
 - `bun run db:generate`: Generate SQL migrations from `src/db/schema.js`
 - `bun run db:migrate`: Apply generated migrations to PostgreSQL
 - `bun run db:studio`: Open Drizzle Studio against the configured database
+- `bun test`: Run the smoke test suite (loads every command/event module and unit-tests core helpers)
 - `bun run scripts/deploy-commands.js --guild --dry-run`: Build and validate command payload without API write
 
 ## Database usage (global style)
 
 The database API is designed to be consistent and simple for contributors.
 
+**Important:** a record must finish its initial load before you read or write
+it. Accessing an unloaded record throws a `RecordNotLoadedError` (this guards
+against silently overwriting stored data with defaults). Inside command
+`execute`, the handler preloads `ctx.user`, `ctx.guild`, and `ctx.mention` for
+you; for any other ID, `await global.db.loadUser(id)` / `loadGuild(id)` first.
+
 ```js
-// user data
+// user data (interaction.user.id is preloaded by the handler)
 global.db.data.users[interaction.user.id].money += 5000;
 
-// guild data
-global.db.data.guilds[interaction.guildId].welcome.enabled = true;
+// guild data (interaction.guildId is preloaded by the handler)
+global.db.data.guilds[interaction.guildId].autorole.roles.push(roleId);
 
-// bot data
-global.db.data.bot.mode = "maintenance";
+// bot data (loaded at startup)
+global.db.bot.maintenance = true;
 ```
 
 Equivalent helper shortcuts:
@@ -95,7 +104,7 @@ const user = global.db.user(interaction.user.id);
 user.money += 5000;
 
 const guild = global.db.guild(interaction.guildId);
-guild.welcome.message = "Welcome, {user}.";
+guild.greeter.welcomeMessage = "Welcome, {user}.";
 
 global.db.bot.maintenance = true;
 ```
@@ -105,10 +114,6 @@ Command context preload (recommended):
 ```js
 // inside command execute({ interaction, ctx })
 global.db.data.users[ctx.user].money += 5000;
-
-if (ctx.guild) {
-  global.db.data.guilds[ctx.guild].mode = "normal";
-}
 
 if (ctx.mention) {
   global.db.data.users[ctx.mention].money -= 500;
@@ -122,7 +127,7 @@ await global.db.loadUser(customUserId);
 global.db.data.users[customUserId].money += 5000;
 
 await global.db.loadGuild(customGuildId);
-global.db.data.guilds[customGuildId].mode = "normal";
+global.db.data.guilds[customGuildId].autorole.roles = [];
 ```
 
 Database structure:
@@ -133,18 +138,32 @@ Database structure:
 
 Notes:
 
-- Mutasi object otomatis ke-persist ke PostgreSQL (debounced write).
-- Default object dibuat otomatis saat pertama kali akses key.
+- Mutasi object otomatis ke-persist ke PostgreSQL (debounced write, dengan retry backoff kalau DB lagi down).
+- Default object dibuat otomatis saat record pertama kali di-load.
+- Record yang belum selesai di-load akan melempar `RecordNotLoadedError` saat diakses — selalu `await loadUser/loadGuild` untuk ID custom.
+- Cache record yang idle >30 menit otomatis di-evict dari memori (yang masih dirty tetap disimpan).
 - Inisialisasi dan shutdown DB sudah di-handle di bootstrap runtime.
-- Handler now preloads `ctx.user`, `ctx.guild`, and detected `ctx.mention` automatically.
+- Handler preloads `ctx.user`, `ctx.guild`, dan `ctx.mention` (dari option `target/user/member/mention/receiver`) secara otomatis.
 
 ## Built-in commands
 
-- `info`: `/ping`, `/help`
-- `utility`: `/userinfo`, `/set welcome [channel]`, `/set leave [channel]`, `/log channel [channel]`, `/log config [event]`
-- `moderation`: `/purge` (admin + guild only, subcommands: `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`; supports optional `prefix` for `bot` and optional `count` for `contains`/`user`), `/kick` (admin + guild only, required `target`, optional `reason`), `/ban` (admin + guild only, optional `days` and `reason`), `/autorole` with subcommands `add/remove/show/blacklist/unblacklist` (admin + guild only)
-- `owner`: `/reloadcommands` (owner only, requires user ID in `BOT_OWNERS`)
-- `rpg`: `/daily` (claim money + exp every 24 hours), `/profile` (show RPG stats)
+- `info`: `/ping`, `/help`, `/serverinfo`, `/avatar`
+- `utility`:
+  - `/userinfo` — user details card
+  - `/set welcome|leave [channel]` — greeter channels; `/set welcome-message|leave-message [message]` — custom templates with `{user}`, `{username}`, `{server}`, `{count}`; `/set show`
+  - `/log channel [channel]`, `/log config [event]` — 25 toggleable log events (messages, members, voice, channels, roles, server, emojis, automod)
+  - `/rolemenu` — post a button-based self-assign role menu (up to 5 roles)
+  - `/tag show|list|add|remove` — custom text snippets (add/remove need Manage Server)
+- `moderation` (each gated by the matching Discord permission, both in the client UI and at runtime):
+  - `/purge` (Manage Messages) — subcommands `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`
+  - `/kick` (Kick Members), `/ban` (Ban Members, optional `days`/`reason`), `/unban` (Ban Members, by user ID)
+  - `/timeout` (Moderate Members, durations like `10m`, `2h`, `1d`, max 28d), `/untimeout`
+  - `/warn add|list|remove|clear` (Moderate Members) — persistent warnings with DM notice
+  - `/slowmode` (Manage Channels, 0-21600s), `/lock`, `/unlock` (Manage Channels)
+  - `/automod show|invite|mentions|word-add|word-remove` (Manage Server) — anti-invite, banned words, mention spam; members with Manage Messages are exempt
+  - `/autorole add/remove/show/blacklist/unblacklist` (Manage Roles)
+- `owner`: `/reloadcommands` (reload + redeploy), `/maintenance [enabled]` (block non-owner commands); both require user ID in `BOT_OWNERS`
+- `rpg`: `/daily` (money + exp every 24 hours, with level-ups), `/profile` (stats + level progress)
 
 ## Hot reload workflows
 
@@ -209,9 +228,9 @@ docs/
 ### Heroku (Bun buildpack)
 
 - Add buildpack URL in Heroku app settings: `https://github.com/jakeg/heroku-buildpack-bun`
-- This bot runs as a worker dyno using `Procfile` (`worker: bun run start`)
-- Set required config vars on Heroku: `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`
-- Optional config vars: `DISCORD_GUILD_ID`, `BOT_OWNERS`, `LOG_LEVEL`, `BUN_VERSION`, `DATABASE_URL`, `ZUMY_STARTUP_DEPLOY_MODE`
+- This bot runs as a worker dyno using `Procfile` (`worker: bun run start`); migrations run in the release phase
+- Required config vars: `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, and `DATABASE_URL` (attach a `heroku-postgresql` addon — `app.json` provisions one automatically for button deploys)
+- Optional config vars: `DISCORD_GUILD_ID`, `BOT_OWNERS`, `LOG_LEVEL`, `BUN_VERSION`, `ZUMY_STARTUP_DEPLOY_MODE`
 
 ## Troubleshooting
 

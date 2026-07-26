@@ -63,6 +63,11 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
       return;
     }
 
+    if (global.db?.bot?.maintenance && !permission.isOwner(interaction.user.id)) {
+      await replyError(interaction, "The bot is under maintenance right now. Please try again later.");
+      return;
+    }
+
     const cooldownSeconds = command.cooldown ?? DEFAULT_COOLDOWN_SECONDS;
     const remaining = cooldowns.getRemaining(command.data.name, interaction.user.id);
     if (remaining > 0) {
@@ -76,6 +81,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
       const ctx = await createContext({ interaction });
       await command.execute({ interaction, registry, logger, ctx });
     } catch (error) {
+      cooldowns.refund(command.data.name, interaction.user.id);
       const details = formatError(error);
       logger.error("Command execution failed", {
         command: command.data.name,

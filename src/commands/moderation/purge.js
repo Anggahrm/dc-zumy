@@ -1,4 +1,4 @@
-import { MessageFlags, SlashCommandBuilder } from "discord.js";
+import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
 const DEFAULT_LIMIT = 50;
@@ -32,9 +32,13 @@ function parseSubstring(value) {
   return trimmed.length > 0 ? trimmed.toLowerCase() : null;
 }
 
+function formatFilterValue(value) {
+  return value.replaceAll("`", "'").slice(0, 80);
+}
+
 function hasEmoji(content) {
   if (!content) return false;
-  return /<a?:\w+:\d+>|[\u{1F300}-\u{1FAFF}]/u.test(content);
+  return /<a?:\w+:\d+>|\p{Extended_Pictographic}/u.test(content);
 }
 
 function hasLink(content) {
@@ -151,11 +155,13 @@ export default {
   cooldown: 5,
   permissions: {
     guildOnly: true,
-    admin: true,
+    member: [PermissionFlagsBits.ManageMessages],
   },
   data: new SlashCommandBuilder()
     .setName("purge")
     .setDescription("Purge recent messages with filters")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+    .setContexts(InteractionContextType.Guild)
     .addSubcommand((subcommand) =>
       subcommand
         .setName("all")
@@ -278,7 +284,7 @@ export default {
           interaction,
           modeLabel: "bot",
           count,
-          detail: prefix ? `prefix starts with \`${prefix}\`` : null,
+          detail: prefix ? `prefix starts with \`${formatFilterValue(prefix)}\`` : null,
           predicate: (message) => {
             if (!message.author?.bot) return false;
             if (!prefix) return true;
@@ -300,7 +306,7 @@ export default {
           interaction,
           modeLabel: "contains",
           count,
-          detail: `contains \`${substringRaw}\``,
+          detail: `contains \`${formatFilterValue(substringRaw)}\``,
           predicate: (message) => {
             const content = message.content?.toLowerCase();
             return Boolean(content && content.includes(substring));

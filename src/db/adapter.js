@@ -3,8 +3,17 @@ import { closeDb, getDb } from "#db/client.js";
 import { createDefaultBotData, createDefaultGuildData, createDefaultUserData } from "#db/defaults.js";
 import { botData, guildsData, usersData } from "#db/schema.js";
 
+const SAVE_DEBOUNCE_MS = 300;
+const SAVE_RETRY_MAX_MS = 30_000;
+const CACHE_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+const CACHE_IDLE_EVICT_MS = 30 * 60 * 1000;
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function createDeepProxy(target, onChange) {
@@ -42,6 +51,16 @@ function createDeepProxy(target, onChange) {
   return new Proxy(target, handler);
 }
 
+class RecordNotLoadedError extends Error {
+  constructor(collection, id) {
+    super(
+      `Record ${collection}:${id} has not been loaded yet. `
+      + "Await db.loadUser(id) / db.loadGuild(id) before reading or writing it.",
+    );
+    this.name = "RecordNotLoadedError";
+  }
+}
+
 class DatabaseAdapter {
   constructor() {
     this.db = null;
@@ -54,8 +73,12 @@ class DatabaseAdapter {
     this.saveChain = new Map();
     this.saveTimers = new Map();
     this.dirtyRecords = new Set();
+    this.loadedRecords = new Set();
     this.revisions = new Map();
-    this.saveDebounceMs = 300;
+    this.saveFailures = new Map();
+    this.lastAccess = new Map();
+    this.sweepTimer = null;
+    this.saveDebounceMs = SAVE_DEBOUNCE_MS;
     this.validIdPattern = /^\d{5,30}$/;
 
     this.data = {
@@ -82,6 +105,7 @@ class DatabaseAdapter {
 
     this.ensureRecord("users", safeId);
     await this.loadRecord("users", safeId);
+    this.assertLoaded("users", safeId);
     return this.user(safeId);
   }
 
@@ -96,13 +120,14 @@ class DatabaseAdapter {
       throw new Error("Invalid guild id.");
     }
 
-    const cached = this.guildsCache.get(safeId);
-    if (preferCache && cached) {
+    if (preferCache && this.loadedRecords.has(`guilds:${safeId}`)) {
+      this.touch("guilds", safeId);
       return this.guild(safeId);
     }
 
     this.ensureRecord("guilds", safeId);
     await this.loadRecord("guilds", safeId);
+    this.assertLoaded("guilds", safeId);
     return this.guild(safeId);
   }
 
@@ -122,6 +147,16 @@ class DatabaseAdapter {
     return next;
   }
 
+  assertLoaded(collection, id) {
+    if (!this.loadedRecords.has(`${collection}:${id}`)) {
+      throw new RecordNotLoadedError(collection, id);
+    }
+  }
+
+  touch(collection, id) {
+    this.lastAccess.set(`${collection}:${id}`, Date.now());
+  }
+
   createCollectionProxy(collection) {
     return new Proxy(
       {},
@@ -133,13 +168,22 @@ class DatabaseAdapter {
           if (!safeId) return undefined;
 
           const record = this.ensureRecord(collection, safeId);
+          // Guard against silent lost-updates: reads/writes on a record whose
+          // initial DB load has not completed would let a later save overwrite
+          // the stored row with defaults. Fail loudly instead.
+          this.assertLoaded(collection, safeId);
           return createDeepProxy(record, () => this.queueSave(collection, safeId));
         },
         set: (_, id, value) => {
           const safeId = this.normalizeId(id);
           if (!safeId) return false;
+          if (!isPlainObject(value)) {
+            throw new TypeError(`Records in '${collection}' must be plain objects.`);
+          }
           const cache = this.getCollectionCache(collection);
           cache.set(safeId, value);
+          this.loadedRecords.add(`${collection}:${safeId}`);
+          this.touch(collection, safeId);
           this.queueSave(collection, safeId);
           return true;
         },
@@ -148,6 +192,7 @@ class DatabaseAdapter {
   }
 
   ensureRecord(collection, id) {
+    this.touch(collection, id);
     const cache = this.getCollectionCache(collection);
     const existing = cache.get(id);
     if (!existing) {
@@ -205,6 +250,36 @@ class DatabaseAdapter {
     this.initialized = true;
 
     await this.loadRecord("bot", "global");
+    this.startSweeper();
+  }
+
+  startSweeper() {
+    if (this.sweepTimer) return;
+    this.sweepTimer = setInterval(() => this.sweepIdleRecords(), CACHE_SWEEP_INTERVAL_MS);
+    this.sweepTimer.unref?.();
+  }
+
+  sweepIdleRecords() {
+    const cutoff = Date.now() - CACHE_IDLE_EVICT_MS;
+    for (const [key, accessedAt] of this.lastAccess) {
+      if (accessedAt > cutoff) continue;
+      const [collection, id] = key.split(":");
+      if (collection === "bot") continue;
+      if (
+        this.dirtyRecords.has(key)
+        || this.pendingLoads.has(key)
+        || this.pendingSaves.has(key)
+        || this.saveTimers.has(key)
+      ) {
+        continue;
+      }
+
+      this.getCollectionCache(collection).delete(id);
+      this.loadedRecords.delete(key);
+      this.revisions.delete(key);
+      this.saveFailures.delete(key);
+      this.lastAccess.delete(key);
+    }
   }
 
   async loadRecord(collection, id) {
@@ -232,6 +307,7 @@ class DatabaseAdapter {
             Object.assign(current, row.data);
           }
         }
+        this.loadedRecords.add(key);
         return;
       }
 
@@ -243,6 +319,7 @@ class DatabaseAdapter {
             Object.assign(current, row.data);
           }
         }
+        this.loadedRecords.add(key);
         return;
       }
 
@@ -254,6 +331,7 @@ class DatabaseAdapter {
         if (row?.data && !this.dirtyRecords.has(key)) {
           Object.assign(this.botCache, row.data);
         }
+        this.loadedRecords.add(key);
       }
     } catch (error) {
       console.error("Database load failed", {
@@ -274,12 +352,19 @@ class DatabaseAdapter {
     return next;
   }
 
+  getRetryDelay(key) {
+    const failures = this.saveFailures.get(key) ?? 0;
+    if (failures === 0) return this.saveDebounceMs;
+    return Math.min(SAVE_RETRY_MAX_MS, this.saveDebounceMs * 2 ** failures);
+  }
+
   scheduleSave(collection, id, { markDirty = true } = {}) {
     if (!this.initialized) return;
 
     const key = `${collection}:${id}`;
     const revision = markDirty ? this.nextRevision(key) : this.getRevision(key);
     this.dirtyRecords.add(key);
+    this.touch(collection, id);
 
     const existing = this.saveTimers.get(key);
     if (existing) {
@@ -289,7 +374,7 @@ class DatabaseAdapter {
     const timer = setTimeout(() => {
       this.saveTimers.delete(key);
       this.enqueueSave(collection, id, revision);
-    }, this.saveDebounceMs);
+    }, this.getRetryDelay(key));
 
     this.saveTimers.set(key, timer);
   }
@@ -304,10 +389,17 @@ class DatabaseAdapter {
     const task = previous
       .catch(() => {})
       .then(() => this.saveRecord(collection, id, scheduledRevision))
+      .then(() => {
+        this.saveFailures.delete(key);
+      })
       .catch((error) => {
+        const failures = (this.saveFailures.get(key) ?? 0) + 1;
+        this.saveFailures.set(key, failures);
         console.error("Database save failed", {
           collection,
           id,
+          attempt: failures,
+          nextRetryMs: this.getRetryDelay(key),
           message: error?.message || String(error),
         });
         this.scheduleSave(collection, id, { markDirty: false });
@@ -330,31 +422,22 @@ class DatabaseAdapter {
 
     const key = `${collection}:${id}`;
 
-    if (collection === "users") {
-      const data = clone(this.usersCache.get(id) ?? createDefaultUserData(id));
-      await this.db
-        .insert(usersData)
-        .values({ id, data, updatedAt: new Date() })
-        .onConflictDoUpdate({
-          target: usersData.id,
-          set: {
-            data,
-            updatedAt: new Date(),
-          },
-        });
-      if (this.getRevision(key) === scheduledRevision) {
+    if (collection === "users" || collection === "guilds") {
+      const cached = this.getCollectionCache(collection).get(id);
+      if (!cached) {
+        // Never persist synthesized defaults over a row we no longer hold.
+        console.warn("Skipped save for evicted record", { collection, id });
         this.dirtyRecords.delete(key);
+        return;
       }
-      return;
-    }
 
-    if (collection === "guilds") {
-      const data = clone(this.guildsCache.get(id) ?? createDefaultGuildData(id));
+      const data = clone(cached);
+      const table = collection === "users" ? usersData : guildsData;
       await this.db
-        .insert(guildsData)
+        .insert(table)
         .values({ id, data, updatedAt: new Date() })
         .onConflictDoUpdate({
-          target: guildsData.id,
+          target: table.id,
           set: {
             data,
             updatedAt: new Date(),
@@ -385,8 +468,8 @@ class DatabaseAdapter {
   }
 
   async flushAll() {
-    const entries = Array.from(this.saveTimers.keys());
-    for (const key of entries) {
+    const keys = new Set([...this.saveTimers.keys(), ...this.dirtyRecords]);
+    for (const key of keys) {
       const timer = this.saveTimers.get(key);
       if (timer) {
         clearTimeout(timer);
@@ -394,18 +477,18 @@ class DatabaseAdapter {
       }
 
       const [collection, id] = key.split(":");
-      await this.saveRecord(collection, id, this.getRevision(key)).catch((error) => {
-        console.error("Database flush save failed", {
-          collection,
-          id,
-          message: error?.message || String(error),
-        });
-      });
+      this.enqueueSave(collection, id, this.getRevision(key));
     }
+
+    await Promise.allSettled(Array.from(this.saveChain.values()));
   }
 
   async close() {
     if (!this.initialized) return;
+    if (this.sweepTimer) {
+      clearInterval(this.sweepTimer);
+      this.sweepTimer = null;
+    }
     await this.flushAll();
     await Promise.allSettled(Array.from(this.pendingLoads.values()));
     await Promise.allSettled(Array.from(this.pendingSaves.values()));

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from "discord.js";
+import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
 function normalizeReason(reason) {
@@ -10,11 +10,13 @@ export default {
   cooldown: 5,
   permissions: {
     guildOnly: true,
-    admin: true,
+    member: [PermissionFlagsBits.KickMembers],
   },
   data: new SlashCommandBuilder()
     .setName("kick")
     .setDescription("Kick a user from this server")
+    .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers)
+    .setContexts(InteractionContextType.Guild)
     .addUserOption((option) =>
       option
         .setName("target")
@@ -32,6 +34,8 @@ export default {
     if (!guild) {
       throw new Error("Guild context is required for kick command.");
     }
+
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const target = interaction.options.getUser("target", true);
     const reason = normalizeReason(interaction.options.getString("reason"));

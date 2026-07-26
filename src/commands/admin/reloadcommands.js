@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from "discord.js";
+import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
 export default {
@@ -16,7 +16,8 @@ export default {
       throw new Error("Reload function is not available");
     }
 
-    await reloadCommands(true);
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await reloadCommands(true, { deploy: true });
     const count = interaction.client.zumy?.registry.size() ?? 0;
 
     const card = createCard({
@@ -26,6 +27,7 @@ export default {
         "**Reload Complete**",
         `- Active command count: **${count}**`,
         "- Latest command modules are now live.",
+        "- Slash command definitions re-deployed to Discord.",
       ].join("\n"),
     });
 

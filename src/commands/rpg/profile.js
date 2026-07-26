@@ -1,4 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
+import { levelProgress } from "#utils/level.js";
 import { createCard, replyCard } from "#utils/respond.js";
 import { formatDuration } from "#utils/time.js";
 
@@ -35,13 +36,14 @@ export default {
         ? "Ready now"
         : `Ready in **${formatDuration((nextDailyAt - now) / 1000)}** (<t:${Math.floor(nextDailyAt / 1000)}:R>)`;
 
+    const progress = levelProgress(user.exp);
     const card = createCard({
       color: 0x3498db,
       title: "RPG Profile",
       body: [
         `- User: <@${target.id}>`,
-        `- Level: **${formatNumber(user.level)}**`,
-        `- EXP: **${formatNumber(user.exp)}**`,
+        `- Level: **${formatNumber(progress.level)}**`,
+        `- EXP: **${formatNumber(user.exp)}** (${formatNumber(progress.current)}/${formatNumber(progress.needed)} to next level)`,
         `- Money: **${formatNumber(user.money)}**`,
         `- Daily: ${dailyStatus}`,
       ].join("\n"),

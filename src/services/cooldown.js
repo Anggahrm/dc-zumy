@@ -1,5 +1,17 @@
+const SWEEP_INTERVAL_MS = 10 * 60 * 1000;
+
 export function createCooldownService() {
   const map = new Map();
+
+  const sweeper = setInterval(() => {
+    const now = Date.now();
+    for (const [key, expiresAt] of map) {
+      if (expiresAt <= now) {
+        map.delete(key);
+      }
+    }
+  }, SWEEP_INTERVAL_MS);
+  sweeper.unref?.();
 
   function makeKey(commandName, userId) {
     return `${commandName}:${userId}`;
@@ -24,8 +36,18 @@ export function createCooldownService() {
     map.set(key, expiresAt);
   }
 
+  function refund(commandName, userId) {
+    map.delete(makeKey(commandName, userId));
+  }
+
+  function stop() {
+    clearInterval(sweeper);
+  }
+
   return {
     getRemaining,
     consume,
+    refund,
+    stop,
   };
 }

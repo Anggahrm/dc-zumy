@@ -1,4 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
+import { levelFromExp } from "#utils/level.js";
 import { createCard, replyCard } from "#utils/respond.js";
 import { formatDuration } from "#utils/time.js";
 
@@ -35,9 +36,12 @@ export default {
     const rewardMoney = randomInt(1000, 3000);
     const rewardExp = randomInt(50, 150);
 
+    const previousLevel = levelFromExp(user.exp);
     user.money = Number(user.money ?? 0) + rewardMoney;
     user.exp = Number(user.exp ?? 0) + rewardExp;
     user.nextDailyAt = now + DAILY_COOLDOWN_MS;
+    user.level = levelFromExp(user.exp);
+    const leveledUp = user.level > previousLevel;
 
     const card = createCard({
       color: 0x57f287,
@@ -46,10 +50,12 @@ export default {
         `You received your daily reward.`,
         `- Money: **+${rewardMoney}**`,
         `- EXP: **+${rewardExp}**`,
+        ...(leveledUp ? [`- 🎉 Level up! You are now level **${user.level}**`] : []),
         "",
         "**Your Totals**",
         `- Money: **${user.money}**`,
         `- EXP: **${user.exp}**`,
+        `- Level: **${user.level}**`,
         `- Next daily: <t:${Math.floor(user.nextDailyAt / 1000)}:R>`,
       ].join("\n"),
     });

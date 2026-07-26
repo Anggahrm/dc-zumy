@@ -25,6 +25,8 @@ This avoids deep relative paths like `../../..` and makes refactoring safer.
 Each command file must export a default object in this shape:
 
 ```js
+import { PermissionFlagsBits } from "discord.js";
+
 export default {
   category: "info",
   cooldown: 3,
@@ -32,6 +34,7 @@ export default {
     guildOnly: false,
     admin: false,
     owner: false,
+    member: [PermissionFlagsBits.ManageGuild], // optional granular runtime checks
   },
   data: new SlashCommandBuilder()
     .setName("name")
@@ -39,7 +42,9 @@ export default {
   components: {
     "custom:id": async ({ interaction, registry, logger }) => {},
   },
-  async execute({ interaction, registry, logger }) {},
+  // Optional dynamic fallback for prefixed customIds (return true when handled)
+  async onComponent({ interaction, registry, logger }) {},
+  async execute({ interaction, registry, logger, ctx }) {},
 };
 ```
 
@@ -51,8 +56,9 @@ The command loader validates these rules and fails fast if invalid:
 - `execute` is a function
 - `category` is a string
 - `cooldown` (if provided) must be an integer >= 0
-- `permissions` can only contain `owner`, `admin`, `guildOnly` (booleans)
+- `permissions` can only contain `owner`, `admin`, `guildOnly` (booleans) and `member` (array of `PermissionFlagsBits` bigints)
 - `components` (if provided) must be an object with function values
+- `onComponent` (if provided) must be a function
 
 The registry also rejects duplicates:
 

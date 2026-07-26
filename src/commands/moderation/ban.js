@@ -1,4 +1,4 @@
-import { MessageFlags, SlashCommandBuilder } from "discord.js";
+import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
 function normalizeReason(reason) {
@@ -15,11 +15,13 @@ export default {
   cooldown: 5,
   permissions: {
     guildOnly: true,
-    admin: true,
+    member: [PermissionFlagsBits.BanMembers],
   },
   data: new SlashCommandBuilder()
     .setName("ban")
     .setDescription("Ban a user from this server")
+    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+    .setContexts(InteractionContextType.Guild)
     .addUserOption((option) =>
       option
         .setName("target")

@@ -13,9 +13,15 @@ import {
 } from "discord.js";
 import { BOT_NAME, CUSTOM_IDS } from "#config/constants.js";
 
-function getCategories(registry) {
+function getVisibleCommands(registry, interaction) {
+  const permission = interaction.client.zumy?.permission;
+  const isOwner = permission?.isOwner(interaction.user.id) ?? false;
+  return registry.all().filter((command) => !command.permissions?.owner || isOwner);
+}
+
+function getCategories(commands) {
   const counts = new Map();
-  for (const command of registry.all()) {
+  for (const command of commands) {
     counts.set(command.category, (counts.get(command.category) ?? 0) + 1);
   }
   return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
@@ -25,8 +31,8 @@ function formatCategoryTitle(name) {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-function buildCategorySelect(registry, selected = null) {
-  const options = getCategories(registry).map(([name, count]) =>
+function buildCategorySelect(commands, selected = null) {
+  const options = getCategories(commands).map(([name, count]) =>
     new StringSelectMenuOptionBuilder()
       .setLabel(formatCategoryTitle(name))
       .setDescription(`${count} command${count > 1 ? "s" : ""}`)
@@ -42,8 +48,8 @@ function buildCategorySelect(registry, selected = null) {
   return new ActionRowBuilder().addComponents(select);
 }
 
-function buildHomeContainer(registry) {
-  const categoryLines = getCategories(registry)
+function buildHomeContainer(commands) {
+  const categoryLines = getCategories(commands)
     .map(([name, count]) => `- ${formatCategoryTitle(name)}: ${count} command${count > 1 ? "s" : ""}`)
     .join("\n");
 
@@ -65,9 +71,8 @@ function buildHomeContainer(registry) {
     .addTextDisplayComponents(new TextDisplayBuilder().setContent(`### Tips\n${tips}`));
 }
 
-function buildCategoryContainer(registry, category) {
-  const commands = registry
-    .all()
+function buildCategoryContainer(allCommands, category) {
+  const commands = allCommands
     .filter((command) => command.category === category)
     .sort((a, b) => a.data.name.localeCompare(b.data.name));
 
@@ -94,22 +99,22 @@ function homeButtonRow() {
   );
 }
 
-function createReplyPayload(registry) {
+function createReplyPayload(commands) {
   return {
     flags: MessageFlags.IsComponentsV2,
-    components: [buildHomeContainer(registry), buildCategorySelect(registry)],
+    components: [buildHomeContainer(commands), buildCategorySelect(commands)],
   };
 }
 
-function createCategoryPayload(registry, category) {
+function createCategoryPayload(commands, category) {
   return {
-    components: [buildCategoryContainer(registry, category), buildCategorySelect(registry, category), homeButtonRow()],
+    components: [buildCategoryContainer(commands, category), buildCategorySelect(commands, category), homeButtonRow()],
   };
 }
 
-function createHomeUpdatePayload(registry) {
+function createHomeUpdatePayload(commands) {
   return {
-    components: [buildHomeContainer(registry), buildCategorySelect(registry)],
+    components: [buildHomeContainer(commands), buildCategorySelect(commands)],
   };
 }
 
@@ -121,14 +126,14 @@ export default {
     [CUSTOM_IDS.HELP_CATEGORY_SELECT]: async ({ interaction, registry }) => {
       if (!interaction.isStringSelectMenu()) return;
       const category = interaction.values[0];
-      await interaction.update(createCategoryPayload(registry, category));
+      await interaction.update(createCategoryPayload(getVisibleCommands(registry, interaction), category));
     },
     [CUSTOM_IDS.HELP_HOME_BUTTON]: async ({ interaction, registry }) => {
       if (!interaction.isButton()) return;
-      await interaction.update(createHomeUpdatePayload(registry));
+      await interaction.update(createHomeUpdatePayload(getVisibleCommands(registry, interaction)));
     },
   },
   async execute({ interaction, registry }) {
-    await interaction.reply(createReplyPayload(registry));
+    await interaction.reply(createReplyPayload(getVisibleCommands(registry, interaction)));
   },
 };

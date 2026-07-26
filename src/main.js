@@ -91,15 +91,22 @@ async function bootstrap() {
   const cooldowns = createCooldownService();
   const permission = createPermissionService({ owners: env.owners });
 
+  runtime.client = client;
+  runtime.cooldowns = cooldowns;
+
   await db.init();
 
-  const reloadCommands = async (bustCache = false) => {
+  const reloadCommands = async (bustCache = false, { deploy = false } = {}) => {
     await replaceCommands({
       logger,
       registry,
       rootDir: PROJECT_ROOT,
       bustCache,
     });
+
+    if (deploy) {
+      await deployCommandsOnStart({ env, logger, registry });
+    }
   };
 
   await reloadCommands(false);
@@ -137,15 +144,38 @@ async function bootstrap() {
   await client.login(env.token);
 }
 
+const runtime = {
+  client: null,
+  cooldowns: null,
+};
+
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    timer.unref?.();
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 async function shutdown(signal) {
   try {
-    await db.close();
+    runtime.cooldowns?.stop();
+    await withTimeout(db.close(), 10_000, "Database shutdown");
   } catch (error) {
     console.error("Database shutdown error", error);
-  } finally {
-    if (signal) {
-      process.exit(0);
+  }
+
+  try {
+    if (runtime.client) {
+      await withTimeout(runtime.client.destroy(), 5_000, "Client shutdown");
     }
+  } catch (error) {
+    console.error("Client shutdown error", error);
+  }
+
+  if (signal) {
+    process.exit(0);
   }
 }
 
