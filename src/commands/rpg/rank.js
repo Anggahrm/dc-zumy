@@ -1,7 +1,33 @@
 import { InteractionContextType, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { getLevelsConfig, getMemberRank } from "#services/levels.js";
 import { levelProgress } from "#utils/level.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("rank", {
+  en: {
+    title: "Rank",
+    leveling_disabled: "Leveling is disabled here. An admin can enable it with `/levelconfig toggle`.",
+    no_xp: "**{tag}** has no XP here yet. Time to start chatting!",
+    line_member: "- Member: <@{user_id}>",
+    line_rank: "- Rank: **#{rank}**",
+    line_level: "- Level: **{level}**",
+    line_xp: "- XP: **{xp}**",
+    line_messages: "- Messages counted: **{messages}**",
+    progress_note: "-# {current}/{needed} XP to level {next_level}",
+  },
+  id: {
+    title: "Rank",
+    leveling_disabled: "Leveling dimatikan di sini. Admin bisa menyalakannya lagi dengan `/levelconfig toggle`.",
+    no_xp: "**{tag}** belum punya XP di sini. Ayo mulai ngobrol!",
+    line_member: "- Member: <@{user_id}>",
+    line_rank: "- Rank: **#{rank}**",
+    line_level: "- Level: **{level}**",
+    line_xp: "- XP: **{xp}**",
+    line_messages: "- Pesan terhitung: **{messages}**",
+    progress_note: "-# {current}/{needed} XP menuju level {next_level}",
+  },
+});
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 
@@ -23,7 +49,7 @@ export default {
     .addUserOption((option) =>
       option.setName("target").setDescription("Member to inspect").setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for rank command.");
@@ -35,8 +61,8 @@ export default {
         interaction,
         createCard({
           color: 0xf1c40f,
-          title: "Rank",
-          body: "Leveling is disabled here. An admin can enable it with `/levelconfig toggle`.",
+          title: ctx.t("rank.title"),
+          body: ctx.t("rank.leveling_disabled"),
         }),
         { ephemeral: true },
       );
@@ -51,8 +77,8 @@ export default {
         interaction,
         createCard({
           color: 0x3498db,
-          title: "Rank",
-          body: `**${target.tag}** has no XP here yet. Time to start chatting!`,
+          title: ctx.t("rank.title"),
+          body: ctx.t("rank.no_xp", { tag: target.tag }),
         }),
         { ephemeral: true },
       );
@@ -64,16 +90,20 @@ export default {
       interaction,
       createCard({
         color: 0x5865f2,
-        title: "Rank",
+        title: ctx.t("rank.title"),
         body: [
-          `- Member: <@${target.id}>`,
-          `- Rank: **#${rank.rank}**`,
-          `- Level: **${progress.level}**`,
-          `- XP: **${numberFormatter.format(rank.xp)}**`,
-          `- Messages counted: **${numberFormatter.format(rank.messages)}**`,
+          ctx.t("rank.line_member", { user_id: target.id }),
+          ctx.t("rank.line_rank", { rank: rank.rank }),
+          ctx.t("rank.line_level", { level: progress.level }),
+          ctx.t("rank.line_xp", { xp: numberFormatter.format(rank.xp) }),
+          ctx.t("rank.line_messages", { messages: numberFormatter.format(rank.messages) }),
           "",
           `${progressBar(progress.current, progress.needed)}`,
-          `-# ${numberFormatter.format(progress.current)}/${numberFormatter.format(progress.needed)} XP to level ${progress.level + 1}`,
+          ctx.t("rank.progress_note", {
+            current: numberFormatter.format(progress.current),
+            needed: numberFormatter.format(progress.needed),
+            next_level: progress.level + 1,
+          }),
         ].join("\n"),
       }),
     );

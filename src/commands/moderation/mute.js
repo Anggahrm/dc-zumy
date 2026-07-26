@@ -1,13 +1,51 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { recordCase } from "#services/cases.js";
+import { registerStrings } from "#services/i18n.js";
 import { getModConfig } from "#services/mod-config.js";
 import { unmuteJobKey } from "#services/scheduler-jobs.js";
 import { checkActorHierarchy, dmModerationNotice, normalizeReason } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 import { formatDuration, parseDuration } from "#utils/time.js";
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Moderation", body });
+registerStrings("mute", {
+  en: {
+    title: "Moderation",
+    invalid_duration: "Invalid duration. Use formats like `30m`, `2h`, `7d` or leave it empty for indefinite.",
+    no_mute_role: "No mute role configured. Run `/muterole create` (or `/muterole set`) first.",
+    not_member: "I can only mute members of this server.",
+    already_muted: "**{user}** is already muted.",
+    mute_failed: "Mute failed. Check that my role is above the mute role and I have Manage Roles.",
+    dm_action_label: "Mute",
+    dm_duration_line: "- Duration: {duration}",
+    duration_indefinite_line: "- Duration: until unmuted",
+    case_suffix: " — Case #{caseNumber}",
+    applied_title: "**Mute Applied**{caseSuffix}",
+    target_line: "- Target: **{user}** (`{id}`)",
+    moderator_line: "- Moderator: **{moderator}**",
+    until_line: "- Until: <t:{until}:F> (<t:{until}:R>)",
+    reason_line: "- Reason: {reason}",
+  },
+  id: {
+    title: "Moderasi",
+    invalid_duration: "Durasi tidak valid. Pakai format seperti `30m`, `2h`, `7d`, atau kosongkan biar mute tanpa batas waktu.",
+    no_mute_role: "Role mute belum diatur. Jalankan `/muterole create` (atau `/muterole set`) dulu ya.",
+    not_member: "Aku cuma bisa mute member server ini.",
+    already_muted: "**{user}** sudah di-mute.",
+    mute_failed: "Mute gagal. Pastikan role-ku ada di atas role mute dan aku punya permission Manage Roles.",
+    dm_action_label: "Mute",
+    dm_duration_line: "- Durasi: {duration}",
+    duration_indefinite_line: "- Durasi: sampai di-unmute",
+    case_suffix: " — Case #{caseNumber}",
+    applied_title: "**Mute Diterapkan**{caseSuffix}",
+    target_line: "- Target: **{user}** (`{id}`)",
+    moderator_line: "- Moderator: **{moderator}**",
+    until_line: "- Sampai: <t:{until}:F> (<t:{until}:R>)",
+    reason_line: "- Alasan: {reason}",
+  },
+});
+
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("mute.title"), body });
 }
 
 export default {
@@ -34,12 +72,13 @@ export default {
     .addStringOption((option) =>
       option.setName("reason").setDescription("Reason").setMaxLength(400).setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for mute command.");
     }
 
+    const t = ctx.t;
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const target = interaction.options.getUser("target", true);
@@ -50,7 +89,7 @@ export default {
     if (durationRaw && !durationMs) {
       await replyCard(
         interaction,
-        errorCard("Invalid duration. Use formats like `30m`, `2h`, `7d` or leave it empty for indefinite."),
+        errorCard(t, t("mute.invalid_duration")),
         { ephemeral: true },
       );
       return;
@@ -61,7 +100,7 @@ export default {
     if (!muteRole) {
       await replyCard(
         interaction,
-        errorCard("No mute role configured. Run `/muterole create` (or `/muterole set`) first."),
+        errorCard(t, t("mute.no_mute_role")),
         { ephemeral: true },
       );
       return;
@@ -74,7 +113,7 @@ export default {
 
     const targetMember = await guild.members.fetch(target.id).catch(() => null);
     if (!targetMember) {
-      await replyCard(interaction, errorCard("I can only mute members of this server."), { ephemeral: true });
+      await replyCard(interaction, errorCard(t, t("mute.not_member")), { ephemeral: true });
       return;
     }
 
@@ -86,12 +125,12 @@ export default {
       targetMember,
     });
     if (rejection) {
-      await replyCard(interaction, errorCard(rejection), { ephemeral: true });
+      await replyCard(interaction, errorCard(t, rejection), { ephemeral: true });
       return;
     }
 
     if (targetMember.roles.cache.has(muteRole.id)) {
-      await replyCard(interaction, errorCard(`**${target.tag}** is already muted.`), { ephemeral: true });
+      await replyCard(interaction, errorCard(t, t("mute.already_muted", { user: target.tag })), { ephemeral: true });
       return;
     }
 
@@ -100,7 +139,7 @@ export default {
     } catch {
       await replyCard(
         interaction,
-        errorCard("Mute failed. Check that my role is above the mute role and I have Manage Roles."),
+        errorCard(t, t("mute.mute_failed")),
         { ephemeral: true },
       );
       return;
@@ -134,9 +173,11 @@ export default {
 
     await dmModerationNotice(target, {
       guildName: guild.name,
-      actionLabel: "Mute",
+      actionLabel: t("mute.dm_action_label"),
       reason,
-      lines: durationLabel ? [`- Duration: ${durationLabel}`] : ["- Duration: until unmuted"],
+      lines: durationLabel
+        ? [t("mute.dm_duration_line", { duration: durationLabel })]
+        : [t("mute.duration_indefinite_line")],
     });
 
     const until = durationMs ? Math.floor((Date.now() + durationMs) / 1000) : null;
@@ -144,13 +185,15 @@ export default {
       interaction,
       createCard({
         color: 0xf1c40f,
-        title: "Moderation",
+        title: t("mute.title"),
         body: [
-          `**Mute Applied**${caseRow ? ` — Case #${caseRow.caseNumber}` : ""}`,
-          `- Target: **${target.tag}** (\`${target.id}\`)`,
-          `- Moderator: **${interaction.user.tag}**`,
-          until ? `- Until: <t:${until}:F> (<t:${until}:R>)` : "- Duration: until unmuted",
-          `- Reason: ${reason}`,
+          t("mute.applied_title", {
+            caseSuffix: caseRow ? t("mute.case_suffix", { caseNumber: caseRow.caseNumber }) : "",
+          }),
+          t("mute.target_line", { user: target.tag, id: target.id }),
+          t("mute.moderator_line", { moderator: interaction.user.tag }),
+          until ? t("mute.until_line", { until }) : t("mute.duration_indefinite_line"),
+          t("mute.reason_line", { reason }),
         ].join("\n"),
       }),
     );

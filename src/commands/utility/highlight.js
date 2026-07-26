@@ -7,14 +7,48 @@ import {
   MAX_KEYWORD_LENGTH,
   removeHighlight,
 } from "#services/highlights.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
-function successCard(body) {
-  return createCard({ color: 0x57f287, title: "Highlights", body });
+registerStrings("highlight", {
+  en: {
+    title: "Highlights",
+    reason_invalid: "Keywords need at least 2 characters.",
+    reason_exists: "You're already watching that keyword.",
+    reason_full: "You can watch up to {max} keywords.",
+    reason_guild_full: "This server's highlight list is full.",
+    add_failed: "Could not add that keyword.",
+    watching: "🔔 Watching `{word}` — I'll DM you when it's mentioned here.\n-# Max one DM per 5 minutes; your own messages and direct mentions don't trigger it.",
+    removed: "Keyword removed.",
+    not_watching: "You're not watching that keyword.",
+    your_title: "Your highlights",
+    list_empty: "You're not watching any keywords. Use `/highlight add`.",
+    cleared: "All keywords removed.",
+    none_to_clear: "You had no keywords.",
+  },
+  id: {
+    title: "Highlight",
+    reason_invalid: "Keyword minimal 2 karakter.",
+    reason_exists: "Kamu sudah memantau keyword itu.",
+    reason_full: "Kamu bisa memantau maksimal {max} keyword.",
+    reason_guild_full: "Daftar highlight server ini sudah penuh.",
+    add_failed: "Tidak bisa menambahkan keyword itu.",
+    watching: "🔔 Memantau `{word}` — aku akan DM kamu kalau kata itu disebut di sini.\n-# Maksimal satu DM per 5 menit; pesanmu sendiri dan mention langsung tidak memicunya.",
+    removed: "Keyword dihapus.",
+    not_watching: "Kamu tidak sedang memantau keyword itu.",
+    your_title: "Highlight kamu",
+    list_empty: "Kamu tidak memantau keyword apa pun. Pakai `/highlight add`.",
+    cleared: "Semua keyword dihapus.",
+    none_to_clear: "Kamu tidak punya keyword.",
+  },
+});
+
+function successCard(t, body) {
+  return createCard({ color: 0x57f287, title: t("highlight.title"), body });
 }
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Highlights", body });
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("highlight.title"), body });
 }
 
 export default {
@@ -69,12 +103,12 @@ export default {
       const result = await addHighlight(guildId, interaction.user.id, interaction.options.getString("keyword", true));
       if (!result.ok) {
         const reasons = {
-          invalid: "Keywords need at least 2 characters.",
-          exists: "You're already watching that keyword.",
-          full: `You can watch up to ${MAX_HIGHLIGHT_KEYWORDS} keywords.`,
-          guild_full: "This server's highlight list is full.",
+          invalid: ctx.t("highlight.reason_invalid"),
+          exists: ctx.t("highlight.reason_exists"),
+          full: ctx.t("highlight.reason_full", { max: MAX_HIGHLIGHT_KEYWORDS }),
+          guild_full: ctx.t("highlight.reason_guild_full"),
         };
-        await replyCard(interaction, errorCard(reasons[result.reason] ?? "Could not add that keyword."), {
+        await replyCard(interaction, errorCard(ctx.t, reasons[result.reason] ?? ctx.t("highlight.add_failed")), {
           ephemeral: true,
         });
         return;
@@ -82,10 +116,7 @@ export default {
 
       await replyCard(
         interaction,
-        successCard([
-          `🔔 Watching \`${result.word}\` — I'll DM you when it's mentioned here.`,
-          "-# Max one DM per 5 minutes; your own messages and direct mentions don't trigger it.",
-        ].join("\n")),
+        successCard(ctx.t, ctx.t("highlight.watching", { word: result.word })),
         { ephemeral: true },
       );
       return;
@@ -95,7 +126,7 @@ export default {
       const removed = await removeHighlight(guildId, interaction.user.id, interaction.options.getString("keyword", true));
       await replyCard(
         interaction,
-        removed ? successCard("Keyword removed.") : errorCard("You're not watching that keyword."),
+        removed ? successCard(ctx.t, ctx.t("highlight.removed")) : errorCard(ctx.t, ctx.t("highlight.not_watching")),
         { ephemeral: true },
       );
       return;
@@ -108,10 +139,10 @@ export default {
         interaction,
         createCard({
           color: 0x3498db,
-          title: "Your highlights",
+          title: ctx.t("highlight.your_title"),
           body: mine.length > 0
             ? mine.map((word) => `- \`${word}\``).join("\n")
-            : "You're not watching any keywords. Use `/highlight add`.",
+            : ctx.t("highlight.list_empty"),
         }),
         { ephemeral: true },
       );
@@ -122,7 +153,7 @@ export default {
       const cleared = await clearHighlights(guildId, interaction.user.id);
       await replyCard(
         interaction,
-        cleared ? successCard("All keywords removed.") : errorCard("You had no keywords."),
+        cleared ? successCard(ctx.t, ctx.t("highlight.cleared")) : errorCard(ctx.t, ctx.t("highlight.none_to_clear")),
         { ephemeral: true },
       );
     }

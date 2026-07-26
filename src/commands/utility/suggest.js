@@ -6,6 +6,7 @@ import {
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import {
   buildSuggestionCard,
   createSuggestion,
@@ -15,6 +16,31 @@ import {
   voteSuggestion,
 } from "#services/suggestions.js";
 import { createCard, replyCard, replyError } from "#utils/respond.js";
+
+registerStrings("suggest", {
+  en: {
+    title: "Suggestions",
+    guild_only: "Suggestions only work in a server.",
+    vote_invalid: "This vote button is no longer valid.",
+    not_found: "This suggestion no longer exists.",
+    not_set_up: "Suggestions are not set up here. An admin can enable them with `/suggestion channel`.",
+    channel_unavailable: "The suggestions channel is unavailable. Ask an admin to re-run `/suggestion channel`.",
+    empty: "Suggestions cannot be empty.",
+    post_failed: "I couldn't post to the suggestions channel. Check my permissions there.",
+    posted: "Suggestion **#{number}** posted in <#{channel_id}>. Thanks!",
+  },
+  id: {
+    title: "Saran",
+    guild_only: "Saran hanya bisa dipakai di server.",
+    vote_invalid: "Tombol vote ini sudah tidak berlaku.",
+    not_found: "Saran ini sudah tidak ada.",
+    not_set_up: "Fitur saran belum diatur di sini. Admin bisa mengaktifkannya lewat `/suggestion channel`.",
+    channel_unavailable: "Channel saran tidak bisa diakses. Minta admin menjalankan ulang `/suggestion channel`.",
+    empty: "Saran tidak boleh kosong.",
+    post_failed: "Aku tidak bisa posting ke channel saran. Cek permission-ku di sana ya.",
+    posted: "Saran **#{number}** sudah diposting di <#{channel_id}>. Makasih!",
+  },
+});
 
 const VOTE_PREFIX = "suggest-vote:";
 
@@ -48,26 +74,26 @@ export default {
         .setMaxLength(MAX_SUGGESTION_LENGTH)
         .setRequired(true),
     ),
-  async onComponent({ interaction }) {
+  async onComponent({ interaction, t }) {
     if (!interaction.isButton()) return false;
     if (!interaction.customId.startsWith(VOTE_PREFIX)) return false;
 
     const guild = interaction.guild;
     if (!guild) {
-      await replyError(interaction, "Suggestions only work in a server.");
+      await replyError(interaction, t("suggest.guild_only"));
       return true;
     }
 
     const [, numberRaw, direction] = interaction.customId.split(":");
     const number = Number(numberRaw);
     if (!Number.isInteger(number) || !["up", "down"].includes(direction)) {
-      await replyError(interaction, "This vote button is no longer valid.");
+      await replyError(interaction, t("suggest.vote_invalid"));
       return true;
     }
 
     const entry = await voteSuggestion(guild.id, number, interaction.user.id, direction);
     if (!entry) {
-      await replyError(interaction, "This suggestion no longer exists.");
+      await replyError(interaction, t("suggest.not_found"));
       return true;
     }
 
@@ -90,8 +116,8 @@ export default {
         interaction,
         createCard({
           color: 0xf1c40f,
-          title: "Suggestions",
-          body: "Suggestions are not set up here. An admin can enable them with `/suggestion channel`.",
+          title: ctx.t("suggest.title"),
+          body: ctx.t("suggest.not_set_up"),
         }),
         { ephemeral: true },
       );
@@ -105,8 +131,8 @@ export default {
         interaction,
         createCard({
           color: 0xed4245,
-          title: "Suggestions",
-          body: "The suggestions channel is unavailable. Ask an admin to re-run `/suggestion channel`.",
+          title: ctx.t("suggest.title"),
+          body: ctx.t("suggest.channel_unavailable"),
         }),
         { ephemeral: true },
       );
@@ -117,7 +143,7 @@ export default {
     if (!text) {
       await replyCard(
         interaction,
-        createCard({ color: 0xed4245, title: "Suggestions", body: "Suggestions cannot be empty." }),
+        createCard({ color: 0xed4245, title: ctx.t("suggest.title"), body: ctx.t("suggest.empty") }),
         { ephemeral: true },
       );
       return;
@@ -150,8 +176,8 @@ export default {
         interaction,
         createCard({
           color: 0xed4245,
-          title: "Suggestions",
-          body: "I couldn't post to the suggestions channel. Check my permissions there.",
+          title: ctx.t("suggest.title"),
+          body: ctx.t("suggest.post_failed"),
         }),
         { ephemeral: true },
       );
@@ -166,8 +192,8 @@ export default {
       interaction,
       createCard({
         color: 0x57f287,
-        title: "Suggestions",
-        body: `Suggestion **#${created.number}** posted in <#${channelId}>. Thanks!`,
+        title: ctx.t("suggest.title"),
+        body: ctx.t("suggest.posted", { number: created.number, channel_id: channelId }),
       }),
       { ephemeral: true },
     );

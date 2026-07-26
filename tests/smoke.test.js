@@ -6,7 +6,7 @@ import { parseYoutubeChannelId, parseYoutubeFeed } from "#services/alerts.js";
 import { checkMessage, compileWordRegex, isAutomodActive, trackSpam } from "#services/automod.js";
 import { isBirthdayOn, isValidBirthday } from "#services/birthdays.js";
 import { renderGreeterTemplate } from "#services/greeter.js";
-import { translate } from "#services/i18n.js";
+import { getDictionaries, translate } from "#services/i18n.js";
 import { sanitizeMenuName } from "#services/rolemenus.js";
 import { sanitizeTagName } from "#services/tags.js";
 import { expForLevel, levelFromExp, levelProgress } from "#utils/level.js";
@@ -251,6 +251,25 @@ describe("tags", () => {
 });
 
 describe("i18n", () => {
+  test("every registered key exists in both languages with matching placeholders", async () => {
+    // Loading all commands registers their dictionaries.
+    await loadCommands({ logger: noopLogger, rootDir: PROJECT_ROOT });
+    const { en, id } = getDictionaries();
+
+    const missingId = Object.keys(en).filter((key) => !(key in id));
+    const missingEn = Object.keys(id).filter((key) => !(key in en));
+    expect(missingId).toEqual([]);
+    expect(missingEn).toEqual([]);
+
+    const placeholderMismatches = Object.keys(en).filter((key) => {
+      const vars = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");
+      return vars(en[key]) !== vars(id[key]);
+    });
+    expect(placeholderMismatches).toEqual([]);
+
+    expect(Object.keys(en).length).toBeGreaterThan(400);
+  });
+
   test("translates with variables and falls back to english", () => {
     expect(translate("id", "handler.cooldown", { seconds: 5 })).toBe("Sabar dulu ya. Coba lagi dalam 5 detik.");
     expect(translate("en", "handler.cooldown", { seconds: 5 })).toBe("You're a bit fast. Try again in 5s.");

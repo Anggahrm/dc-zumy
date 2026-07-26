@@ -1,9 +1,31 @@
 import { ChannelType, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
-import { canManageChannel, normalizeReason, setChannelLock } from "#utils/moderation.js";
+import { registerStrings } from "#services/i18n.js";
+import { canManageChannel, setChannelLock } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Moderation", body });
+registerStrings("unlock", {
+  en: {
+    title: "Moderation",
+    no_reason: "No reason provided.",
+    cannot_unlock: "That channel can't be unlocked.",
+    need_manage_roles: "I need **Manage Roles** permission in that channel.",
+    audit_reason: "Unlocked by {user}: {reason}",
+    unlock_failed: "Unlock failed. Please check my channel permissions.",
+    unlocked_body: "🔓 <#{channel}> is now unlocked.\n- Reason: {reason}",
+  },
+  id: {
+    title: "Moderasi",
+    no_reason: "Tidak ada alasan yang diberikan.",
+    cannot_unlock: "Channel itu tidak bisa dibuka kuncinya.",
+    need_manage_roles: "Aku butuh permission **Manage Roles** di channel itu.",
+    audit_reason: "Dibuka oleh {user}: {reason}",
+    unlock_failed: "Gagal membuka kunci. Cek permission-ku di channel itu ya.",
+    unlocked_body: "🔓 <#{channel}> sekarang dibuka kuncinya.\n- Alasan: {reason}",
+  },
+});
+
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("unlock.title"), body });
 }
 
 export default {
@@ -28,29 +50,29 @@ export default {
     .addStringOption((option) =>
       option.setName("reason").setDescription("Reason").setMaxLength(400).setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for unlock command.");
     }
 
     const channel = interaction.options.getChannel("channel") ?? interaction.channel;
-    const reason = normalizeReason(interaction.options.getString("reason"));
+    const reason = interaction.options.getString("reason")?.trim() || ctx.t("unlock.no_reason");
 
     if (!channel || !channel.permissionOverwrites) {
-      await replyCard(interaction, errorCard("That channel can't be unlocked."), { ephemeral: true });
+      await replyCard(interaction, errorCard(ctx.t, ctx.t("unlock.cannot_unlock")), { ephemeral: true });
       return;
     }
 
     if (!canManageChannel(channel)) {
-      await replyCard(interaction, errorCard("I need **Manage Roles** permission in that channel."), { ephemeral: true });
+      await replyCard(interaction, errorCard(ctx.t, ctx.t("unlock.need_manage_roles")), { ephemeral: true });
       return;
     }
 
     try {
-      await setChannelLock(channel, false, `Unlocked by ${interaction.user.tag}: ${reason}`);
+      await setChannelLock(channel, false, ctx.t("unlock.audit_reason", { user: interaction.user.tag, reason }));
     } catch {
-      await replyCard(interaction, errorCard("Unlock failed. Please check my channel permissions."), { ephemeral: true });
+      await replyCard(interaction, errorCard(ctx.t, ctx.t("unlock.unlock_failed")), { ephemeral: true });
       return;
     }
 
@@ -58,11 +80,8 @@ export default {
       interaction,
       createCard({
         color: 0x57f287,
-        title: "Moderation",
-        body: [
-          `🔓 <#${channel.id}> is now unlocked.`,
-          `- Reason: ${reason}`,
-        ].join("\n"),
+        title: ctx.t("unlock.title"),
+        body: ctx.t("unlock.unlocked_body", { channel: channel.id, reason }),
       }),
     );
   },

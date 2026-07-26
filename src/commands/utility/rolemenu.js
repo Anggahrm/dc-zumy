@@ -14,6 +14,7 @@ import {
   StringSelectMenuOptionBuilder,
   TextDisplayBuilder,
 } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import {
   addMenuRole,
   createMenu,
@@ -31,21 +32,118 @@ import { createCard, replyCard, replyError } from "#utils/respond.js";
 const BUTTON_PREFIX = "rolemenu:";
 const SELECT_PREFIX = "rolemenu-select:";
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Role Menu", body });
+registerStrings("rolemenu", {
+  en: {
+    title: "Role Menu",
+    list_title: "Role Menus",
+    role_gone: "That role no longer exists.",
+    role_everyone: "The @everyone role cannot be used in a role menu.",
+    role_managed: "Role <@&{role_id}> is managed by an integration and cannot be self-assigned.",
+    role_too_high: "Role <@&{role_id}> is equal to or higher than my highest role, so I can't assign it.",
+    menu_pick_one_select: "Pick one role from the menu below.",
+    menu_pick_many_select: "Pick your roles from the menu below.",
+    menu_pick_one_buttons: "Click a button to pick one role (it replaces the others).",
+    menu_pick_many_buttons: "Use the buttons below to add or remove roles.",
+    select_placeholder_one: "Pick one role...",
+    select_placeholder_many: "Pick your roles...",
+    guild_only: "Role menus only work in a server.",
+    membership_unresolved: "I couldn't resolve your membership.",
+    menu_outdated: "This role menu is outdated. Ask an admin to repost or remove it.",
+    menu_gone: "This role menu no longer exists.",
+    roles_update_failed: "I couldn't update your roles. Check my permissions and role position.",
+    confirm_added: "Added: {roles}",
+    confirm_removed: "Removed: {roles}",
+    confirm_none: "No role changes.",
+    create_invalid_name: "Menu names must be 1-32 chars: lowercase letters, numbers, `-`, `_`.",
+    create_exists: "A menu with that name already exists.",
+    create_full: "Menu limit reached (max {max}).",
+    create_failed: "Could not create the menu.",
+    created: "Menu `{name}` created.\n- Add roles: `/rolemenu add name:{name}`\n- Then post it: `/rolemenu post name:{name}`",
+    list_line: "- `{name}` — {count} role(s), {mode}{unique}, {status}",
+    list_unique: ", unique",
+    list_posted: "posted",
+    list_not_posted: "not posted",
+    list_empty: "No role menus yet. Create one with `/rolemenu create`.",
+    not_found: "No menu with that name. Try `/rolemenu list`.",
+    add_exists: "That role is already in the menu.",
+    add_full: "This menu is full (max {max} roles).",
+    add_not_found: "No menu with that name.",
+    add_failed: "Could not add the role.",
+    added: "Added <@&{role_id}> to `{name}` ({count}/{max}).",
+    repost_hint: "- Run `/rolemenu post` to update the posted message.",
+    removed: "Removed <@&{role_id}> from `{name}` ({count} left).",
+    remove_not_in_menu: "That role is not in the menu.",
+    post_empty: "Add at least one role before posting.",
+    post_remove_hint: "Remove it with `/rolemenu remove name:{name}`.",
+    pick_text_channel: "Pick a text channel I can post in.",
+    post_posted: "Menu `{name}` posted in <#{channel_id}>.",
+    post_updated: "Menu `{name}` updated in <#{channel_id}>.",
+    deleted: "Menu `{name}` deleted.",
+  },
+  id: {
+    title: "Role Menu",
+    list_title: "Role Menu",
+    role_gone: "Role itu sudah tidak ada.",
+    role_everyone: "Role @everyone tidak bisa dipakai di role menu.",
+    role_managed: "Role <@&{role_id}> dikelola oleh integrasi dan tidak bisa diambil sendiri.",
+    role_too_high: "Role <@&{role_id}> setara atau lebih tinggi dari role tertinggiku, jadi aku tidak bisa memberikannya.",
+    menu_pick_one_select: "Pilih satu role dari menu di bawah.",
+    menu_pick_many_select: "Pilih role-mu dari menu di bawah.",
+    menu_pick_one_buttons: "Klik tombol untuk memilih satu role (menggantikan yang lain).",
+    menu_pick_many_buttons: "Pakai tombol di bawah untuk menambah atau melepas role.",
+    select_placeholder_one: "Pilih satu role...",
+    select_placeholder_many: "Pilih role-mu...",
+    guild_only: "Role menu hanya bisa dipakai di server.",
+    membership_unresolved: "Aku tidak bisa membaca data keanggotaanmu.",
+    menu_outdated: "Role menu ini sudah usang. Minta admin untuk memposting ulang atau menghapusnya.",
+    menu_gone: "Role menu ini sudah tidak ada.",
+    roles_update_failed: "Aku tidak bisa mengubah role-mu. Cek permission dan posisi role-ku.",
+    confirm_added: "Ditambahkan: {roles}",
+    confirm_removed: "Dilepas: {roles}",
+    confirm_none: "Tidak ada perubahan role.",
+    create_invalid_name: "Nama menu harus 1-32 karakter: huruf kecil, angka, `-`, `_`.",
+    create_exists: "Menu dengan nama itu sudah ada.",
+    create_full: "Batas menu tercapai (maksimal {max}).",
+    create_failed: "Tidak bisa membuat menu.",
+    created: "Menu `{name}` dibuat.\n- Tambah role: `/rolemenu add name:{name}`\n- Lalu posting: `/rolemenu post name:{name}`",
+    list_line: "- `{name}` — {count} role, {mode}{unique}, {status}",
+    list_unique: ", unique",
+    list_posted: "sudah diposting",
+    list_not_posted: "belum diposting",
+    list_empty: "Belum ada role menu. Buat satu dengan `/rolemenu create`.",
+    not_found: "Tidak ada menu dengan nama itu. Coba `/rolemenu list`.",
+    add_exists: "Role itu sudah ada di menu.",
+    add_full: "Menu ini penuh (maksimal {max} role).",
+    add_not_found: "Tidak ada menu dengan nama itu.",
+    add_failed: "Tidak bisa menambahkan role.",
+    added: "<@&{role_id}> ditambahkan ke `{name}` ({count}/{max}).",
+    repost_hint: "- Jalankan `/rolemenu post` untuk memperbarui pesan yang sudah diposting.",
+    removed: "<@&{role_id}> dilepas dari `{name}` (sisa {count}).",
+    remove_not_in_menu: "Role itu tidak ada di menu.",
+    post_empty: "Tambahkan minimal satu role sebelum posting.",
+    post_remove_hint: "Hapus dengan `/rolemenu remove name:{name}`.",
+    pick_text_channel: "Pilih text channel yang bisa aku pakai untuk posting.",
+    post_posted: "Menu `{name}` diposting di <#{channel_id}>.",
+    post_updated: "Menu `{name}` diperbarui di <#{channel_id}>.",
+    deleted: "Menu `{name}` dihapus.",
+  },
+});
+
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("rolemenu.title"), body });
 }
 
-function successCard(body) {
-  return createCard({ color: 0x57f287, title: "Role Menu", body });
+function successCard(t, body) {
+  return createCard({ color: 0x57f287, title: t("rolemenu.title"), body });
 }
 
-function validateMenuRole(guild, role) {
-  if (!role) return "That role no longer exists.";
-  if (role.id === guild.id) return "The @everyone role cannot be used in a role menu.";
-  if (role.managed) return `Role <@&${role.id}> is managed by an integration and cannot be self-assigned.`;
+function validateMenuRole(t, guild, role) {
+  if (!role) return t("rolemenu.role_gone");
+  if (role.id === guild.id) return t("rolemenu.role_everyone");
+  if (role.managed) return t("rolemenu.role_managed", { role_id: role.id });
   const me = guild.members.me;
   if (me && role.position >= me.roles.highest.position) {
-    return `Role <@&${role.id}> is equal to or higher than my highest role, so I can't assign it.`;
+    return t("rolemenu.role_too_high", { role_id: role.id });
   }
   return null;
 }
@@ -58,7 +156,7 @@ function chunk(array, size) {
   return out;
 }
 
-function buildMenuMessage(guild, menu) {
+function buildMenuMessage(t, guild, menu) {
   const roles = menu.roles
     .map((roleId) => guild.roles.cache.get(roleId))
     .filter(Boolean);
@@ -77,11 +175,11 @@ function buildMenuMessage(guild, menu) {
         [
           menu.mode === "select"
             ? menu.unique
-              ? "Pick one role from the menu below."
-              : "Pick your roles from the menu below."
+              ? t("rolemenu.menu_pick_one_select")
+              : t("rolemenu.menu_pick_many_select")
             : menu.unique
-              ? "Click a button to pick one role (it replaces the others)."
-              : "Use the buttons below to add or remove roles.",
+              ? t("rolemenu.menu_pick_one_buttons")
+              : t("rolemenu.menu_pick_many_buttons"),
           "",
           ...lines,
         ].join("\n"),
@@ -92,7 +190,7 @@ function buildMenuMessage(guild, menu) {
   if (menu.mode === "select") {
     const select = new StringSelectMenuBuilder()
       .setCustomId(`${SELECT_PREFIX}${menu.name}`)
-      .setPlaceholder(menu.unique ? "Pick one role..." : "Pick your roles...")
+      .setPlaceholder(menu.unique ? t("rolemenu.select_placeholder_one") : t("rolemenu.select_placeholder_many"))
       .setMinValues(0)
       .setMaxValues(menu.unique ? 1 : roles.length)
       .addOptions(
@@ -129,24 +227,24 @@ async function resolveMember(interaction, guild) {
     : guild.members.fetch(interaction.user.id).catch(() => null);
 }
 
-async function confirmRoles(interaction, added, removed) {
+async function confirmRoles(t, interaction, added, removed) {
   const lines = [];
-  if (added.length > 0) lines.push(`Added: ${added.map((id) => `<@&${id}>`).join(", ")}`);
-  if (removed.length > 0) lines.push(`Removed: ${removed.map((id) => `<@&${id}>`).join(", ")}`);
-  if (lines.length === 0) lines.push("No role changes.");
+  if (added.length > 0) lines.push(t("rolemenu.confirm_added", { roles: added.map((id) => `<@&${id}>`).join(", ") }));
+  if (removed.length > 0) lines.push(t("rolemenu.confirm_removed", { roles: removed.map((id) => `<@&${id}>`).join(", ") }));
+  if (lines.length === 0) lines.push(t("rolemenu.confirm_none"));
 
   await interaction.reply({
-    components: [createCard({ color: 0x57f287, title: "Role Menu", body: lines.join("\n") })],
+    components: [createCard({ color: 0x57f287, title: t("rolemenu.title"), body: lines.join("\n") })],
     flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
     allowedMentions: { parse: [] },
   });
 }
 
-async function handleButton(interaction) {
+async function handleButton(interaction, t) {
   const parts = interaction.customId.split(":");
   const guild = interaction.guild;
   if (!guild) {
-    await replyError(interaction, "Role menus only work in a server.");
+    await replyError(interaction, t("rolemenu.guild_only"));
     return true;
   }
 
@@ -154,7 +252,7 @@ async function handleButton(interaction) {
   const [menuName, roleId] = parts.length >= 3 ? [parts[1], parts[2]] : [null, parts[1]];
 
   const role = guild.roles.cache.get(roleId) ?? (await guild.roles.fetch(roleId).catch(() => null));
-  const invalidReason = validateMenuRole(guild, role);
+  const invalidReason = validateMenuRole(t, guild, role);
   if (invalidReason) {
     await replyError(interaction, invalidReason);
     return true;
@@ -162,7 +260,7 @@ async function handleButton(interaction) {
 
   const member = await resolveMember(interaction, guild);
   if (!member) {
-    await replyError(interaction, "I couldn't resolve your membership.");
+    await replyError(interaction, t("rolemenu.membership_unresolved"));
     return true;
   }
 
@@ -170,7 +268,7 @@ async function handleButton(interaction) {
   // Refuse buttons on orphaned messages: menu deleted, or role removed from
   // the menu after posting.
   if (menuName && (!menu || !menu.roles.includes(role.id))) {
-    await replyError(interaction, "This role menu is outdated. Ask an admin to repost or remove it.");
+    await replyError(interaction, t("rolemenu.menu_outdated"));
     return true;
   }
 
@@ -179,7 +277,7 @@ async function handleButton(interaction) {
   try {
     if (hasRole) {
       await member.roles.remove(role.id, "Role menu self-remove");
-      await confirmRoles(interaction, [], [role.id]);
+      await confirmRoles(t, interaction, [], [role.id]);
       return true;
     }
 
@@ -196,30 +294,30 @@ async function handleButton(interaction) {
       await member.roles.remove(removed, "Role menu unique mode");
     }
     await member.roles.add(role.id, "Role menu self-assign");
-    await confirmRoles(interaction, [role.id], removed);
+    await confirmRoles(t, interaction, [role.id], removed);
   } catch {
-    await replyError(interaction, "I couldn't update your roles. Check my permissions and role position.");
+    await replyError(interaction, t("rolemenu.roles_update_failed"));
   }
   return true;
 }
 
-async function handleSelect(interaction) {
+async function handleSelect(interaction, t) {
   const guild = interaction.guild;
   if (!guild) {
-    await replyError(interaction, "Role menus only work in a server.");
+    await replyError(interaction, t("rolemenu.guild_only"));
     return true;
   }
 
   const menuName = interaction.customId.slice(SELECT_PREFIX.length);
   const menu = await getMenu(guild.id, menuName);
   if (!menu) {
-    await replyError(interaction, "This role menu no longer exists.");
+    await replyError(interaction, t("rolemenu.menu_gone"));
     return true;
   }
 
   const member = await resolveMember(interaction, guild);
   if (!member) {
-    await replyError(interaction, "I couldn't resolve your membership.");
+    await replyError(interaction, t("rolemenu.membership_unresolved"));
     return true;
   }
 
@@ -229,7 +327,7 @@ async function handleSelect(interaction) {
 
   for (const roleId of menu.roles) {
     const role = guild.roles.cache.get(roleId);
-    if (validateMenuRole(guild, role)) continue;
+    if (validateMenuRole(t, guild, role)) continue;
 
     const has = member.roles.cache.has(roleId);
     if (chosen.has(roleId) && !has) added.push(roleId);
@@ -239,9 +337,9 @@ async function handleSelect(interaction) {
   try {
     if (removed.length > 0) await member.roles.remove(removed, "Role menu selection");
     if (added.length > 0) await member.roles.add(added, "Role menu selection");
-    await confirmRoles(interaction, added, removed);
+    await confirmRoles(t, interaction, added, removed);
   } catch {
-    await replyError(interaction, "I couldn't update your roles. Check my permissions and role position.");
+    await replyError(interaction, t("rolemenu.roles_update_failed"));
   }
   return true;
 }
@@ -345,12 +443,12 @@ export default {
       .map((name) => ({ name, value: name }));
     await interaction.respond(matches);
   },
-  async onComponent({ interaction }) {
+  async onComponent({ interaction, t }) {
     if (interaction.isButton() && interaction.customId.startsWith(BUTTON_PREFIX)) {
-      return handleButton(interaction);
+      return handleButton(interaction, t);
     }
     if (interaction.isStringSelectMenu() && interaction.customId.startsWith(SELECT_PREFIX)) {
-      return handleSelect(interaction);
+      return handleSelect(interaction, t);
     }
     return false;
   },
@@ -373,21 +471,17 @@ export default {
 
       if (!result.ok) {
         const reasons = {
-          invalid_name: "Menu names must be 1-32 chars: lowercase letters, numbers, `-`, `_`.",
-          exists: "A menu with that name already exists.",
-          full: `Menu limit reached (max ${MAX_MENUS}).`,
+          invalid_name: ctx.t("rolemenu.create_invalid_name"),
+          exists: ctx.t("rolemenu.create_exists"),
+          full: ctx.t("rolemenu.create_full", { max: MAX_MENUS }),
         };
-        await replyCard(interaction, errorCard(reasons[result.reason] ?? "Could not create the menu."), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, reasons[result.reason] ?? ctx.t("rolemenu.create_failed")), { ephemeral: true });
         return;
       }
 
       await replyCard(
         interaction,
-        successCard([
-          `Menu \`${result.name}\` created.`,
-          `- Add roles: \`/rolemenu add name:${result.name}\``,
-          `- Then post it: \`/rolemenu post name:${result.name}\``,
-        ].join("\n")),
+        successCard(ctx.t, ctx.t("rolemenu.created", { name: result.name })),
         { ephemeral: true },
       );
       return;
@@ -400,16 +494,22 @@ export default {
         interaction,
         createCard({
           color: 0x3498db,
-          title: "Role Menus",
+          title: ctx.t("rolemenu.list_title"),
           body: names.length > 0
             ? names
               .map((name) => {
                 const menu = menus[name];
-                const status = menu.messageId ? "posted" : "not posted";
-                return `- \`${name}\` — ${menu.roles.length} role(s), ${menu.mode}${menu.unique ? ", unique" : ""}, ${status}`;
+                const status = menu.messageId ? ctx.t("rolemenu.list_posted") : ctx.t("rolemenu.list_not_posted");
+                return ctx.t("rolemenu.list_line", {
+                  name,
+                  count: menu.roles.length,
+                  mode: menu.mode,
+                  unique: menu.unique ? ctx.t("rolemenu.list_unique") : "",
+                  status,
+                });
               })
               .join("\n")
-            : "No role menus yet. Create one with `/rolemenu create`.",
+            : ctx.t("rolemenu.list_empty"),
         }),
         { ephemeral: true },
       );
@@ -419,34 +519,34 @@ export default {
     const name = sanitizeMenuName(interaction.options.getString("name", true));
     const menu = name ? await getMenu(guildId, name) : null;
     if (!menu) {
-      await replyCard(interaction, errorCard("No menu with that name. Try `/rolemenu list`."), { ephemeral: true });
+      await replyCard(interaction, errorCard(ctx.t, ctx.t("rolemenu.not_found")), { ephemeral: true });
       return;
     }
 
     if (subcommand === "add") {
       const role = interaction.options.getRole("role", true);
-      const invalidReason = validateMenuRole(guild, role);
+      const invalidReason = validateMenuRole(ctx.t, guild, role);
       if (invalidReason) {
-        await replyCard(interaction, errorCard(invalidReason), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, invalidReason), { ephemeral: true });
         return;
       }
 
       const result = await addMenuRole(guildId, name, role.id);
       if (!result.ok) {
         const reasons = {
-          exists: "That role is already in the menu.",
-          full: `This menu is full (max ${MAX_MENU_ROLES} roles).`,
-          not_found: "No menu with that name.",
+          exists: ctx.t("rolemenu.add_exists"),
+          full: ctx.t("rolemenu.add_full", { max: MAX_MENU_ROLES }),
+          not_found: ctx.t("rolemenu.add_not_found"),
         };
-        await replyCard(interaction, errorCard(reasons[result.reason] ?? "Could not add the role."), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, reasons[result.reason] ?? ctx.t("rolemenu.add_failed")), { ephemeral: true });
         return;
       }
 
       await replyCard(
         interaction,
-        successCard([
-          `Added <@&${role.id}> to \`${name}\` (${result.count}/${MAX_MENU_ROLES}).`,
-          ...(menu.messageId ? ["- Run `/rolemenu post` to update the posted message."] : []),
+        successCard(ctx.t, [
+          ctx.t("rolemenu.added", { role_id: role.id, name, count: result.count, max: MAX_MENU_ROLES }),
+          ...(menu.messageId ? [ctx.t("rolemenu.repost_hint")] : []),
         ].join("\n")),
         { ephemeral: true },
       );
@@ -459,11 +559,11 @@ export default {
       await replyCard(
         interaction,
         result.ok
-          ? successCard([
-            `Removed <@&${role.id}> from \`${name}\` (${result.count} left).`,
-            ...(menu.messageId ? ["- Run `/rolemenu post` to update the posted message."] : []),
+          ? successCard(ctx.t, [
+            ctx.t("rolemenu.removed", { role_id: role.id, name, count: result.count }),
+            ...(menu.messageId ? [ctx.t("rolemenu.repost_hint")] : []),
           ].join("\n"))
-          : errorCard("That role is not in the menu."),
+          : errorCard(ctx.t, ctx.t("rolemenu.remove_not_in_menu")),
         { ephemeral: true },
       );
       return;
@@ -471,16 +571,16 @@ export default {
 
     if (subcommand === "post") {
       if (menu.roles.length === 0) {
-        await replyCard(interaction, errorCard("Add at least one role before posting."), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("rolemenu.post_empty")), { ephemeral: true });
         return;
       }
 
       for (const roleId of menu.roles) {
-        const invalidReason = validateMenuRole(guild, guild.roles.cache.get(roleId));
+        const invalidReason = validateMenuRole(ctx.t, guild, guild.roles.cache.get(roleId));
         if (invalidReason) {
           await replyCard(
             interaction,
-            errorCard([invalidReason, `Remove it with \`/rolemenu remove name:${name}\`.`].join("\n")),
+            errorCard(ctx.t, [invalidReason, ctx.t("rolemenu.post_remove_hint", { name })].join("\n")),
             { ephemeral: true },
           );
           return;
@@ -491,11 +591,11 @@ export default {
         ?? (menu.channelId ? guild.channels.cache.get(menu.channelId) : null)
         ?? interaction.channel;
       if (!channel || !channel.isTextBased() || typeof channel.send !== "function") {
-        await replyCard(interaction, errorCard("Pick a text channel I can post in."), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("rolemenu.pick_text_channel")), { ephemeral: true });
         return;
       }
 
-      const payload = buildMenuMessage(guild, menu);
+      const payload = buildMenuMessage(ctx.t, guild, menu);
 
       let updated = false;
       if (menu.messageId && menu.channelId === channel.id) {
@@ -521,7 +621,7 @@ export default {
 
       await replyCard(
         interaction,
-        successCard(`Menu \`${name}\` ${updated ? "updated" : "posted"} in <#${channel.id}>.`),
+        successCard(ctx.t, ctx.t(updated ? "rolemenu.post_updated" : "rolemenu.post_posted", { name, channel_id: channel.id })),
         { ephemeral: true },
       );
       return;
@@ -535,7 +635,7 @@ export default {
         await message?.delete().catch(() => {});
       }
 
-      await replyCard(interaction, successCard(`Menu \`${name}\` deleted.`), { ephemeral: true });
+      await replyCard(interaction, successCard(ctx.t, ctx.t("rolemenu.deleted", { name })), { ephemeral: true });
     }
   },
 };

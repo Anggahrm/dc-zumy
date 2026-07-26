@@ -6,6 +6,18 @@ import {
   SlashCommandBuilder,
   TextDisplayBuilder,
 } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
+
+registerStrings("avatar", {
+  en: {
+    card_title: "## Avatar\n**{tag}** (`{id}`)",
+    image_alt: "{tag} avatar",
+  },
+  id: {
+    card_title: "## Avatar\n**{tag}** (`{id}`)",
+    image_alt: "Avatar {tag}",
+  },
+});
 
 export default {
   category: "info",
@@ -16,20 +28,20 @@ export default {
     .addUserOption((option) =>
       option.setName("target").setDescription("User to inspect").setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const target = interaction.options.getUser("target") ?? interaction.user;
     const avatarUrl = target.displayAvatarURL({ extension: "png", size: 1024 });
 
     const card = new ContainerBuilder()
       .setAccentColor(0x5865f2)
       .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`## Avatar\n**${target.tag}** (\`${target.id}\`)`),
+        new TextDisplayBuilder().setContent(ctx.t("avatar.card_title", { tag: target.tag, id: target.id })),
       )
       .addMediaGalleryComponents(
         new MediaGalleryBuilder().addItems(
           new MediaGalleryItemBuilder()
             .setURL(avatarUrl)
-            .setDescription(`${target.tag} avatar`),
+            .setDescription(ctx.t("avatar.image_alt", { tag: target.tag })),
         ),
       );
 

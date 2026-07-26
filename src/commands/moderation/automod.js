@@ -8,7 +8,139 @@ import {
   MAX_MENTION_LIMIT,
   updateAutomodConfig,
 } from "#services/automod.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("automod", {
+  en: {
+    title: "Automod",
+    none: "(none)",
+    rule_anti_invite: "Anti-invite",
+    rule_banned_word: "Banned words",
+    rule_mention_spam: "Mention spam",
+    rule_link_filter: "Link filter",
+    rule_spam: "Message spam",
+    rules_header: "**Rules**",
+    detail_action: "action: {action}",
+    detail_banned_words: "{count}/{max}, action: {action}",
+    detail_mentions: "limit {limit}, action: {action}",
+    detail_links: "allowlist {count} domain(s), action: {action}",
+    detail_spam: "{max} msg/{interval}s, dup x{duplicates}, action: {action}",
+    punishment_header: "**Punishment**",
+    timeout_duration_line: "- Timeout duration: **{minutes}m**",
+    escalation_line: "- Escalation: {parts}",
+    escalation_off: "(off)",
+    escalation_step_timeout: "{count} warns → timeout",
+    escalation_step_kick: "{count} warns → kick",
+    escalation_step_ban: "{count} warns → ban",
+    exemptions_header: "**Exemptions**",
+    exempt_channels_line: "- Channels: {list}",
+    exempt_roles_line: "- Roles: {list}",
+    word_list_line: "**Word list**: {list}",
+    link_allowlist_line: "**Link allowlist**: {list}",
+    footer_note: "-# Members with Manage Messages are always exempt. Enable the `Automod actions` log event to see actions.",
+    invite_enabled: "Anti-invite is now ✅ enabled.",
+    invite_disabled: "Anti-invite is now ❌ disabled.",
+    mentions_set: "Messages with **{limit}+** mentions will be actioned.",
+    mentions_disabled: "Mention spam filter disabled.",
+    word_empty: "Please provide a non-empty word.",
+    word_exists: "That word is already banned.",
+    word_list_full: "Word list is full (max {max}).",
+    word_added: "Added `{word}` to the banned word list.",
+    word_removed: "Word removed from the banned list.",
+    word_not_found: "That word is not in the banned list.",
+    links_enabled: "Link filter is now ✅ enabled.",
+    links_disabled: "Link filter is now ❌ disabled.",
+    links_empty_allowlist_note: "-# Allowlist is empty — every link will be actioned. Add domains with `/automod link-allow`.",
+    domain_invalid: "That doesn't look like a valid domain (e.g. `youtube.com`).",
+    domain_exists: "That domain is already allowed.",
+    allowlist_full: "Allowlist is full (max {max}).",
+    domain_added: "Links to `{domain}` (and subdomains) are now allowed.",
+    domain_removed: "Domain removed from the allowlist.",
+    domain_not_found: "That domain is not in the allowlist.",
+    spam_enabled: "Spam detection ✅ enabled: **{max}** msgs per **{interval}s**, duplicates x**{duplicates}**.",
+    spam_disabled: "Spam detection ❌ disabled.",
+    channel_exempted: "<#{channel}> is now exempt from automod.",
+    channel_unexempted: "<#{channel}> is no longer exempt from automod.",
+    channel_already_exempt: "That channel is already exempt.",
+    channel_not_exempt: "That channel is not exempt.",
+    role_exempted: "<@&{role}> is now exempt from automod.",
+    role_unexempted: "<@&{role}> is no longer exempt from automod.",
+    role_already_exempt: "That role is already exempt.",
+    role_not_exempt: "That role is not exempt.",
+    action_set: "**{rule}** now triggers: **{action}**.",
+    timeout_duration_set: "Automod/escalation timeouts now last **{minutes}m**.",
+    escalation_set_timeout: "**{count}** warns → timeout",
+    escalation_set_kick: "**{count}** warns → kick",
+    escalation_set_ban: "**{count}** warns → ban",
+    escalation_ladder: "Escalation ladder: {parts}",
+    escalation_disabled: "Escalation disabled.",
+  },
+  id: {
+    title: "Automod",
+    none: "(kosong)",
+    rule_anti_invite: "Anti-invite",
+    rule_banned_word: "Kata terlarang",
+    rule_mention_spam: "Spam mention",
+    rule_link_filter: "Filter link",
+    rule_spam: "Spam pesan",
+    rules_header: "**Aturan**",
+    detail_action: "aksi: {action}",
+    detail_banned_words: "{count}/{max}, aksi: {action}",
+    detail_mentions: "limit {limit}, aksi: {action}",
+    detail_links: "allowlist {count} domain, aksi: {action}",
+    detail_spam: "{max} pesan/{interval} detik, duplikat x{duplicates}, aksi: {action}",
+    punishment_header: "**Hukuman**",
+    timeout_duration_line: "- Durasi timeout: **{minutes} menit**",
+    escalation_line: "- Eskalasi: {parts}",
+    escalation_off: "(nonaktif)",
+    escalation_step_timeout: "{count} peringatan → timeout",
+    escalation_step_kick: "{count} peringatan → kick",
+    escalation_step_ban: "{count} peringatan → ban",
+    exemptions_header: "**Pengecualian**",
+    exempt_channels_line: "- Channel: {list}",
+    exempt_roles_line: "- Role: {list}",
+    word_list_line: "**Daftar kata**: {list}",
+    link_allowlist_line: "**Allowlist link**: {list}",
+    footer_note: "-# Member dengan permission Manage Messages selalu dikecualikan. Aktifkan log event `Automod actions` untuk melihat aksinya.",
+    invite_enabled: "Anti-invite sekarang ✅ aktif.",
+    invite_disabled: "Anti-invite sekarang ❌ nonaktif.",
+    mentions_set: "Pesan dengan **{limit}+** mention akan ditindak.",
+    mentions_disabled: "Filter spam mention dinonaktifkan.",
+    word_empty: "Masukkan kata yang tidak kosong ya.",
+    word_exists: "Kata itu sudah ada di daftar terlarang.",
+    word_list_full: "Daftar kata sudah penuh (maksimal {max}).",
+    word_added: "`{word}` ditambahkan ke daftar kata terlarang.",
+    word_removed: "Kata dihapus dari daftar terlarang.",
+    word_not_found: "Kata itu tidak ada di daftar terlarang.",
+    links_enabled: "Filter link sekarang ✅ aktif.",
+    links_disabled: "Filter link sekarang ❌ nonaktif.",
+    links_empty_allowlist_note: "-# Allowlist masih kosong — semua link bakal ditindak. Tambahkan domain lewat `/automod link-allow`.",
+    domain_invalid: "Itu kayaknya bukan domain yang valid (contoh: `youtube.com`).",
+    domain_exists: "Domain itu sudah diizinkan.",
+    allowlist_full: "Allowlist sudah penuh (maksimal {max}).",
+    domain_added: "Link ke `{domain}` (termasuk subdomain) sekarang diizinkan.",
+    domain_removed: "Domain dihapus dari allowlist.",
+    domain_not_found: "Domain itu tidak ada di allowlist.",
+    spam_enabled: "Deteksi spam ✅ aktif: **{max}** pesan per **{interval} detik**, duplikat x**{duplicates}**.",
+    spam_disabled: "Deteksi spam ❌ nonaktif.",
+    channel_exempted: "<#{channel}> sekarang dikecualikan dari automod.",
+    channel_unexempted: "<#{channel}> tidak lagi dikecualikan dari automod.",
+    channel_already_exempt: "Channel itu sudah dikecualikan.",
+    channel_not_exempt: "Channel itu memang tidak dikecualikan.",
+    role_exempted: "<@&{role}> sekarang dikecualikan dari automod.",
+    role_unexempted: "<@&{role}> tidak lagi dikecualikan dari automod.",
+    role_already_exempt: "Role itu sudah dikecualikan.",
+    role_not_exempt: "Role itu memang tidak dikecualikan.",
+    action_set: "**{rule}** sekarang memicu: **{action}**.",
+    timeout_duration_set: "Timeout automod/eskalasi sekarang berdurasi **{minutes} menit**.",
+    escalation_set_timeout: "**{count}** peringatan → timeout",
+    escalation_set_kick: "**{count}** peringatan → kick",
+    escalation_set_ban: "**{count}** peringatan → ban",
+    escalation_ladder: "Tangga eskalasi: {parts}",
+    escalation_disabled: "Eskalasi dinonaktifkan.",
+  },
+});
 
 const RULE_LABELS = {
   anti_invite: "Anti-invite",
@@ -18,71 +150,90 @@ const RULE_LABELS = {
   spam: "Message spam",
 };
 
+function ruleLabel(t, rule) {
+  return RULE_LABELS[rule] ? t(`automod.rule_${rule}`) : rule;
+}
+
 function statusLine(label, enabled, detail = null) {
   return `${enabled ? "✅" : "❌"} ${label}${detail ? ` — ${detail}` : ""}`;
 }
 
-function formatList(values, formatter = (v) => `\`${v}\``) {
-  return values.length > 0 ? values.map(formatter).join(", ") : "(none)";
+function formatList(t, values, formatter = (v) => `\`${v}\``) {
+  return values.length > 0 ? values.map(formatter).join(", ") : t("automod.none");
 }
 
-function configCard(config) {
+function configCard(t, config) {
   const escalationParts = [];
-  if (config.escalation.timeoutAt > 0) escalationParts.push(`${config.escalation.timeoutAt} warns → timeout`);
-  if (config.escalation.kickAt > 0) escalationParts.push(`${config.escalation.kickAt} warns → kick`);
-  if (config.escalation.banAt > 0) escalationParts.push(`${config.escalation.banAt} warns → ban`);
+  if (config.escalation.timeoutAt > 0) escalationParts.push(t("automod.escalation_step_timeout", { count: config.escalation.timeoutAt }));
+  if (config.escalation.kickAt > 0) escalationParts.push(t("automod.escalation_step_kick", { count: config.escalation.kickAt }));
+  if (config.escalation.banAt > 0) escalationParts.push(t("automod.escalation_step_ban", { count: config.escalation.banAt }));
 
   return createCard({
     color: 0x3498db,
-    title: "Automod",
+    title: t("automod.title"),
     body: [
-      "**Rules**",
-      statusLine("Anti-invite", config.antiInvite, `action: ${config.actions.anti_invite}`),
+      t("automod.rules_header"),
+      statusLine(t("automod.rule_anti_invite"), config.antiInvite, t("automod.detail_action", { action: config.actions.anti_invite })),
       statusLine(
-        "Banned words",
+        t("automod.rule_banned_word"),
         config.bannedWords.length > 0,
-        `${config.bannedWords.length}/${MAX_BANNED_WORDS}, action: ${config.actions.banned_word}`,
+        t("automod.detail_banned_words", {
+          count: config.bannedWords.length,
+          max: MAX_BANNED_WORDS,
+          action: config.actions.banned_word,
+        }),
       ),
       statusLine(
-        "Mention spam",
+        t("automod.rule_mention_spam"),
         config.mentionLimit > 0,
-        config.mentionLimit > 0 ? `limit ${config.mentionLimit}, action: ${config.actions.mention_spam}` : null,
+        config.mentionLimit > 0
+          ? t("automod.detail_mentions", { limit: config.mentionLimit, action: config.actions.mention_spam })
+          : null,
       ),
       statusLine(
-        "Link filter",
+        t("automod.rule_link_filter"),
         config.linkFilter,
-        config.linkFilter ? `allowlist ${config.linkAllowlist.length} domain(s), action: ${config.actions.link_filter}` : null,
+        config.linkFilter
+          ? t("automod.detail_links", { count: config.linkAllowlist.length, action: config.actions.link_filter })
+          : null,
       ),
       statusLine(
-        "Message spam",
+        t("automod.rule_spam"),
         config.spamEnabled,
         config.spamEnabled
-          ? `${config.spamMaxMessages} msg/${config.spamIntervalSeconds}s, dup x${config.spamDuplicateLimit}, action: ${config.actions.spam}`
+          ? t("automod.detail_spam", {
+              max: config.spamMaxMessages,
+              interval: config.spamIntervalSeconds,
+              duplicates: config.spamDuplicateLimit,
+              action: config.actions.spam,
+            })
           : null,
       ),
       "",
-      "**Punishment**",
-      `- Timeout duration: **${config.timeoutMinutes}m**`,
-      `- Escalation: ${escalationParts.length > 0 ? escalationParts.join(" · ") : "(off)"}`,
+      t("automod.punishment_header"),
+      t("automod.timeout_duration_line", { minutes: config.timeoutMinutes }),
+      t("automod.escalation_line", {
+        parts: escalationParts.length > 0 ? escalationParts.join(" · ") : t("automod.escalation_off"),
+      }),
       "",
-      "**Exemptions**",
-      `- Channels: ${formatList(config.exemptChannels, (id) => `<#${id}>`)}`,
-      `- Roles: ${formatList(config.exemptRoles, (id) => `<@&${id}>`)}`,
+      t("automod.exemptions_header"),
+      t("automod.exempt_channels_line", { list: formatList(t, config.exemptChannels, (id) => `<#${id}>`) }),
+      t("automod.exempt_roles_line", { list: formatList(t, config.exemptRoles, (id) => `<@&${id}>`) }),
       "",
-      `**Word list**: ${formatList(config.bannedWords)}`,
-      `**Link allowlist**: ${formatList(config.linkAllowlist)}`,
+      t("automod.word_list_line", { list: formatList(t, config.bannedWords) }),
+      t("automod.link_allowlist_line", { list: formatList(t, config.linkAllowlist) }),
       "",
-      "-# Members with Manage Messages are always exempt. Enable the `Automod actions` log event to see actions.",
+      t("automod.footer_note"),
     ].join("\n"),
   });
 }
 
-function successCard(body) {
-  return createCard({ color: 0x57f287, title: "Automod", body });
+function successCard(t, body) {
+  return createCard({ color: 0x57f287, title: t("automod.title"), body });
 }
 
-function warningCard(body) {
-  return createCard({ color: 0xf1c40f, title: "Automod", body });
+function warningCard(t, body) {
+  return createCard({ color: 0xf1c40f, title: t("automod.title"), body });
 }
 
 export default {
@@ -280,12 +431,13 @@ export default {
       throw new Error("Guild context is required for automod command.");
     }
 
+    const t = ctx.t;
     const guildId = ctx.guild ?? guild.id;
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === "show") {
       const config = await getAutomodConfig(guildId);
-      await replyCard(interaction, configCard(config), { ephemeral: true });
+      await replyCard(interaction, configCard(t, config), { ephemeral: true });
       return;
     }
 
@@ -294,7 +446,7 @@ export default {
       await updateAutomodConfig(guildId, (config) => {
         config.antiInvite = enabled;
       });
-      await replyCard(interaction, successCard(`Anti-invite is now ${enabled ? "✅ enabled" : "❌ disabled"}.`), {
+      await replyCard(interaction, successCard(t, t(enabled ? "automod.invite_enabled" : "automod.invite_disabled")), {
         ephemeral: true,
       });
       return;
@@ -307,7 +459,7 @@ export default {
       });
       await replyCard(
         interaction,
-        successCard(limit > 0 ? `Messages with **${limit}+** mentions will be actioned.` : "Mention spam filter disabled."),
+        successCard(t, limit > 0 ? t("automod.mentions_set", { limit }) : t("automod.mentions_disabled")),
         { ephemeral: true },
       );
       return;
@@ -324,10 +476,10 @@ export default {
       });
 
       const responses = {
-        empty: warningCard("Please provide a non-empty word."),
-        exists: warningCard("That word is already banned."),
-        full: warningCard(`Word list is full (max ${MAX_BANNED_WORDS}).`),
-        added: successCard(`Added \`${word}\` to the banned word list.`),
+        empty: warningCard(t, t("automod.word_empty")),
+        exists: warningCard(t, t("automod.word_exists")),
+        full: warningCard(t, t("automod.word_list_full", { max: MAX_BANNED_WORDS })),
+        added: successCard(t, t("automod.word_added", { word })),
       };
       await replyCard(interaction, responses[result], { ephemeral: true });
       return;
@@ -344,7 +496,7 @@ export default {
 
       await replyCard(
         interaction,
-        result ? successCard("Word removed from the banned list.") : warningCard("That word is not in the banned list."),
+        result ? successCard(t, t("automod.word_removed")) : warningCard(t, t("automod.word_not_found")),
         { ephemeral: true },
       );
       return;
@@ -357,10 +509,10 @@ export default {
       });
       await replyCard(
         interaction,
-        successCard([
-          `Link filter is now ${enabled ? "✅ enabled" : "❌ disabled"}.`,
+        successCard(t, [
+          t(enabled ? "automod.links_enabled" : "automod.links_disabled"),
           ...(enabled && config.linkAllowlist.length === 0
-            ? ["-# Allowlist is empty — every link will be actioned. Add domains with `/automod link-allow`."]
+            ? [t("automod.links_empty_allowlist_note")]
             : []),
         ].join("\n")),
         { ephemeral: true },
@@ -379,10 +531,10 @@ export default {
       });
 
       const responses = {
-        invalid: warningCard("That doesn't look like a valid domain (e.g. `youtube.com`)."),
-        exists: warningCard("That domain is already allowed."),
-        full: warningCard(`Allowlist is full (max ${MAX_ALLOWLIST_DOMAINS}).`),
-        added: successCard(`Links to \`${domain}\` (and subdomains) are now allowed.`),
+        invalid: warningCard(t, t("automod.domain_invalid")),
+        exists: warningCard(t, t("automod.domain_exists")),
+        full: warningCard(t, t("automod.allowlist_full", { max: MAX_ALLOWLIST_DOMAINS })),
+        added: successCard(t, t("automod.domain_added", { domain })),
       };
       await replyCard(interaction, responses[result], { ephemeral: true });
       return;
@@ -399,7 +551,7 @@ export default {
 
       await replyCard(
         interaction,
-        result ? successCard("Domain removed from the allowlist.") : warningCard("That domain is not in the allowlist."),
+        result ? successCard(t, t("automod.domain_removed")) : warningCard(t, t("automod.domain_not_found")),
         { ephemeral: true },
       );
       return;
@@ -421,9 +573,14 @@ export default {
       await replyCard(
         interaction,
         successCard(
+          t,
           enabled
-            ? `Spam detection ✅ enabled: **${config.spamMaxMessages}** msgs per **${config.spamIntervalSeconds}s**, duplicates x**${config.spamDuplicateLimit}**.`
-            : "Spam detection ❌ disabled.",
+            ? t("automod.spam_enabled", {
+                max: config.spamMaxMessages,
+                interval: config.spamIntervalSeconds,
+                duplicates: config.spamDuplicateLimit,
+              })
+            : t("automod.spam_disabled"),
         ),
         { ephemeral: true },
       );
@@ -445,8 +602,8 @@ export default {
       await replyCard(
         interaction,
         result
-          ? successCard(`<#${channel.id}> is ${adding ? "now exempt from" : "no longer exempt from"} automod.`)
-          : warningCard(adding ? "That channel is already exempt." : "That channel is not exempt."),
+          ? successCard(t, t(adding ? "automod.channel_exempted" : "automod.channel_unexempted", { channel: channel.id }))
+          : warningCard(t, t(adding ? "automod.channel_already_exempt" : "automod.channel_not_exempt")),
         { ephemeral: true },
       );
       return;
@@ -467,8 +624,8 @@ export default {
       await replyCard(
         interaction,
         result
-          ? successCard(`<@&${role.id}> is ${adding ? "now exempt from" : "no longer exempt from"} automod.`)
-          : warningCard(adding ? "That role is already exempt." : "That role is not exempt."),
+          ? successCard(t, t(adding ? "automod.role_exempted" : "automod.role_unexempted", { role: role.id }))
+          : warningCard(t, t(adding ? "automod.role_already_exempt" : "automod.role_not_exempt")),
         { ephemeral: true },
       );
       return;
@@ -482,7 +639,7 @@ export default {
       });
       await replyCard(
         interaction,
-        successCard(`**${RULE_LABELS[rule] ?? rule}** now triggers: **${action}**.`),
+        successCard(t, t("automod.action_set", { rule: ruleLabel(t, rule), action })),
         { ephemeral: true },
       );
       return;
@@ -493,7 +650,7 @@ export default {
       await updateAutomodConfig(guildId, (config) => {
         config.timeoutMinutes = minutes;
       });
-      await replyCard(interaction, successCard(`Automod/escalation timeouts now last **${minutes}m**.`), {
+      await replyCard(interaction, successCard(t, t("automod.timeout_duration_set", { minutes })), {
         ephemeral: true,
       });
       return;
@@ -511,13 +668,16 @@ export default {
       });
 
       const parts = [];
-      if (config.escalation.timeoutAt > 0) parts.push(`**${config.escalation.timeoutAt}** warns → timeout`);
-      if (config.escalation.kickAt > 0) parts.push(`**${config.escalation.kickAt}** warns → kick`);
-      if (config.escalation.banAt > 0) parts.push(`**${config.escalation.banAt}** warns → ban`);
+      if (config.escalation.timeoutAt > 0) parts.push(t("automod.escalation_set_timeout", { count: config.escalation.timeoutAt }));
+      if (config.escalation.kickAt > 0) parts.push(t("automod.escalation_set_kick", { count: config.escalation.kickAt }));
+      if (config.escalation.banAt > 0) parts.push(t("automod.escalation_set_ban", { count: config.escalation.banAt }));
 
       await replyCard(
         interaction,
-        successCard(parts.length > 0 ? `Escalation ladder: ${parts.join(" · ")}` : "Escalation disabled."),
+        successCard(
+          t,
+          parts.length > 0 ? t("automod.escalation_ladder", { parts: parts.join(" · ") }) : t("automod.escalation_disabled"),
+        ),
         { ephemeral: true },
       );
     }

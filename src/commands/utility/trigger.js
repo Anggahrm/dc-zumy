@@ -1,4 +1,5 @@
 import { ChannelType, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import {
   createTrigger,
   deleteTrigger,
@@ -11,12 +12,51 @@ import {
 } from "#services/triggers.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
-function successCard(body) {
-  return createCard({ color: 0x57f287, title: "Triggers", body });
+registerStrings("trigger", {
+  en: {
+    title: "Triggers",
+    reason_invalid_name: "Trigger names must be 1-32 chars: lowercase letters, numbers, `-`, `_`.",
+    reason_exists: "A trigger with that name already exists.",
+    reason_full: "Trigger limit reached (max {max}).",
+    reason_empty: "Match and response cannot be empty.",
+    create_failed: "Could not create the trigger.",
+    created: "Trigger `{name}` created.",
+    deleted: "Trigger deleted.",
+    not_found: "No trigger with that name.",
+    channel_added_only: "Trigger now also fires in <#{channel_id}> (and only there).",
+    channel_added: "Trigger now also fires in <#{channel_id}>.",
+    channel_removed_all: "Channel restriction removed — trigger now fires everywhere.",
+    channel_removed: "Trigger no longer fires in <#{channel_id}>.",
+    scope_all_channels: "all channels",
+    list_line: "- `{name}` — {type} `{match}` ({chance}%, {cooldown}s cd, {scope})",
+    list_empty: "No triggers yet. Create one with `/trigger add`.",
+  },
+  id: {
+    title: "Trigger",
+    reason_invalid_name: "Nama trigger harus 1-32 karakter: huruf kecil, angka, `-`, `_`.",
+    reason_exists: "Trigger dengan nama itu sudah ada.",
+    reason_full: "Batas trigger tercapai (maks {max}).",
+    reason_empty: "Match dan respons tidak boleh kosong.",
+    create_failed: "Tidak bisa membuat trigger itu.",
+    created: "Trigger `{name}` dibuat.",
+    deleted: "Trigger dihapus.",
+    not_found: "Tidak ada trigger dengan nama itu.",
+    channel_added_only: "Trigger sekarang juga aktif di <#{channel_id}> (dan hanya di sana).",
+    channel_added: "Trigger sekarang juga aktif di <#{channel_id}>.",
+    channel_removed_all: "Pembatasan channel dihapus — trigger sekarang aktif di mana saja.",
+    channel_removed: "Trigger tidak lagi aktif di <#{channel_id}>.",
+    scope_all_channels: "semua channel",
+    list_line: "- `{name}` — {type} `{match}` ({chance}%, {cooldown}s cd, {scope})",
+    list_empty: "Belum ada trigger. Buat satu dengan `/trigger add`.",
+  },
+});
+
+function successCard(t, body) {
+  return createCard({ color: 0x57f287, title: t("trigger.title"), body });
 }
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Triggers", body });
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("trigger.title"), body });
 }
 
 export default {
@@ -130,18 +170,18 @@ export default {
 
       if (!result.ok) {
         const reasons = {
-          invalid_name: "Trigger names must be 1-32 chars: lowercase letters, numbers, `-`, `_`.",
-          exists: "A trigger with that name already exists.",
-          full: `Trigger limit reached (max ${MAX_TRIGGERS}).`,
-          empty: "Match and response cannot be empty.",
+          invalid_name: ctx.t("trigger.reason_invalid_name"),
+          exists: ctx.t("trigger.reason_exists"),
+          full: ctx.t("trigger.reason_full", { max: MAX_TRIGGERS }),
+          empty: ctx.t("trigger.reason_empty"),
         };
-        await replyCard(interaction, errorCard(reasons[result.reason] ?? "Could not create the trigger."), {
+        await replyCard(interaction, errorCard(ctx.t, reasons[result.reason] ?? ctx.t("trigger.create_failed")), {
           ephemeral: true,
         });
         return;
       }
 
-      await replyCard(interaction, successCard(`Trigger \`${result.name}\` created.`), { ephemeral: true });
+      await replyCard(interaction, successCard(ctx.t, ctx.t("trigger.created", { name: result.name })), { ephemeral: true });
       return;
     }
 
@@ -149,7 +189,7 @@ export default {
       const removed = await deleteTrigger(guildId, interaction.options.getString("name", true));
       await replyCard(
         interaction,
-        removed ? successCard("Trigger deleted.") : errorCard("No trigger with that name."),
+        removed ? successCard(ctx.t, ctx.t("trigger.deleted")) : errorCard(ctx.t, ctx.t("trigger.not_found")),
         { ephemeral: true },
       );
       return;
@@ -160,18 +200,19 @@ export default {
       const result = await toggleTriggerChannel(guildId, interaction.options.getString("name", true), channel.id);
 
       if (!result) {
-        await replyCard(interaction, errorCard("No trigger with that name."), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("trigger.not_found")), { ephemeral: true });
         return;
       }
 
       await replyCard(
         interaction,
         successCard(
+          ctx.t,
           result.restricted
-            ? `Trigger now also fires in <#${channel.id}>${result.channels.length === 1 ? " (and only there)" : ""}.`
+            ? ctx.t(result.channels.length === 1 ? "trigger.channel_added_only" : "trigger.channel_added", { channel_id: channel.id })
             : result.channels.length === 0
-              ? "Channel restriction removed — trigger now fires everywhere."
-              : `Trigger no longer fires in <#${channel.id}>.`,
+              ? ctx.t("trigger.channel_removed_all")
+              : ctx.t("trigger.channel_removed", { channel_id: channel.id }),
         ),
         { ephemeral: true },
       );
@@ -186,18 +227,25 @@ export default {
         interaction,
         createCard({
           color: 0x3498db,
-          title: "Triggers",
+          title: ctx.t("trigger.title"),
           body: names.length > 0
             ? names
               .map((name) => {
                 const trigger = triggers[name];
                 const scope = trigger.channels.length > 0
                   ? trigger.channels.map((id) => `<#${id}>`).join(", ")
-                  : "all channels";
-                return `- \`${name}\` — ${trigger.type} \`${trigger.match.replaceAll("`", "'")}\` (${trigger.chance}%, ${trigger.cooldownSeconds}s cd, ${scope})`;
+                  : ctx.t("trigger.scope_all_channels");
+                return ctx.t("trigger.list_line", {
+                  name,
+                  type: trigger.type,
+                  match: trigger.match.replaceAll("`", "'"),
+                  chance: trigger.chance,
+                  cooldown: trigger.cooldownSeconds,
+                  scope,
+                });
               })
               .join("\n")
-            : "No triggers yet. Create one with `/trigger add`.",
+            : ctx.t("trigger.list_empty"),
         }),
         { ephemeral: true },
       );

@@ -1,6 +1,24 @@
 import { InteractionContextType, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { getInviteLeaderboard, getInviteStats } from "#services/invites.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("invites", {
+  en: {
+    show_title: "Invites",
+    show_body: "- Member: <@{user_id}>\n- Invites: **{net}**\n- Joined: **{joins}** · Left again: **{leaves}**\n-# Tracked since the bot joined; vanity URLs and app-directory joins can't be attributed.",
+    leaderboard_title: "Invite leaderboard",
+    leaderboard_empty: "No tracked invites yet. Counts appear as members join through tracked invites.",
+    leaderboard_line: "**#{rank}** <@{user_id}> — **{net}** ({joins} joined, {leaves} left)",
+  },
+  id: {
+    show_title: "Invites",
+    show_body: "- Member: <@{user_id}>\n- Invite: **{net}**\n- Masuk: **{joins}** · Keluar lagi: **{leaves}**\n-# Dihitung sejak bot bergabung; join lewat vanity URL dan app directory tidak bisa dilacak.",
+    leaderboard_title: "Leaderboard invite",
+    leaderboard_empty: "Belum ada invite yang terlacak. Hitungan muncul saat member bergabung lewat invite yang terlacak.",
+    leaderboard_line: "**#{rank}** <@{user_id}> — **{net}** ({joins} masuk, {leaves} keluar)",
+  },
+});
 
 export default {
   category: "utility",
@@ -38,13 +56,13 @@ export default {
         interaction,
         createCard({
           color: 0x5865f2,
-          title: "Invites",
-          body: [
-            `- Member: <@${target.id}>`,
-            `- Invites: **${stats.net}**`,
-            `- Joined: **${stats.joins}** · Left again: **${stats.leaves}**`,
-            "-# Tracked since the bot joined; vanity URLs and app-directory joins can't be attributed.",
-          ].join("\n"),
+          title: ctx.t("invites.show_title"),
+          body: ctx.t("invites.show_body", {
+            user_id: target.id,
+            net: stats.net,
+            joins: stats.joins,
+            leaves: stats.leaves,
+          }),
         }),
       );
       return;
@@ -57,8 +75,8 @@ export default {
           interaction,
           createCard({
             color: 0x3498db,
-            title: "Invite leaderboard",
-            body: "No tracked invites yet. Counts appear as members join through tracked invites.",
+            title: ctx.t("invites.leaderboard_title"),
+            body: ctx.t("invites.leaderboard_empty"),
           }),
           { ephemeral: true },
         );
@@ -66,11 +84,17 @@ export default {
       }
 
       const lines = top.map((entry, index) =>
-        `**#${index + 1}** <@${entry.userId}> — **${entry.net}** (${entry.joins} joined, ${entry.leaves} left)`);
+        ctx.t("invites.leaderboard_line", {
+          rank: index + 1,
+          user_id: entry.userId,
+          net: entry.net,
+          joins: entry.joins,
+          leaves: entry.leaves,
+        }));
 
       await replyCard(
         interaction,
-        createCard({ color: 0x5865f2, title: "Invite leaderboard", body: lines.join("\n") }),
+        createCard({ color: 0x5865f2, title: ctx.t("invites.leaderboard_title"), body: lines.join("\n") }),
       );
     }
   },

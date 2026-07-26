@@ -7,6 +7,7 @@ import {
   upcomingBirthdays,
   updateBirthdaysConfig,
 } from "#services/birthdays.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
 const MONTH_NAMES = [
@@ -14,12 +15,79 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-function successCard(body) {
-  return createCard({ color: 0x57f287, title: "Birthdays", body });
+registerStrings("birthday", {
+  en: {
+    title: "Birthdays",
+    month_1: "January",
+    month_2: "February",
+    month_3: "March",
+    month_4: "April",
+    month_5: "May",
+    month_6: "June",
+    month_7: "July",
+    month_8: "August",
+    month_9: "September",
+    month_10: "October",
+    month_11: "November",
+    month_12: "December",
+    invalid_date: "That date doesn't exist. Double-check the day and month.",
+    list_full: "This server's birthday list is full.",
+    saved: "Your birthday is saved: **{day} {month}** 🎂",
+    no_channel_note: "-# Note: no announcement channel is set yet (`/birthday channel`).",
+    removed: "Your birthday was removed.",
+    not_saved: "You have no birthday saved here.",
+    none_yet: "No birthdays saved yet. Be the first with `/birthday set`!",
+    upcoming_title: "Upcoming birthdays",
+    upcoming_line: "- <@{user_id}> — **{day} {month}** (<t:{timestamp}:R>)",
+    need_manage_guild: "You need **Manage Server** for this subcommand.",
+    channel_set: "Birthdays will be announced in <#{channel_id}> (daily at 00:00 UTC).",
+    channel_disabled: "Birthday announcements disabled.",
+    role_invalid: "That role can't be used (managed, @everyone, or above my highest role).",
+    role_set: "Members get <@&{role_id}> on their birthday (removed the day after).",
+    role_disabled: "Birthday role disabled.",
+    template_updated: "Template updated: {template}",
+    template_reset: "Template reset to default.",
+  },
+  id: {
+    title: "Ulang Tahun",
+    month_1: "Januari",
+    month_2: "Februari",
+    month_3: "Maret",
+    month_4: "April",
+    month_5: "Mei",
+    month_6: "Juni",
+    month_7: "Juli",
+    month_8: "Agustus",
+    month_9: "September",
+    month_10: "Oktober",
+    month_11: "November",
+    month_12: "Desember",
+    invalid_date: "Tanggal itu tidak ada. Cek lagi hari dan bulannya.",
+    list_full: "Daftar ulang tahun server ini sudah penuh.",
+    saved: "Ulang tahunmu tersimpan: **{day} {month}** 🎂",
+    no_channel_note: "-# Catatan: belum ada channel pengumuman yang diatur (`/birthday channel`).",
+    removed: "Ulang tahunmu dihapus.",
+    not_saved: "Kamu belum menyimpan ulang tahun di sini.",
+    none_yet: "Belum ada ulang tahun yang tersimpan. Jadilah yang pertama dengan `/birthday set`!",
+    upcoming_title: "Ulang tahun terdekat",
+    upcoming_line: "- <@{user_id}> — **{day} {month}** (<t:{timestamp}:R>)",
+    need_manage_guild: "Kamu butuh permission **Manage Server** untuk subcommand ini.",
+    channel_set: "Ulang tahun akan diumumkan di <#{channel_id}> (tiap hari jam 00:00 UTC).",
+    channel_disabled: "Pengumuman ulang tahun dimatikan.",
+    role_invalid: "Role itu tidak bisa dipakai (managed, @everyone, atau di atas role tertinggiku).",
+    role_set: "Member dapat <@&{role_id}> saat ulang tahun (dilepas keesokan harinya).",
+    role_disabled: "Role ulang tahun dimatikan.",
+    template_updated: "Template diperbarui: {template}",
+    template_reset: "Template dikembalikan ke default.",
+  },
+});
+
+function successCard(t, body) {
+  return createCard({ color: 0x57f287, title: t("birthday.title"), body });
 }
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Birthdays", body });
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("birthday.title"), body });
 }
 
 function requireManageGuild(interaction) {
@@ -99,7 +167,7 @@ export default {
       const month = interaction.options.getInteger("month", true);
 
       if (!isValidBirthday(day, month)) {
-        await replyCard(interaction, errorCard("That date doesn't exist. Double-check the day and month."), {
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("birthday.invalid_date")), {
           ephemeral: true,
         });
         return;
@@ -107,16 +175,16 @@ export default {
 
       const ok = await setBirthday(guildId, interaction.user.id, day, month);
       if (!ok) {
-        await replyCard(interaction, errorCard("This server's birthday list is full."), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("birthday.list_full")), { ephemeral: true });
         return;
       }
 
       const { channelId } = await getBirthdaysConfig(guildId);
       await replyCard(
         interaction,
-        successCard([
-          `Your birthday is saved: **${day} ${MONTH_NAMES[month - 1]}** 🎂`,
-          ...(channelId ? [] : ["-# Note: no announcement channel is set yet (`/birthday channel`)."]),
+        successCard(ctx.t, [
+          ctx.t("birthday.saved", { day, month: ctx.t(`birthday.month_${month}`) }),
+          ...(channelId ? [] : [ctx.t("birthday.no_channel_note")]),
         ].join("\n")),
         { ephemeral: true },
       );
@@ -127,7 +195,7 @@ export default {
       const removed = await removeBirthday(guildId, interaction.user.id);
       await replyCard(
         interaction,
-        removed ? successCard("Your birthday was removed.") : errorCard("You have no birthday saved here."),
+        removed ? successCard(ctx.t, ctx.t("birthday.removed")) : errorCard(ctx.t, ctx.t("birthday.not_saved")),
         { ephemeral: true },
       );
       return;
@@ -142,8 +210,8 @@ export default {
           interaction,
           createCard({
             color: 0x3498db,
-            title: "Birthdays",
-            body: "No birthdays saved yet. Be the first with `/birthday set`!",
+            title: ctx.t("birthday.title"),
+            body: ctx.t("birthday.none_yet"),
           }),
           { ephemeral: true },
         );
@@ -151,18 +219,23 @@ export default {
       }
 
       const lines = upcoming.map(({ userId, entry, next }) =>
-        `- <@${userId}> — **${entry.day} ${MONTH_NAMES[entry.month - 1]}** (<t:${Math.floor(next / 1000)}:R>)`);
+        ctx.t("birthday.upcoming_line", {
+          user_id: userId,
+          day: entry.day,
+          month: ctx.t(`birthday.month_${entry.month}`),
+          timestamp: Math.floor(next / 1000),
+        }));
 
       await replyCard(
         interaction,
-        createCard({ color: 0x3498db, title: "Upcoming birthdays", body: lines.join("\n") }),
+        createCard({ color: 0x3498db, title: ctx.t("birthday.upcoming_title"), body: lines.join("\n") }),
         { ephemeral: true },
       );
       return;
     }
 
     if (!requireManageGuild(interaction)) {
-      await replyCard(interaction, errorCard("You need **Manage Server** for this subcommand."), { ephemeral: true });
+      await replyCard(interaction, errorCard(ctx.t, ctx.t("birthday.need_manage_guild")), { ephemeral: true });
       return;
     }
 
@@ -173,9 +246,9 @@ export default {
       });
       await replyCard(
         interaction,
-        successCard(channel
-          ? `Birthdays will be announced in <#${channel.id}> (daily at 00:00 UTC).`
-          : "Birthday announcements disabled."),
+        successCard(ctx.t, channel
+          ? ctx.t("birthday.channel_set", { channel_id: channel.id })
+          : ctx.t("birthday.channel_disabled")),
         { ephemeral: true },
       );
       return;
@@ -187,7 +260,7 @@ export default {
       if (role && (role.id === guild.id || role.managed || (me && role.position >= me.roles.highest.position))) {
         await replyCard(
           interaction,
-          errorCard("That role can't be used (managed, @everyone, or above my highest role)."),
+          errorCard(ctx.t, ctx.t("birthday.role_invalid")),
           { ephemeral: true },
         );
         return;
@@ -198,9 +271,9 @@ export default {
       });
       await replyCard(
         interaction,
-        successCard(role
-          ? `Members get <@&${role.id}> on their birthday (removed the day after).`
-          : "Birthday role disabled."),
+        successCard(ctx.t, role
+          ? ctx.t("birthday.role_set", { role_id: role.id })
+          : ctx.t("birthday.role_disabled")),
         { ephemeral: true },
       );
       return;
@@ -213,7 +286,7 @@ export default {
       });
       await replyCard(
         interaction,
-        successCard(template ? `Template updated: ${template}` : "Template reset to default."),
+        successCard(ctx.t, template ? ctx.t("birthday.template_updated", { template }) : ctx.t("birthday.template_reset")),
         { ephemeral: true },
       );
     }

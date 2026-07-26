@@ -1,19 +1,46 @@
 import { ChannelType, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import {
   buildSuggestionCard,
   getSuggestion,
   setSuggestionsChannel,
-  SUGGESTION_STATUS,
   updateSuggestion,
 } from "#services/suggestions.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
-function successCard(body) {
-  return createCard({ color: 0x57f287, title: "Suggestions", body });
+registerStrings("suggestion", {
+  en: {
+    title: "Suggestions",
+    channel_set: "Suggestions channel set to <#{channel_id}>. Members can now use `/suggest`.",
+    disabled: "Suggestions disabled.",
+    not_found: "Suggestion #{number} was not found.",
+    status_approved: "Approved",
+    status_denied: "Denied",
+    status_considered: "Under consideration",
+    marked: "Suggestion **#{number}** marked as **{label}**.",
+    note_line: "- Note: {note}",
+    card_update_failed: "- Note: the original card could not be updated (message missing?).",
+  },
+  id: {
+    title: "Saran",
+    channel_set: "Channel saran diatur ke <#{channel_id}>. Member sekarang bisa pakai `/suggest`.",
+    disabled: "Fitur saran dimatikan.",
+    not_found: "Saran #{number} tidak ditemukan.",
+    status_approved: "Disetujui",
+    status_denied: "Ditolak",
+    status_considered: "Dalam pertimbangan",
+    marked: "Saran **#{number}** ditandai sebagai **{label}**.",
+    note_line: "- Catatan: {note}",
+    card_update_failed: "- Catatan: kartu aslinya tidak bisa diperbarui (pesannya hilang?).",
+  },
+});
+
+function successCard(t, body) {
+  return createCard({ color: 0x57f287, title: t("suggestion.title"), body });
 }
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Suggestions", body });
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("suggestion.title"), body });
 }
 
 function makeNumberOption(option) {
@@ -99,9 +126,9 @@ export default {
       await setSuggestionsChannel(guildId, channel?.id ?? null);
       await replyCard(
         interaction,
-        successCard(channel
-          ? `Suggestions channel set to <#${channel.id}>. Members can now use \`/suggest\`.`
-          : "Suggestions disabled."),
+        successCard(ctx.t, channel
+          ? ctx.t("suggestion.channel_set", { channel_id: channel.id })
+          : ctx.t("suggestion.disabled")),
         { ephemeral: true },
       );
       return;
@@ -118,7 +145,7 @@ export default {
 
     const existing = await getSuggestion(guildId, number);
     if (!existing) {
-      await replyCard(interaction, errorCard(`Suggestion #${number} was not found.`), { ephemeral: true });
+      await replyCard(interaction, errorCard(ctx.t, ctx.t("suggestion.not_found", { number })), { ephemeral: true });
       return;
     }
 
@@ -128,14 +155,14 @@ export default {
     });
 
     const refreshed = await refreshSuggestionMessage(guild, entry);
-    const label = SUGGESTION_STATUS[status].label;
+    const label = ctx.t(`suggestion.status_${status}`);
 
     await replyCard(
       interaction,
-      successCard([
-        `Suggestion **#${number}** marked as **${label}**.`,
-        ...(note ? [`- Note: ${note}`] : []),
-        ...(refreshed ? [] : ["- Note: the original card could not be updated (message missing?)."]),
+      successCard(ctx.t, [
+        ctx.t("suggestion.marked", { number, label }),
+        ...(note ? [ctx.t("suggestion.note_line", { note })] : []),
+        ...(refreshed ? [] : [ctx.t("suggestion.card_update_failed")]),
       ].join("\n")),
       { ephemeral: true },
     );

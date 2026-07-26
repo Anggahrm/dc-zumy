@@ -1,43 +1,145 @@
 import { ChannelType, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { getLevelsConfig, MAX_LEVEL_REWARDS, setMemberXp, updateLevelsConfig } from "#services/levels.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
-function successCard(body) {
-  return createCard({ color: 0x57f287, title: "Leveling", body });
+registerStrings("levelconfig", {
+  en: {
+    title: "Leveling",
+    none: "(none)",
+    default_placeholder: "(default)",
+    current_settings: "**Current settings**",
+    status_enabled: "✅ Leveling enabled",
+    status_disabled: "❌ Leveling disabled",
+    xp_per_message_line: "- XP per message: **{min}-{max}** (multiplier x{multiplier})",
+    cooldown_line: "- Cooldown: **{seconds}s**",
+    voice_on_line: "- Voice XP: **{perMinute}/min** (2+ members, not deafened)",
+    voice_off_line: "- Voice XP: off",
+    announce_in_channel_line: "- Level-up announce: in <#{channel}>",
+    announce_same_channel_line: "- Level-up announce: in the same channel",
+    announce_off_line: "- Level-up announce: off",
+    levelup_message_line: "- Level-up message: {message}",
+    reward_mode_stack_line: "- Reward mode: **stack**",
+    reward_mode_replace_line: "- Reward mode: **replace**",
+    no_xp_channels_header: "**No-XP channels**",
+    no_xp_roles_header: "**No-XP roles**",
+    role_rewards_header: "**Role rewards** ({count}/{max})",
+    reward_row: "- Level {level} → <@&{role}>",
+    rewards_none_row: "- (none)",
+    toggle_enabled: "Leveling is now ✅ enabled.",
+    toggle_disabled: "Leveling is now ❌ disabled.",
+    rate_updated: "XP rate: **{min}-{max}** per message, cooldown **{seconds}s**, multiplier **x{multiplier}**.",
+    announce_enabled_line: "Level-up announcements ✅ enabled.",
+    announce_disabled_line: "Level-up announcements ❌ disabled.",
+    announce_where_channel_line: "- Where: <#{channel}>",
+    announce_where_same_line: "- Where: same channel as the message",
+    announce_message_line: "- Message: {message}",
+    channel_no_xp: "<#{channel}> no longer gives XP.",
+    channel_gives_xp: "<#{channel}> now gives XP.",
+    role_no_xp: "Members with <@&{role}> no longer gain XP.",
+    role_gains_xp: "Members with <@&{role}> now gain XP.",
+    role_unusable: "That role can't be used (managed, @everyone, or above my highest role).",
+    rewards_full: "Reward list is full (max {max}).",
+    reward_added: "Level **{level}** now rewards <@&{role}>.",
+    reward_removed: "Reward for level **{level}** removed.",
+    reward_not_found: "No reward at that level.",
+    stack_on: "Rewards now **stack** (members keep all earned roles).",
+    stack_off: "Rewards now **replace** (only the highest earned role is kept).",
+    voice_enabled: "Voice XP ✅ enabled: **{perMinute}/min** for channels with 2+ members (deafened members earn nothing).",
+    voice_disabled: "Voice XP ❌ disabled.",
+    xp_set: "**{user}** set to **{xp}** XP (level **{level}**).",
+  },
+  id: {
+    title: "Leveling",
+    none: "(kosong)",
+    default_placeholder: "(bawaan)",
+    current_settings: "**Pengaturan saat ini**",
+    status_enabled: "✅ Leveling aktif",
+    status_disabled: "❌ Leveling nonaktif",
+    xp_per_message_line: "- XP per pesan: **{min}-{max}** (multiplier x{multiplier})",
+    cooldown_line: "- Cooldown: **{seconds} detik**",
+    voice_on_line: "- Voice XP: **{perMinute}/menit** (2+ member, tidak deafen)",
+    voice_off_line: "- Voice XP: mati",
+    announce_in_channel_line: "- Pengumuman level-up: di <#{channel}>",
+    announce_same_channel_line: "- Pengumuman level-up: di channel yang sama",
+    announce_off_line: "- Pengumuman level-up: mati",
+    levelup_message_line: "- Pesan level-up: {message}",
+    reward_mode_stack_line: "- Mode reward: **stack**",
+    reward_mode_replace_line: "- Mode reward: **replace**",
+    no_xp_channels_header: "**Channel tanpa XP**",
+    no_xp_roles_header: "**Role tanpa XP**",
+    role_rewards_header: "**Role reward** ({count}/{max})",
+    reward_row: "- Level {level} → <@&{role}>",
+    rewards_none_row: "- (kosong)",
+    toggle_enabled: "Leveling sekarang ✅ aktif.",
+    toggle_disabled: "Leveling sekarang ❌ nonaktif.",
+    rate_updated: "Rate XP: **{min}-{max}** per pesan, cooldown **{seconds} detik**, multiplier **x{multiplier}**.",
+    announce_enabled_line: "Pengumuman level-up ✅ aktif.",
+    announce_disabled_line: "Pengumuman level-up ❌ nonaktif.",
+    announce_where_channel_line: "- Di mana: <#{channel}>",
+    announce_where_same_line: "- Di mana: channel yang sama dengan pesannya",
+    announce_message_line: "- Pesan: {message}",
+    channel_no_xp: "<#{channel}> tidak lagi memberi XP.",
+    channel_gives_xp: "<#{channel}> sekarang memberi XP.",
+    role_no_xp: "Member dengan <@&{role}> tidak lagi dapat XP.",
+    role_gains_xp: "Member dengan <@&{role}> sekarang dapat XP.",
+    role_unusable: "Role itu tidak bisa dipakai (managed, @everyone, atau di atas role tertinggiku).",
+    rewards_full: "Daftar reward sudah penuh (maksimal {max}).",
+    reward_added: "Level **{level}** sekarang memberi reward <@&{role}>.",
+    reward_removed: "Reward untuk level **{level}** dihapus.",
+    reward_not_found: "Tidak ada reward di level itu.",
+    stack_on: "Reward sekarang **stack** (member menyimpan semua role yang didapat).",
+    stack_off: "Reward sekarang **replace** (hanya role tertinggi yang disimpan).",
+    voice_enabled: "Voice XP ✅ aktif: **{perMinute}/menit** untuk channel dengan 2+ member (member yang deafen tidak dapat apa-apa).",
+    voice_disabled: "Voice XP ❌ nonaktif.",
+    xp_set: "**{user}** diset ke **{xp}** XP (level **{level}**).",
+  },
+});
+
+function successCard(t, body) {
+  return createCard({ color: 0x57f287, title: t("levelconfig.title"), body });
 }
 
-function warningCard(body) {
-  return createCard({ color: 0xf1c40f, title: "Leveling", body });
+function warningCard(t, body) {
+  return createCard({ color: 0xf1c40f, title: t("levelconfig.title"), body });
 }
 
-function formatList(values, formatter) {
-  return values.length > 0 ? values.map(formatter).join(", ") : "(none)";
+function formatList(values, formatter, noneText) {
+  return values.length > 0 ? values.map(formatter).join(", ") : noneText;
 }
 
-function configCard(config) {
+function configCard(t, config) {
   const rewards = config.rewards.length > 0
-    ? config.rewards.map((reward) => `- Level ${reward.level} → <@&${reward.roleId}>`).join("\n")
-    : "- (none)";
+    ? config.rewards.map((reward) => t("levelconfig.reward_row", { level: reward.level, role: reward.roleId })).join("\n")
+    : t("levelconfig.rewards_none_row");
+
+  const announceLine = config.announce
+    ? (config.announceChannelId
+      ? t("levelconfig.announce_in_channel_line", { channel: config.announceChannelId })
+      : t("levelconfig.announce_same_channel_line"))
+    : t("levelconfig.announce_off_line");
 
   return createCard({
     color: 0x3498db,
-    title: "Leveling",
+    title: t("levelconfig.title"),
     body: [
-      "**Current settings**",
-      `${config.enabled ? "✅" : "❌"} Leveling ${config.enabled ? "enabled" : "disabled"}`,
-      `- XP per message: **${config.xpMin}-${config.xpMax}** (multiplier x${config.multiplier})`,
-      `- Cooldown: **${config.cooldownSeconds}s**`,
-      `- Voice XP: ${config.voiceXpEnabled ? `**${config.voiceXpPerMinute}/min** (2+ members, not deafened)` : "off"}`,
-      `- Level-up announce: ${config.announce ? (config.announceChannelId ? `in <#${config.announceChannelId}>` : "in the same channel") : "off"}`,
-      `- Level-up message: ${config.levelUpMessage ?? "(default)"}`,
-      `- Reward mode: **${config.stackRewards ? "stack" : "replace"}**`,
+      t("levelconfig.current_settings"),
+      config.enabled ? t("levelconfig.status_enabled") : t("levelconfig.status_disabled"),
+      t("levelconfig.xp_per_message_line", { min: config.xpMin, max: config.xpMax, multiplier: config.multiplier }),
+      t("levelconfig.cooldown_line", { seconds: config.cooldownSeconds }),
+      config.voiceXpEnabled
+        ? t("levelconfig.voice_on_line", { perMinute: config.voiceXpPerMinute })
+        : t("levelconfig.voice_off_line"),
+      announceLine,
+      t("levelconfig.levelup_message_line", { message: config.levelUpMessage ?? t("levelconfig.default_placeholder") }),
+      config.stackRewards ? t("levelconfig.reward_mode_stack_line") : t("levelconfig.reward_mode_replace_line"),
       "",
-      "**No-XP channels**",
-      `- ${formatList(config.noXpChannels, (id) => `<#${id}>`)}`,
-      "**No-XP roles**",
-      `- ${formatList(config.noXpRoles, (id) => `<@&${id}>`)}`,
+      t("levelconfig.no_xp_channels_header"),
+      `- ${formatList(config.noXpChannels, (id) => `<#${id}>`, t("levelconfig.none"))}`,
+      t("levelconfig.no_xp_roles_header"),
+      `- ${formatList(config.noXpRoles, (id) => `<@&${id}>`, t("levelconfig.none"))}`,
       "",
-      `**Role rewards** (${config.rewards.length}/${MAX_LEVEL_REWARDS})`,
+      t("levelconfig.role_rewards_header", { count: config.rewards.length, max: MAX_LEVEL_REWARDS }),
       rewards,
     ].join("\n"),
   });
@@ -180,10 +282,11 @@ export default {
 
     const guildId = ctx.guild ?? guild.id;
     const subcommand = interaction.options.getSubcommand();
+    const t = ctx.t;
 
     if (subcommand === "show") {
       const config = await getLevelsConfig(guildId);
-      await replyCard(interaction, configCard(config), { ephemeral: true });
+      await replyCard(interaction, configCard(t, config), { ephemeral: true });
       return;
     }
 
@@ -194,7 +297,7 @@ export default {
       });
       await replyCard(
         interaction,
-        successCard(`Leveling is now ${enabled ? "✅ enabled" : "❌ disabled"}.`),
+        successCard(t, enabled ? t("levelconfig.toggle_enabled") : t("levelconfig.toggle_disabled")),
         { ephemeral: true },
       );
       return;
@@ -216,7 +319,13 @@ export default {
       await replyCard(
         interaction,
         successCard(
-          `XP rate: **${config.xpMin}-${config.xpMax}** per message, cooldown **${config.cooldownSeconds}s**, multiplier **x${config.multiplier}**.`,
+          t,
+          t("levelconfig.rate_updated", {
+            min: config.xpMin,
+            max: config.xpMax,
+            seconds: config.cooldownSeconds,
+            multiplier: config.multiplier,
+          }),
         ),
         { ephemeral: true },
       );
@@ -236,12 +345,14 @@ export default {
 
       await replyCard(
         interaction,
-        successCard([
-          `Level-up announcements ${config.announce ? "✅ enabled" : "❌ disabled"}.`,
+        successCard(t, [
+          config.announce ? t("levelconfig.announce_enabled_line") : t("levelconfig.announce_disabled_line"),
           ...(config.announce
             ? [
-              `- Where: ${config.announceChannelId ? `<#${config.announceChannelId}>` : "same channel as the message"}`,
-              `- Message: ${config.levelUpMessage ?? "(default)"}`,
+              config.announceChannelId
+                ? t("levelconfig.announce_where_channel_line", { channel: config.announceChannelId })
+                : t("levelconfig.announce_where_same_line"),
+              t("levelconfig.announce_message_line", { message: config.levelUpMessage ?? t("levelconfig.default_placeholder") }),
             ]
             : []),
         ].join("\n")),
@@ -262,7 +373,12 @@ export default {
 
       await replyCard(
         interaction,
-        successCard(`<#${channel.id}> ${result ? "no longer gives" : "now gives"} XP.`),
+        successCard(
+          t,
+          result
+            ? t("levelconfig.channel_no_xp", { channel: channel.id })
+            : t("levelconfig.channel_gives_xp", { channel: channel.id }),
+        ),
         { ephemeral: true },
       );
       return;
@@ -280,7 +396,12 @@ export default {
 
       await replyCard(
         interaction,
-        successCard(`Members with <@&${role.id}> ${result ? "no longer gain" : "now gain"} XP.`),
+        successCard(
+          t,
+          result
+            ? t("levelconfig.role_no_xp", { role: role.id })
+            : t("levelconfig.role_gains_xp", { role: role.id }),
+        ),
         { ephemeral: true },
       );
       return;
@@ -294,7 +415,7 @@ export default {
       if (role.id === guild.id || role.managed || (me && role.position >= me.roles.highest.position)) {
         await replyCard(
           interaction,
-          warningCard("That role can't be used (managed, @everyone, or above my highest role)."),
+          warningCard(t, t("levelconfig.role_unusable")),
           { ephemeral: true },
         );
         return;
@@ -314,8 +435,8 @@ export default {
       await replyCard(
         interaction,
         result === "full"
-          ? warningCard(`Reward list is full (max ${MAX_LEVEL_REWARDS}).`)
-          : successCard(`Level **${level}** now rewards <@&${role.id}>.`),
+          ? warningCard(t, t("levelconfig.rewards_full", { max: MAX_LEVEL_REWARDS }))
+          : successCard(t, t("levelconfig.reward_added", { level, role: role.id })),
         { ephemeral: true },
       );
       return;
@@ -332,7 +453,9 @@ export default {
 
       await replyCard(
         interaction,
-        result ? successCard(`Reward for level **${level}** removed.`) : warningCard("No reward at that level."),
+        result
+          ? successCard(t, t("levelconfig.reward_removed", { level }))
+          : warningCard(t, t("levelconfig.reward_not_found")),
         { ephemeral: true },
       );
       return;
@@ -345,7 +468,7 @@ export default {
       });
       await replyCard(
         interaction,
-        successCard(enabled ? "Rewards now **stack** (members keep all earned roles)." : "Rewards now **replace** (only the highest earned role is kept)."),
+        successCard(t, enabled ? t("levelconfig.stack_on") : t("levelconfig.stack_off")),
         { ephemeral: true },
       );
       return;
@@ -362,9 +485,10 @@ export default {
       await replyCard(
         interaction,
         successCard(
+          t,
           config.voiceXpEnabled
-            ? `Voice XP ✅ enabled: **${config.voiceXpPerMinute}/min** for channels with 2+ members (deafened members earn nothing).`
-            : "Voice XP ❌ disabled.",
+            ? t("levelconfig.voice_enabled", { perMinute: config.voiceXpPerMinute })
+            : t("levelconfig.voice_disabled"),
         ),
         { ephemeral: true },
       );
@@ -378,7 +502,7 @@ export default {
 
       await replyCard(
         interaction,
-        successCard(`**${target.tag}** set to **${xp}** XP (level **${row.level}**).`),
+        successCard(t, t("levelconfig.xp_set", { user: target.tag, xp, level: row.level })),
         { ephemeral: true },
       );
     }

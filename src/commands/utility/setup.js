@@ -13,6 +13,7 @@ import {
 import { addAutoroleRole } from "#services/autorole.js";
 import { updateAutomodConfig } from "#services/automod.js";
 import { setGreeterChannel } from "#services/greeter.js";
+import { registerStrings } from "#services/i18n.js";
 import { setLoggingChannel, setLoggingEvent } from "#services/logging.js";
 import { createCard, replyError } from "#utils/respond.js";
 
@@ -20,41 +21,86 @@ const PREFIX = "setup:";
 
 const STEPS = ["log", "welcome", "leave", "autorole", "automod"];
 
+registerStrings("setup", {
+  en: {
+    step_log_title: "Step 1/5 — Log channel",
+    step_log_body: "Where should moderation and server logs go? This also enables the most-used log events.",
+    step_log_label: "Log channel",
+    step_welcome_title: "Step 2/5 — Welcome channel",
+    step_welcome_body: "Where should new members be greeted? (Customize the message later with `/set welcome-message`.)",
+    step_welcome_label: "Welcome channel",
+    step_leave_title: "Step 3/5 — Leave channel",
+    step_leave_body: "Where should leave messages go?",
+    step_leave_label: "Leave channel",
+    step_autorole_title: "Step 4/5 — Autorole",
+    step_autorole_body: "Pick a role every new member should receive automatically.",
+    step_autorole_label: "Autorole",
+    step_automod_title: "Step 5/5 — Automod",
+    step_automod_body: "Enable the recommended automod preset?\n- Anti-invite links: on\n- Mention spam: 8+ mentions\n- Message spam: 6 msgs / 5s, duplicates x4\n-# Fine-tune anytime with `/automod`.",
+    step_automod_label: "Automod",
+    wizard_title: "⚙️ Setup — {title}",
+    pick_channel_placeholder: "Pick a channel...",
+    pick_role_placeholder: "Pick a role...",
+    enable_preset: "Enable preset",
+    no_thanks: "No thanks",
+    skip: "Skip",
+    summary_title: "⚙️ Setup complete",
+    summary_next: "Next steps worth a look: `/rolemenu`, `/levelconfig toggle`, `/starboard channel`, `/ticket panel`, `/joinguard`.\nRun `/diagnose` anytime to health-check the configuration.",
+    need_manage_server: "You need **Manage Server** for setup.",
+    progress_skipped: "▫️ {label}: skipped",
+    progress_log: "✅ Log channel: <#{channel_id}> (core events enabled)",
+    progress_welcome: "✅ Welcome channel: <#{channel_id}>",
+    progress_leave: "✅ Leave channel: <#{channel_id}>",
+    autorole_invalid: "That role can't be auto-assigned (managed, @everyone, or above my highest role). Pick another.",
+    progress_autorole: "✅ Autorole: <@&{role_id}>",
+    progress_automod_on: "✅ Automod: recommended preset enabled",
+    progress_automod_off: "▫️ Automod: left off",
+  },
+  id: {
+    step_log_title: "Langkah 1/5 — Channel log",
+    step_log_body: "Ke mana log moderasi dan server dikirim? Ini juga mengaktifkan event log yang paling sering dipakai.",
+    step_log_label: "Channel log",
+    step_welcome_title: "Langkah 2/5 — Channel welcome",
+    step_welcome_body: "Di mana member baru disambut? (Pesannya bisa diubah nanti lewat `/set welcome-message`.)",
+    step_welcome_label: "Channel welcome",
+    step_leave_title: "Langkah 3/5 — Channel leave",
+    step_leave_body: "Ke mana pesan perpisahan dikirim?",
+    step_leave_label: "Channel leave",
+    step_autorole_title: "Langkah 4/5 — Autorole",
+    step_autorole_body: "Pilih role yang otomatis diberikan ke setiap member baru.",
+    step_autorole_label: "Autorole",
+    step_automod_title: "Langkah 5/5 — Automod",
+    step_automod_body: "Aktifkan preset automod yang direkomendasikan?\n- Anti-link invite: aktif\n- Spam mention: 8+ mention\n- Spam pesan: 6 pesan / 5 detik, duplikat x4\n-# Bisa diatur lebih detail kapan saja lewat `/automod`.",
+    step_automod_label: "Automod",
+    wizard_title: "⚙️ Setup — {title}",
+    pick_channel_placeholder: "Pilih channel...",
+    pick_role_placeholder: "Pilih role...",
+    enable_preset: "Aktifkan preset",
+    no_thanks: "Tidak usah",
+    skip: "Lewati",
+    summary_title: "⚙️ Setup selesai",
+    summary_next: "Langkah berikutnya yang layak dicek: `/rolemenu`, `/levelconfig toggle`, `/starboard channel`, `/ticket panel`, `/joinguard`.\nJalankan `/diagnose` kapan saja untuk cek kesehatan konfigurasi.",
+    need_manage_server: "Kamu butuh permission **Manage Server** untuk setup.",
+    progress_skipped: "▫️ {label}: dilewati",
+    progress_log: "✅ Channel log: <#{channel_id}> (event inti diaktifkan)",
+    progress_welcome: "✅ Channel welcome: <#{channel_id}>",
+    progress_leave: "✅ Channel leave: <#{channel_id}>",
+    autorole_invalid: "Role itu tidak bisa diberikan otomatis (managed, @everyone, atau di atas role tertinggiku). Pilih yang lain.",
+    progress_autorole: "✅ Autorole: <@&{role_id}>",
+    progress_automod_on: "✅ Automod: preset rekomendasi diaktifkan",
+    progress_automod_off: "▫️ Automod: dibiarkan mati",
+  },
+});
+
 const STEP_META = {
-  log: {
-    title: "Step 1/5 — Log channel",
-    body: "Where should moderation and server logs go? This also enables the most-used log events.",
-    kind: "channel",
-  },
-  welcome: {
-    title: "Step 2/5 — Welcome channel",
-    body: "Where should new members be greeted? (Customize the message later with `/set welcome-message`.)",
-    kind: "channel",
-  },
-  leave: {
-    title: "Step 3/5 — Leave channel",
-    body: "Where should leave messages go?",
-    kind: "channel",
-  },
-  autorole: {
-    title: "Step 4/5 — Autorole",
-    body: "Pick a role every new member should receive automatically.",
-    kind: "role",
-  },
-  automod: {
-    title: "Step 5/5 — Automod",
-    body: [
-      "Enable the recommended automod preset?",
-      "- Anti-invite links: on",
-      "- Mention spam: 8+ mentions",
-      "- Message spam: 6 msgs / 5s, duplicates x4",
-      "-# Fine-tune anytime with `/automod`.",
-    ].join("\n"),
-    kind: "confirm",
-  },
+  log: { title: "setup.step_log_title", body: "setup.step_log_body", label: "setup.step_log_label", kind: "channel" },
+  welcome: { title: "setup.step_welcome_title", body: "setup.step_welcome_body", label: "setup.step_welcome_label", kind: "channel" },
+  leave: { title: "setup.step_leave_title", body: "setup.step_leave_body", label: "setup.step_leave_label", kind: "channel" },
+  autorole: { title: "setup.step_autorole_title", body: "setup.step_autorole_body", label: "setup.step_autorole_label", kind: "role" },
+  automod: { title: "setup.step_automod_title", body: "setup.step_automod_body", label: "setup.step_automod_label", kind: "confirm" },
 };
 
-function stepComponents(step) {
+function stepComponents(t, step) {
   const meta = STEP_META[step];
   const rows = [];
 
@@ -63,14 +109,14 @@ function stepComponents(step) {
       new ActionRowBuilder().addComponents(
         new ChannelSelectMenuBuilder()
           .setCustomId(`${PREFIX}${step}`)
-          .setPlaceholder("Pick a channel...")
+          .setPlaceholder(t("setup.pick_channel_placeholder"))
           .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
       ),
     );
   } else if (meta.kind === "role") {
     rows.push(
       new ActionRowBuilder().addComponents(
-        new RoleSelectMenuBuilder().setCustomId(`${PREFIX}${step}`).setPlaceholder("Pick a role..."),
+        new RoleSelectMenuBuilder().setCustomId(`${PREFIX}${step}`).setPlaceholder(t("setup.pick_role_placeholder")),
       ),
     );
   }
@@ -78,12 +124,12 @@ function stepComponents(step) {
   const buttons = [];
   if (meta.kind === "confirm") {
     buttons.push(
-      new ButtonBuilder().setCustomId(`${PREFIX}${step}:on`).setLabel("Enable preset").setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId(`${PREFIX}${step}:off`).setLabel("No thanks").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`${PREFIX}${step}:on`).setLabel(t("setup.enable_preset")).setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId(`${PREFIX}${step}:off`).setLabel(t("setup.no_thanks")).setStyle(ButtonStyle.Secondary),
     );
   } else {
     buttons.push(
-      new ButtonBuilder().setCustomId(`${PREFIX}skip:${step}`).setLabel("Skip").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`${PREFIX}skip:${step}`).setLabel(t("setup.skip")).setStyle(ButtonStyle.Secondary),
     );
   }
   rows.push(new ActionRowBuilder().addComponents(buttons));
@@ -91,27 +137,26 @@ function stepComponents(step) {
   return rows;
 }
 
-function stepPayload(step) {
+function stepPayload(t, step) {
   const meta = STEP_META[step];
   return {
     components: [
-      createCard({ color: 0x5865f2, title: `⚙️ Setup — ${meta.title}`, body: meta.body }),
-      ...stepComponents(step),
+      createCard({ color: 0x5865f2, title: t("setup.wizard_title", { title: t(meta.title) }), body: t(meta.body) }),
+      ...stepComponents(t, step),
     ],
   };
 }
 
-function summaryPayload(lines) {
+function summaryPayload(t, lines) {
   return {
     components: [
       createCard({
         color: 0x57f287,
-        title: "⚙️ Setup complete",
+        title: t("setup.summary_title"),
         body: [
           ...lines,
           "",
-          "Next steps worth a look: `/rolemenu`, `/levelconfig toggle`, `/starboard channel`, `/ticket panel`, `/joinguard`.",
-          "Run `/diagnose` anytime to health-check the configuration.",
+          t("setup.summary_next"),
         ].join("\n"),
       }),
     ],
@@ -155,14 +200,14 @@ export default {
     .setDescription("Guided first-time setup (2 minutes)")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .setContexts(InteractionContextType.Guild),
-  async onComponent({ interaction }) {
+  async onComponent({ interaction, t }) {
     if (!interaction.customId.startsWith(PREFIX)) return false;
     const guild = interaction.guild;
     if (!guild) return false;
 
     // The wizard is ephemeral, but re-check anyway.
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
-      await replyError(interaction, "You need **Manage Server** for setup.");
+      await replyError(interaction, t("setup.need_manage_server"));
       return true;
     }
 
@@ -172,7 +217,7 @@ export default {
     let step;
     if (parts[0] === "skip") {
       step = parts[1];
-      pushProgress(interaction, `▫️ ${STEP_META[step].title.split("— ")[1]}: skipped`);
+      pushProgress(interaction, t("setup.progress_skipped", { label: t(STEP_META[step].label) }));
     } else {
       step = parts[0];
 
@@ -182,21 +227,21 @@ export default {
         for (const key of ["deleted_messages", "edited_messages", "joins", "leaves", "bans", "cases", "automod"]) {
           await setLoggingEvent(guildId, key, true);
         }
-        pushProgress(interaction, `✅ Log channel: <#${channelId}> (core events enabled)`);
+        pushProgress(interaction, t("setup.progress_log", { channel_id: channelId }));
       } else if ((step === "welcome" || step === "leave") && interaction.isChannelSelectMenu()) {
         const channelId = interaction.values[0];
         await setGreeterChannel(guildId, step, channelId);
-        pushProgress(interaction, `✅ ${step === "welcome" ? "Welcome" : "Leave"} channel: <#${channelId}>`);
+        pushProgress(interaction, t(step === "welcome" ? "setup.progress_welcome" : "setup.progress_leave", { channel_id: channelId }));
       } else if (step === "autorole" && interaction.isRoleSelectMenu()) {
         const roleId = interaction.values[0];
         const role = guild.roles.cache.get(roleId);
         const me = guild.members.me;
         if (!role || role.managed || role.id === guild.id || (me && role.position >= me.roles.highest.position)) {
-          await replyError(interaction, "That role can't be auto-assigned (managed, @everyone, or above my highest role). Pick another.");
+          await replyError(interaction, t("setup.autorole_invalid"));
           return true;
         }
         await addAutoroleRole(guildId, roleId);
-        pushProgress(interaction, `✅ Autorole: <@&${roleId}>`);
+        pushProgress(interaction, t("setup.progress_autorole", { role_id: roleId }));
       } else if (step === "automod" && interaction.isButton()) {
         const enable = parts[1] === "on";
         if (enable) {
@@ -205,9 +250,9 @@ export default {
             config.mentionLimit = 8;
             config.spamEnabled = true;
           });
-          pushProgress(interaction, "✅ Automod: recommended preset enabled");
+          pushProgress(interaction, t("setup.progress_automod_on"));
         } else {
-          pushProgress(interaction, "▫️ Automod: left off");
+          pushProgress(interaction, t("setup.progress_automod_off"));
         }
       } else {
         return false;
@@ -216,16 +261,16 @@ export default {
 
     const next = nextStep(step);
     if (next) {
-      await interaction.update(stepPayload(next));
+      await interaction.update(stepPayload(t, next));
     } else {
       const key = progressKey(interaction);
       const lines = progress.get(key) ?? [];
       progress.delete(key);
-      await interaction.update(summaryPayload(lines));
+      await interaction.update(summaryPayload(t, lines));
     }
     return true;
   },
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for setup command.");
@@ -233,7 +278,7 @@ export default {
 
     progress.delete(progressKey(interaction));
     await interaction.reply({
-      ...stepPayload(STEPS[0]),
+      ...stepPayload(ctx.t, STEPS[0]),
       flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
     });
   },

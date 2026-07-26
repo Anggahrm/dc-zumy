@@ -1,22 +1,72 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { recordCase } from "#services/cases.js";
 import { applyWarnEscalation } from "#services/escalation.js";
+import { registerStrings } from "#services/i18n.js";
 import { addWarning, clearWarnings, getWarnings, removeWarning } from "#services/warnings.js";
 import { checkActorHierarchy, normalizeReason } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Moderation", body });
+registerStrings("warn", {
+  en: {
+    title: "Moderation",
+    dm_title: "Warning",
+    cannot_warn_bot: "You cannot warn a bot.",
+    dm_intro: "You received a warning in **{guild}**.",
+    reason_line: "- Reason: {reason}",
+    total_line: "- Total warnings: **{count}**",
+    case_suffix: " — Case #{caseNumber}",
+    issued_title: "**Warning Issued**{caseSuffix}",
+    target_line: "- Target: **{user}** (`{id}`)",
+    warning_id_line: "- Warning ID: `{id}`",
+    escalation_line: "- ⚖️ Escalation triggered: **{action}**",
+    dm_failed_note: "- Note: could not DM the member.",
+    no_warnings: "**{user}** has no warnings.",
+    list_header: "**Warnings for {user}** ({count} total{suffix})",
+    list_truncated_suffix: ", showing latest 15",
+    entry_line: "**{index}.** `{id}` — {reason}",
+    entry_meta: "-# by <@{moderator}> · <t:{at}:R>",
+    removed: "Warning `{id}` removed from **{user}**.",
+    remove_not_found: "No warning with that id found for **{user}**.",
+    cleared: "Cleared **{count}** warning(s) for **{user}**.",
+    clear_none: "**{user}** has no warnings to clear.",
+  },
+  id: {
+    title: "Moderasi",
+    dm_title: "Peringatan",
+    cannot_warn_bot: "Kamu tidak bisa warn bot.",
+    dm_intro: "Kamu menerima peringatan di **{guild}**.",
+    reason_line: "- Alasan: {reason}",
+    total_line: "- Total peringatan: **{count}**",
+    case_suffix: " — Case #{caseNumber}",
+    issued_title: "**Peringatan Diberikan**{caseSuffix}",
+    target_line: "- Target: **{user}** (`{id}`)",
+    warning_id_line: "- ID Peringatan: `{id}`",
+    escalation_line: "- ⚖️ Eskalasi terpicu: **{action}**",
+    dm_failed_note: "- Catatan: tidak bisa mengirim DM ke member itu.",
+    no_warnings: "**{user}** tidak punya peringatan.",
+    list_header: "**Peringatan untuk {user}** ({count} total{suffix})",
+    list_truncated_suffix: ", menampilkan 15 terbaru",
+    entry_line: "**{index}.** `{id}` — {reason}",
+    entry_meta: "-# oleh <@{moderator}> · <t:{at}:R>",
+    removed: "Peringatan `{id}` dihapus dari **{user}**.",
+    remove_not_found: "Tidak ada peringatan dengan id itu untuk **{user}**.",
+    cleared: "Berhasil menghapus **{count}** peringatan untuk **{user}**.",
+    clear_none: "**{user}** tidak punya peringatan untuk dihapus.",
+  },
+});
+
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("warn.title"), body });
 }
 
-function successCard(body) {
-  return createCard({ color: 0xf1c40f, title: "Moderation", body });
+function successCard(t, body) {
+  return createCard({ color: 0xf1c40f, title: t("warn.title"), body });
 }
 
-function formatWarningLine(entry, index) {
+function formatWarningLine(t, entry, index) {
   return [
-    `**${index + 1}.** \`${entry.id}\` — ${entry.reason}`,
-    `-# by <@${entry.moderatorId}> · <t:${Math.floor(entry.at / 1000)}:R>`,
+    t("warn.entry_line", { index: index + 1, id: entry.id, reason: entry.reason }),
+    t("warn.entry_meta", { moderator: entry.moderatorId, at: Math.floor(entry.at / 1000) }),
   ].join("\n");
 }
 
@@ -99,6 +149,7 @@ export default {
       throw new Error("Guild context is required for warn command.");
     }
 
+    const t = ctx.t;
     const guildId = ctx.guild ?? guild.id;
     const subcommand = interaction.options.getSubcommand();
     const target = interaction.options.getUser("target", true);
@@ -119,12 +170,12 @@ export default {
         targetMember,
       });
       if (rejection) {
-        await replyCard(interaction, errorCard(rejection), { ephemeral: true });
+        await replyCard(interaction, errorCard(t, rejection), { ephemeral: true });
         return;
       }
 
       if (target.bot) {
-        await replyCard(interaction, errorCard("You cannot warn a bot."), { ephemeral: true });
+        await replyCard(interaction, errorCard(t, t("warn.cannot_warn_bot")), { ephemeral: true });
         return;
       }
 
@@ -149,11 +200,11 @@ export default {
           components: [
             createCard({
               color: 0xf1c40f,
-              title: "Warning",
+              title: t("warn.dm_title"),
               body: [
-                `You received a warning in **${guild.name}**.`,
-                `- Reason: ${reason}`,
-                `- Total warnings: **${count}**`,
+                t("warn.dm_intro", { guild: guild.name }),
+                t("warn.reason_line", { reason }),
+                t("warn.total_line", { count }),
               ].join("\n"),
             }),
           ],
@@ -172,14 +223,16 @@ export default {
 
       await replyCard(
         interaction,
-        successCard([
-          `**Warning Issued**${caseRow ? ` — Case #${caseRow.caseNumber}` : ""}`,
-          `- Target: **${target.tag}** (\`${target.id}\`)`,
-          `- Reason: ${reason}`,
-          `- Warning ID: \`${entry.id}\``,
-          `- Total warnings: **${count}**`,
-          ...(escalated ? [`- ⚖️ Escalation triggered: **${escalated}**`] : []),
-          ...(dmDelivered ? [] : ["- Note: could not DM the member."]),
+        successCard(t, [
+          t("warn.issued_title", {
+            caseSuffix: caseRow ? t("warn.case_suffix", { caseNumber: caseRow.caseNumber }) : "",
+          }),
+          t("warn.target_line", { user: target.tag, id: target.id }),
+          t("warn.reason_line", { reason }),
+          t("warn.warning_id_line", { id: entry.id }),
+          t("warn.total_line", { count }),
+          ...(escalated ? [t("warn.escalation_line", { action: escalated })] : []),
+          ...(dmDelivered ? [] : [t("warn.dm_failed_note")]),
         ].join("\n")),
       );
       return;
@@ -192,22 +245,26 @@ export default {
           interaction,
           createCard({
             color: 0x57f287,
-            title: "Moderation",
-            body: `**${target.tag}** has no warnings.`,
+            title: t("warn.title"),
+            body: t("warn.no_warnings", { user: target.tag }),
           }),
           { ephemeral: true },
         );
         return;
       }
 
-      const lines = warnings.slice(-15).map((entry, index) => formatWarningLine(entry, index));
+      const lines = warnings.slice(-15).map((entry, index) => formatWarningLine(t, entry, index));
       await replyCard(
         interaction,
         createCard({
           color: 0x3498db,
-          title: "Moderation",
+          title: t("warn.title"),
           body: [
-            `**Warnings for ${target.tag}** (${warnings.length} total${warnings.length > 15 ? ", showing latest 15" : ""})`,
+            t("warn.list_header", {
+              user: target.tag,
+              count: warnings.length,
+              suffix: warnings.length > 15 ? t("warn.list_truncated_suffix") : "",
+            }),
             "",
             ...lines,
           ].join("\n"),
@@ -223,8 +280,8 @@ export default {
       await replyCard(
         interaction,
         removed
-          ? successCard(`Warning \`${warnId.replaceAll("`", "'")}\` removed from **${target.tag}**.`)
-          : errorCard(`No warning with that id found for **${target.tag}**.`),
+          ? successCard(t, t("warn.removed", { id: warnId.replaceAll("`", "'"), user: target.tag }))
+          : errorCard(t, t("warn.remove_not_found", { user: target.tag })),
         { ephemeral: true },
       );
       return;
@@ -235,8 +292,8 @@ export default {
       await replyCard(
         interaction,
         cleared > 0
-          ? successCard(`Cleared **${cleared}** warning(s) for **${target.tag}**.`)
-          : errorCard(`**${target.tag}** has no warnings to clear.`),
+          ? successCard(t, t("warn.cleared", { count: cleared, user: target.tag }))
+          : errorCard(t, t("warn.clear_none", { user: target.tag })),
         { ephemeral: true },
       );
     }

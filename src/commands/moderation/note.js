@@ -1,6 +1,28 @@
 import { InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { listCases, recordCase } from "#services/cases.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("note", {
+  en: {
+    title: "Notes",
+    case_suffix: " — Case #{caseNumber}",
+    saved: "Note saved for **{user}**{caseSuffix}.",
+    none: "No notes for **{user}**.",
+    list_title: "Notes for {user}",
+    list_line: "**#{caseNumber}** {reason} — by {moderator}, <t:{at}:R>",
+    unknown_moderator: "unknown",
+  },
+  id: {
+    title: "Catatan",
+    case_suffix: " — Case #{caseNumber}",
+    saved: "Catatan untuk **{user}** tersimpan{caseSuffix}.",
+    none: "Belum ada catatan untuk **{user}**.",
+    list_title: "Catatan untuk {user}",
+    list_line: "**#{caseNumber}** {reason} — oleh {moderator}, <t:{at}:R>",
+    unknown_moderator: "tidak diketahui",
+  },
+});
 
 export default {
   category: "moderation",
@@ -33,12 +55,13 @@ export default {
           option.setName("target").setDescription("Member").setRequired(true),
         ),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for note command.");
     }
 
+    const t = ctx.t;
     const subcommand = interaction.options.getSubcommand();
     const target = interaction.options.getUser("target", true);
 
@@ -56,9 +79,12 @@ export default {
         interaction,
         createCard({
           color: 0x57f287,
-          title: "Notes",
+          title: t("note.title"),
           body: [
-            `Note saved for **${target.tag}**${caseRow ? ` — Case #${caseRow.caseNumber}` : ""}.`,
+            t("note.saved", {
+              caseSuffix: caseRow ? t("note.case_suffix", { caseNumber: caseRow.caseNumber }) : "",
+              user: target.tag,
+            }),
             `- ${text}`,
           ].join("\n"),
         }),
@@ -75,7 +101,7 @@ export default {
       if (rows.length === 0) {
         await replyCard(
           interaction,
-          createCard({ color: 0x3498db, title: "Notes", body: `No notes for **${target.tag}**.` }),
+          createCard({ color: 0x3498db, title: t("note.title"), body: t("note.none", { user: target.tag }) }),
           { ephemeral: true },
         );
         return;
@@ -83,12 +109,17 @@ export default {
 
       const lines = rows.map((row) => {
         const at = Math.floor(new Date(row.createdAt).getTime() / 1000);
-        return `**#${row.caseNumber}** ${row.reason} — by ${row.moderatorTag ?? "unknown"}, <t:${at}:R>`;
+        return t("note.list_line", {
+          caseNumber: row.caseNumber,
+          at,
+          moderator: row.moderatorTag ?? t("note.unknown_moderator"),
+          reason: row.reason,
+        });
       });
 
       await replyCard(
         interaction,
-        createCard({ color: 0x3498db, title: `Notes for ${target.tag}`, body: lines.join("\n") }),
+        createCard({ color: 0x3498db, title: t("note.list_title", { user: target.tag }), body: lines.join("\n") }),
         { ephemeral: true },
       );
     }

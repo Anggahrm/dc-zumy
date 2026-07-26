@@ -99,6 +99,11 @@ export function translate(language, key, vars = {}) {
   return text;
 }
 
+// Test hook: full dictionaries for coverage assertions.
+export function getDictionaries() {
+  return STRINGS;
+}
+
 // Bound translator for one already-resolved language.
 export function makeTranslator(language) {
   return (key, vars = {}) => translate(language, key, vars);

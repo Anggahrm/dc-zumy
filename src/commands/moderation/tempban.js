@@ -1,12 +1,50 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { recordCase } from "#services/cases.js";
+import { registerStrings } from "#services/i18n.js";
 import { unbanJobKey } from "#services/scheduler-jobs.js";
 import { checkActorHierarchy, dmModerationNotice, normalizeReason } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 import { formatDuration, parseDuration } from "#utils/time.js";
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Moderation", body });
+registerStrings("tempban", {
+  en: {
+    title: "Moderation",
+    invalid_duration: "Invalid duration. Use formats like `12h`, `1d`, `7d`, `4w`.",
+    cannot_tempban_self_or_owner: "You cannot tempban yourself or the server owner.",
+    cannot_ban_hierarchy: "I cannot ban that user due to role hierarchy or missing permissions.",
+    dm_action_label: "Temporary ban",
+    dm_duration_line: "- Duration: {duration}",
+    dm_ends_line: "- Ends: <t:{until}:F>",
+    ban_failed: "Ban failed. Please check role hierarchy and bot permissions.",
+    case_suffix: " — Case #{caseNumber}",
+    applied_title: "**Tempban Applied**{caseSuffix}",
+    target_line: "- Target: **{user}** (`{id}`)",
+    moderator_line: "- Moderator: **{moderator}**",
+    duration_line: "- Duration: **{duration}** (unban <t:{until}:R>)",
+    delete_days_line: "- Delete messages: **{days}** day(s)",
+    reason_line: "- Reason: {reason}",
+  },
+  id: {
+    title: "Moderasi",
+    invalid_duration: "Durasi tidak valid. Pakai format seperti `12h`, `1d`, `7d`, `4w`.",
+    cannot_tempban_self_or_owner: "Kamu tidak bisa tempban diri sendiri atau owner server.",
+    cannot_ban_hierarchy: "Aku tidak bisa ban user itu karena hierarki role atau permission-ku kurang.",
+    dm_action_label: "Ban sementara",
+    dm_duration_line: "- Durasi: {duration}",
+    dm_ends_line: "- Berakhir: <t:{until}:F>",
+    ban_failed: "Ban gagal. Cek hierarki role dan permission bot ya.",
+    case_suffix: " — Case #{caseNumber}",
+    applied_title: "**Tempban Diterapkan**{caseSuffix}",
+    target_line: "- Target: **{user}** (`{id}`)",
+    moderator_line: "- Moderator: **{moderator}**",
+    duration_line: "- Durasi: **{duration}** (unban <t:{until}:R>)",
+    delete_days_line: "- Hapus pesan: **{days}** hari",
+    reason_line: "- Alasan: {reason}",
+  },
+});
+
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("tempban.title"), body });
 }
 
 export default {
@@ -41,7 +79,7 @@ export default {
     .addStringOption((option) =>
       option.setName("reason").setDescription("Reason").setMaxLength(400).setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for tempban command.");
@@ -52,6 +90,7 @@ export default {
       throw new Error("Scheduler is not available.");
     }
 
+    const t = ctx.t;
     const target = interaction.options.getUser("target", true);
     const reason = normalizeReason(interaction.options.getString("reason"));
     const durationMs = parseDuration(interaction.options.getString("duration", true));
@@ -60,7 +99,7 @@ export default {
     if (!durationMs) {
       await replyCard(
         interaction,
-        errorCard("Invalid duration. Use formats like `12h`, `1d`, `7d`, `4w`."),
+        errorCard(t, t("tempban.invalid_duration")),
         { ephemeral: true },
       );
       return;
@@ -72,7 +111,7 @@ export default {
     }
 
     if (target.id === interaction.user.id || target.id === guild.ownerId) {
-      await replyCard(interaction, errorCard("You cannot tempban yourself or the server owner."), { ephemeral: true });
+      await replyCard(interaction, errorCard(t, t("tempban.cannot_tempban_self_or_owner")), { ephemeral: true });
       return;
     }
 
@@ -85,14 +124,14 @@ export default {
       targetMember,
     });
     if (rejection) {
-      await replyCard(interaction, errorCard(rejection), { ephemeral: true });
+      await replyCard(interaction, errorCard(t, rejection), { ephemeral: true });
       return;
     }
 
     if (targetMember && !targetMember.bannable) {
       await replyCard(
         interaction,
-        errorCard("I cannot ban that user due to role hierarchy or missing permissions."),
+        errorCard(t, t("tempban.cannot_ban_hierarchy")),
         { ephemeral: true },
       );
       return;
@@ -106,10 +145,10 @@ export default {
     if (targetMember) {
       await dmModerationNotice(target, {
         guildName: guild.name,
-        actionLabel: "Temporary ban",
+        actionLabel: t("tempban.dm_action_label"),
         color: 0xed4245,
         reason,
-        lines: [`- Duration: ${durationLabel}`, `- Ends: <t:${until}:F>`],
+        lines: [t("tempban.dm_duration_line", { duration: durationLabel }), t("tempban.dm_ends_line", { until })],
       });
     }
 
@@ -119,7 +158,7 @@ export default {
         deleteMessageSeconds: days * 24 * 60 * 60,
       });
     } catch {
-      await replyCard(interaction, errorCard("Ban failed. Please check role hierarchy and bot permissions."), {
+      await replyCard(interaction, errorCard(t, t("tempban.ban_failed")), {
         ephemeral: true,
       });
       return;
@@ -146,14 +185,16 @@ export default {
       interaction,
       createCard({
         color: 0xf1c40f,
-        title: "Moderation",
+        title: t("tempban.title"),
         body: [
-          `**Tempban Applied**${caseRow ? ` — Case #${caseRow.caseNumber}` : ""}`,
-          `- Target: **${target.tag}** (\`${target.id}\`)`,
-          `- Moderator: **${interaction.user.tag}**`,
-          `- Duration: **${durationLabel}** (unban <t:${until}:R>)`,
-          `- Delete messages: **${days}** day(s)`,
-          `- Reason: ${reason}`,
+          t("tempban.applied_title", {
+            caseSuffix: caseRow ? t("tempban.case_suffix", { caseNumber: caseRow.caseNumber }) : "",
+          }),
+          t("tempban.target_line", { user: target.tag, id: target.id }),
+          t("tempban.moderator_line", { moderator: interaction.user.tag }),
+          t("tempban.duration_line", { duration: durationLabel, until }),
+          t("tempban.delete_days_line", { days }),
+          t("tempban.reason_line", { reason }),
         ].join("\n"),
       }),
       { ephemeral: true },

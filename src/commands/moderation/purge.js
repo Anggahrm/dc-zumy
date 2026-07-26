@@ -1,5 +1,43 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("purge", {
+  en: {
+    title: "Moderation",
+    complete_title: "**Purge Complete**",
+    mode_line: "- Mode: **{mode}**",
+    requested_line: "- Requested: **{requested}** message(s)",
+    deleted_line: "- Deleted: **{deleted}** message(s)",
+    filter_line: "- Filter: {detail}",
+    no_match: "No messages matched for **{mode}** in the latest {limit} messages.",
+    filter_line_plain: "Filter: {detail}",
+    need_manage_messages: "I need **Manage Messages** permission to purge in this channel.",
+    cannot_access_channel: "I can't access this channel to purge messages.",
+    empty_substring: "Please provide a non-empty substring filter.",
+    bulk_delete_unsupported: "This channel doesn't support bulk message deletion.",
+    detail_prefix: "prefix starts with `{value}`",
+    detail_contains: "contains `{value}`",
+    detail_member: "member **{user}**",
+  },
+  id: {
+    title: "Moderasi",
+    complete_title: "**Purge Selesai**",
+    mode_line: "- Mode: **{mode}**",
+    requested_line: "- Diminta: **{requested}** pesan",
+    deleted_line: "- Dihapus: **{deleted}** pesan",
+    filter_line: "- Filter: {detail}",
+    no_match: "Tidak ada pesan yang cocok untuk **{mode}** di {limit} pesan terakhir.",
+    filter_line_plain: "Filter: {detail}",
+    need_manage_messages: "Aku butuh permission **Manage Messages** untuk purge di channel ini.",
+    cannot_access_channel: "Aku tidak bisa mengakses channel ini untuk purge pesan.",
+    empty_substring: "Filter substring-nya tidak boleh kosong ya.",
+    bulk_delete_unsupported: "Channel ini tidak mendukung penghapusan pesan massal.",
+    detail_prefix: "prefix diawali `{value}`",
+    detail_contains: "mengandung `{value}`",
+    detail_member: "member **{user}**",
+  },
+});
 
 const DEFAULT_LIMIT = 50;
 const MAX_FETCH_LIMIT = 100;
@@ -63,78 +101,78 @@ function pickMessages(messages, predicate, count) {
     .first(count);
 }
 
-function buildResultCard({ modeLabel, requested, deleted, detail = null }) {
+function buildResultCard(t, { modeLabel, requested, deleted, detail = null }) {
   const lines = [
-    "**Purge Complete**",
-    `- Mode: **${modeLabel}**`,
-    `- Requested: **${requested}** message(s)`,
-    `- Deleted: **${deleted}** message(s)`,
+    t("purge.complete_title"),
+    t("purge.mode_line", { mode: modeLabel }),
+    t("purge.requested_line", { requested }),
+    t("purge.deleted_line", { deleted }),
   ];
 
   if (detail) {
-    lines.push(`- Filter: ${detail}`);
+    lines.push(t("purge.filter_line", { detail }));
   }
 
   return createCard({
     color: 0xf1c40f,
-    title: "Moderation",
+    title: t("purge.title"),
     body: lines.join("\n"),
   });
 }
 
-function buildEmptyCard(modeLabel, detail = null) {
+function buildEmptyCard(t, modeLabel, detail = null) {
   const lines = [
-    `No messages matched for **${modeLabel}** in the latest ${MAX_FETCH_LIMIT} messages.`,
+    t("purge.no_match", { mode: modeLabel, limit: MAX_FETCH_LIMIT }),
   ];
 
   if (detail) {
-    lines.push(`Filter: ${detail}`);
+    lines.push(t("purge.filter_line_plain", { detail }));
   }
 
   return createCard({
     color: 0xf1c40f,
-    title: "Moderation",
+    title: t("purge.title"),
     body: lines.join("\n"),
   });
 }
 
-function buildErrorCard(message) {
+function buildErrorCard(t, message) {
   return createCard({
     color: 0xed4245,
-    title: "Moderation",
+    title: t("purge.title"),
     body: message,
   });
 }
 
-function toPurgeUserError(error) {
+function toPurgeUserError(error, t) {
   if (error?.exposeToUser) {
     return error;
   }
 
   if (error?.code === 50013) {
-    return new PurgeUserError("I need **Manage Messages** permission to purge in this channel.");
+    return new PurgeUserError(t("purge.need_manage_messages"));
   }
 
   if (error?.code === 50001) {
-    return new PurgeUserError("I can't access this channel to purge messages.");
+    return new PurgeUserError(t("purge.cannot_access_channel"));
   }
 
   return error;
 }
 
-async function executeFilteredPurge({ interaction, modeLabel, count, detail, predicate }) {
+async function executeFilteredPurge({ interaction, t, modeLabel, count, detail, predicate }) {
   const fetched = await fetchRecentMessages(interaction.channel);
   const targets = pickMessages(fetched, predicate, count);
 
   if (targets.length === 0) {
-    await replyCard(interaction, buildEmptyCard(modeLabel, detail), { ephemeral: true });
+    await replyCard(interaction, buildEmptyCard(t, modeLabel, detail), { ephemeral: true });
     return;
   }
 
   const deleted = await interaction.channel.bulkDelete(targets, true);
   await replyCard(
     interaction,
-    buildResultCard({
+    buildResultCard(t, {
       modeLabel,
       requested: count,
       deleted: deleted.size,
@@ -144,9 +182,9 @@ async function executeFilteredPurge({ interaction, modeLabel, count, detail, pre
   );
 }
 
-function ensureBulkDeleteChannel(interaction) {
+function ensureBulkDeleteChannel(interaction, t) {
   if (!interaction.channel || typeof interaction.channel.bulkDelete !== "function") {
-    throw new PurgeUserError("This channel doesn't support bulk message deletion.");
+    throw new PurgeUserError(t("purge.bulk_delete_unsupported"));
   }
 }
 
@@ -252,8 +290,9 @@ export default {
         )
         .addIntegerOption((option) => makeCountOption(option, false)),
     ),
-  async execute({ interaction }) {
-    ensureBulkDeleteChannel(interaction);
+  async execute({ interaction, ctx }) {
+    const t = ctx.t;
+    ensureBulkDeleteChannel(interaction, t);
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
     });
@@ -266,7 +305,7 @@ export default {
         const deleted = await interaction.channel.bulkDelete(count, true);
         await replyCard(
           interaction,
-          buildResultCard({
+          buildResultCard(t, {
             modeLabel: "all",
             requested: count,
             deleted: deleted.size,
@@ -282,9 +321,10 @@ export default {
 
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "bot",
           count,
-          detail: prefix ? `prefix starts with \`${formatFilterValue(prefix)}\`` : null,
+          detail: prefix ? t("purge.detail_prefix", { value: formatFilterValue(prefix) }) : null,
           predicate: (message) => {
             if (!message.author?.bot) return false;
             if (!prefix) return true;
@@ -298,15 +338,16 @@ export default {
         const substringRaw = interaction.options.getString("substring", true);
         const substring = parseSubstring(substringRaw);
         if (!substring) {
-          throw new PurgeUserError("Please provide a non-empty substring filter.");
+          throw new PurgeUserError(t("purge.empty_substring"));
         }
 
         const count = interaction.options.getInteger("count") ?? DEFAULT_LIMIT;
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "contains",
           count,
-          detail: `contains \`${formatFilterValue(substringRaw)}\``,
+          detail: t("purge.detail_contains", { value: formatFilterValue(substringRaw) }),
           predicate: (message) => {
             const content = message.content?.toLowerCase();
             return Boolean(content && content.includes(substring));
@@ -319,6 +360,7 @@ export default {
         const count = interaction.options.getInteger("count", true);
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "embeds",
           count,
           predicate: (message) => (message.embeds?.length ?? 0) > 0,
@@ -330,6 +372,7 @@ export default {
         const count = interaction.options.getInteger("count", true);
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "emoji",
           count,
           predicate: (message) => hasEmoji(message.content),
@@ -341,6 +384,7 @@ export default {
         const count = interaction.options.getInteger("count", true);
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "files",
           count,
           predicate: (message) => (message.attachments?.size ?? 0) > 0,
@@ -352,6 +396,7 @@ export default {
         const count = interaction.options.getInteger("count", true);
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "human",
           count,
           predicate: (message) => !message.author?.bot,
@@ -363,6 +408,7 @@ export default {
         const count = interaction.options.getInteger("count", true);
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "images",
           count,
           predicate: (message) => {
@@ -377,6 +423,7 @@ export default {
         const count = interaction.options.getInteger("count", true);
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "link",
           count,
           predicate: (message) => hasLink(message.content),
@@ -388,6 +435,7 @@ export default {
         const count = interaction.options.getInteger("count", true);
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "mentions",
           count,
           predicate: (message) => hasMention(message),
@@ -399,6 +447,7 @@ export default {
         const count = interaction.options.getInteger("count", true);
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "reactions",
           count,
           predicate: (message) => (message.reactions?.cache?.size ?? 0) > 0,
@@ -412,14 +461,15 @@ export default {
 
         await executeFilteredPurge({
           interaction,
+          t,
           modeLabel: "user",
           count,
-          detail: `member **${member.tag}**`,
+          detail: t("purge.detail_member", { user: member.tag }),
           predicate: (message) => message.author?.id === member.id,
         });
       }
     } catch (error) {
-      throw toPurgeUserError(error);
+      throw toPurgeUserError(error, t);
     }
   },
 };

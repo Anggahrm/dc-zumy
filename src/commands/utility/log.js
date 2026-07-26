@@ -1,4 +1,5 @@
 import { ChannelType, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import {
   getLoggingConfig,
   getLogEventMeta,
@@ -9,8 +10,35 @@ import {
 } from "#services/logging.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
-function formatChannel(channelId) {
-  return channelId ? `<#${channelId}>` : "- (not set)";
+registerStrings("log", {
+  en: {
+    title: "Logging",
+    not_set: "- (not set)",
+    channel_cleared: "**Log channel cleared**\n- Logging channel: - (not set)",
+    channel_updated: "**Log channel updated**\n- Logging channel: <#{channel_id}>",
+    current_settings_header: "**Current settings**",
+    channel_line: "- Channel: {channel}",
+    invalid_event_key: "Invalid logging event key.",
+    event_updated: "**Logging event updated**\n- {label}: {state}",
+    state_enabled: "✅ Enabled",
+    state_disabled: "❌ Disabled",
+  },
+  id: {
+    title: "Logging",
+    not_set: "- (belum diatur)",
+    channel_cleared: "**Channel log dihapus**\n- Channel logging: - (belum diatur)",
+    channel_updated: "**Channel log diperbarui**\n- Channel logging: <#{channel_id}>",
+    current_settings_header: "**Pengaturan saat ini**",
+    channel_line: "- Channel: {channel}",
+    invalid_event_key: "Key event logging tidak valid.",
+    event_updated: "**Event logging diperbarui**\n- {label}: {state}",
+    state_enabled: "✅ Aktif",
+    state_disabled: "❌ Nonaktif",
+  },
+});
+
+function formatChannel(t, channelId) {
+  return channelId ? `<#${channelId}>` : t("log.not_set");
 }
 
 function renderEventLines(config) {
@@ -21,26 +49,26 @@ function renderEventLines(config) {
   });
 }
 
-function successCard(body) {
+function successCard(t, body) {
   return createCard({
     color: 0x57f287,
-    title: "Logging",
+    title: t("log.title"),
     body,
   });
 }
 
-function warningCard(body) {
+function warningCard(t, body) {
   return createCard({
     color: 0xf1c40f,
-    title: "Logging",
+    title: t("log.title"),
     body,
   });
 }
 
-function errorCard(body) {
+function errorCard(t, body) {
   return createCard({
     color: 0xed4245,
-    title: "Logging",
+    title: t("log.title"),
     body,
   });
 }
@@ -105,14 +133,8 @@ export default {
       const cleared = !selectedChannel;
 
       const card = cleared
-        ? successCard([
-          "**Log channel cleared**",
-          "- Logging channel: - (not set)",
-        ].join("\n"))
-        : successCard([
-          "**Log channel updated**",
-          `- Logging channel: <#${config.channelId}>`,
-        ].join("\n"));
+        ? successCard(ctx.t, ctx.t("log.channel_cleared"))
+        : successCard(ctx.t, ctx.t("log.channel_updated", { channel_id: config.channelId }));
 
       await replyCard(interaction, card, { ephemeral: true });
       return;
@@ -124,10 +146,10 @@ export default {
       const config = await getLoggingConfig(guildId);
       const card = createCard({
         color: 0x3498db,
-        title: "Logging",
+        title: ctx.t("log.title"),
         body: [
-          "**Current settings**",
-          `- Channel: ${formatChannel(config.channelId)}`,
+          ctx.t("log.current_settings_header"),
+          ctx.t("log.channel_line", { channel: formatChannel(ctx.t, config.channelId) }),
           "",
           ...renderEventLines(config),
         ].join("\n"),
@@ -138,7 +160,7 @@ export default {
     }
 
     if (!isValidLogEventKey(eventKey)) {
-      await replyCard(interaction, errorCard("Invalid logging event key."), { ephemeral: true });
+      await replyCard(interaction, errorCard(ctx.t, ctx.t("log.invalid_event_key")), { ephemeral: true });
       return;
     }
 
@@ -149,10 +171,10 @@ export default {
 
     await replyCard(
       interaction,
-      successCard([
-        "**Logging event updated**",
-        `- ${meta?.label ?? eventKey}: ${config.events[eventKey] ? "✅ Enabled" : "❌ Disabled"}`,
-      ].join("\n")),
+      successCard(ctx.t, ctx.t("log.event_updated", {
+        label: meta?.label ?? eventKey,
+        state: config.events[eventKey] ? ctx.t("log.state_enabled") : ctx.t("log.state_disabled"),
+      })),
       { ephemeral: true },
     );
   },

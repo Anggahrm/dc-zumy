@@ -1,7 +1,49 @@
 import { SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { levelFromExp } from "#utils/level.js";
 import { createCard, replyCard } from "#utils/respond.js";
 import { formatDuration } from "#utils/time.js";
+
+registerStrings("daily", {
+  en: {
+    not_ready_title: "Daily Not Ready",
+    already_claimed: "You already claimed daily reward.",
+    try_again_line: "- Try again in: **{remaining}**",
+    available_line: "- Available: <t:{timestamp}:R>",
+    claimed_title: "Daily Claimed",
+    received: "You received your daily reward.",
+    money_line: "- Money: **+{money}**",
+    money_line_bonus: "- Money: **+{money}** (+**{bonus}** streak bonus)",
+    exp_line: "- EXP: **+{exp}**",
+    streak_line_one: "- 🔥 Streak: **{streak}** day",
+    streak_line_many: "- 🔥 Streak: **{streak}** days",
+    level_up_line: "- 🎉 Level up! You are now level **{level}**",
+    totals_title: "**Your Totals**",
+    total_money_line: "- Money: **{money}**",
+    total_exp_line: "- EXP: **{exp}**",
+    total_level_line: "- Level: **{level}**",
+    next_daily_line: "- Next daily: <t:{timestamp}:R>",
+  },
+  id: {
+    not_ready_title: "Daily Belum Siap",
+    already_claimed: "Kamu sudah klaim daily reward.",
+    try_again_line: "- Coba lagi dalam: **{remaining}**",
+    available_line: "- Tersedia: <t:{timestamp}:R>",
+    claimed_title: "Daily Diklaim",
+    received: "Kamu menerima daily reward-mu.",
+    money_line: "- Uang: **+{money}**",
+    money_line_bonus: "- Uang: **+{money}** (+**{bonus}** bonus streak)",
+    exp_line: "- EXP: **+{exp}**",
+    streak_line_one: "- 🔥 Streak: **{streak}** hari",
+    streak_line_many: "- 🔥 Streak: **{streak}** hari",
+    level_up_line: "- 🎉 Level up! Sekarang kamu level **{level}**",
+    totals_title: "**Total Kamu**",
+    total_money_line: "- Uang: **{money}**",
+    total_exp_line: "- EXP: **{exp}**",
+    total_level_line: "- Level: **{level}**",
+    next_daily_line: "- Daily berikutnya: <t:{timestamp}:R>",
+  },
+});
 
 const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
@@ -21,11 +63,11 @@ export default {
       const remaining = formatDuration((nextDailyAt - now) / 1000);
       const card = createCard({
         color: 0xfee75c,
-        title: "Daily Not Ready",
+        title: ctx.t("daily.not_ready_title"),
         body: [
-          `You already claimed daily reward.`,
-          `- Try again in: **${remaining}**`,
-          `- Available: <t:${Math.floor(nextDailyAt / 1000)}:R>`,
+          ctx.t("daily.already_claimed"),
+          ctx.t("daily.try_again_line", { remaining }),
+          ctx.t("daily.available_line", { timestamp: Math.floor(nextDailyAt / 1000) }),
         ].join("\n"),
       });
 
@@ -54,19 +96,23 @@ export default {
 
     const card = createCard({
       color: 0x57f287,
-      title: "Daily Claimed",
+      title: ctx.t("daily.claimed_title"),
       body: [
-        `You received your daily reward.`,
-        `- Money: **+${rewardMoney}**${streakBonus > 0 ? ` (+**${streakBonus}** streak bonus)` : ""}`,
-        `- EXP: **+${rewardExp}**`,
-        `- 🔥 Streak: **${streak}** day${streak === 1 ? "" : "s"}`,
-        ...(leveledUp ? [`- 🎉 Level up! You are now level **${user.level}**`] : []),
+        ctx.t("daily.received"),
+        streakBonus > 0
+          ? ctx.t("daily.money_line_bonus", { money: rewardMoney, bonus: streakBonus })
+          : ctx.t("daily.money_line", { money: rewardMoney }),
+        ctx.t("daily.exp_line", { exp: rewardExp }),
+        streak === 1
+          ? ctx.t("daily.streak_line_one", { streak })
+          : ctx.t("daily.streak_line_many", { streak }),
+        ...(leveledUp ? [ctx.t("daily.level_up_line", { level: user.level })] : []),
         "",
-        "**Your Totals**",
-        `- Money: **${user.money}**`,
-        `- EXP: **${user.exp}**`,
-        `- Level: **${user.level}**`,
-        `- Next daily: <t:${Math.floor(user.nextDailyAt / 1000)}:R>`,
+        ctx.t("daily.totals_title"),
+        ctx.t("daily.total_money_line", { money: user.money }),
+        ctx.t("daily.total_exp_line", { exp: user.exp }),
+        ctx.t("daily.total_level_line", { level: user.level }),
+        ctx.t("daily.next_daily_line", { timestamp: Math.floor(user.nextDailyAt / 1000) }),
       ].join("\n"),
     });
 

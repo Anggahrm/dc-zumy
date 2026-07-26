@@ -1,12 +1,36 @@
 import { InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { temproleJobKey } from "#services/scheduler-jobs.js";
 import { createCard, replyCard } from "#utils/respond.js";
 import { formatDuration, parseDuration } from "#utils/time.js";
 
 const MAX_DURATION_MS = 90 * 24 * 60 * 60 * 1000;
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Temp Role", body });
+registerStrings("temprole", {
+  en: {
+    title: "Temp Role",
+    invalid_duration: "Duration must be between **1m** and **90d** (e.g. `1h`, `3d`).",
+    role_unassignable: "That role can't be assigned (managed, @everyone, or above my highest role).",
+    role_above_actor: "You can only grant roles below your own highest role.",
+    not_in_server: "That user is not in this server.",
+    assign_failed: "I couldn't assign that role. Check my permissions.",
+    granted: "<@{userId}> received <@&{roleId}> for **{duration}**.",
+    removed_line: "- Removed automatically: <t:{until}:F> (<t:{until}:R>)",
+  },
+  id: {
+    title: "Role Sementara",
+    invalid_duration: "Durasi harus antara **1m** dan **90d** (contoh: `1h`, `3d`).",
+    role_unassignable: "Role itu tidak bisa diberikan (managed, @everyone, atau di atas role tertinggiku).",
+    role_above_actor: "Kamu hanya bisa memberikan role yang posisinya di bawah role tertinggimu.",
+    not_in_server: "User itu tidak ada di server ini.",
+    assign_failed: "Aku tidak bisa memberikan role itu. Cek permission-ku ya.",
+    granted: "<@{userId}> dapat <@&{roleId}> selama **{duration}**.",
+    removed_line: "- Dihapus otomatis: <t:{until}:F> (<t:{until}:R>)",
+  },
+});
+
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("temprole.title"), body });
 }
 
 export default {
@@ -30,7 +54,7 @@ export default {
     .addStringOption((option) =>
       option.setName("duration").setDescription("e.g. 1h, 3d, 2w (max 90d)").setRequired(true),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for temprole command.");
@@ -41,12 +65,13 @@ export default {
       throw new Error("Scheduler is not available.");
     }
 
+    const t = ctx.t;
     const target = interaction.options.getUser("target", true);
     const role = interaction.options.getRole("role", true);
     const durationMs = parseDuration(interaction.options.getString("duration", true));
 
     if (!durationMs || durationMs < 60_000 || durationMs > MAX_DURATION_MS) {
-      await replyCard(interaction, errorCard("Duration must be between **1m** and **90d** (e.g. `1h`, `3d`)."), {
+      await replyCard(interaction, errorCard(t, t("temprole.invalid_duration")), {
         ephemeral: true,
       });
       return;
@@ -54,7 +79,7 @@ export default {
 
     const me = guild.members.me;
     if (role.id === guild.id || role.managed || (me && role.position >= me.roles.highest.position)) {
-      await replyCard(interaction, errorCard("That role can't be assigned (managed, @everyone, or above my highest role)."), {
+      await replyCard(interaction, errorCard(t, t("temprole.role_unassignable")), {
         ephemeral: true,
       });
       return;
@@ -68,7 +93,7 @@ export default {
       interaction.user.id !== guild.ownerId
       && (!actorMember || role.position >= actorMember.roles.highest.position)
     ) {
-      await replyCard(interaction, errorCard("You can only grant roles below your own highest role."), {
+      await replyCard(interaction, errorCard(t, t("temprole.role_above_actor")), {
         ephemeral: true,
       });
       return;
@@ -76,14 +101,14 @@ export default {
 
     const member = await guild.members.fetch(target.id).catch(() => null);
     if (!member) {
-      await replyCard(interaction, errorCard("That user is not in this server."), { ephemeral: true });
+      await replyCard(interaction, errorCard(t, t("temprole.not_in_server")), { ephemeral: true });
       return;
     }
 
     try {
       await member.roles.add(role, `Temp role by ${interaction.user.tag} (${formatDuration(durationMs / 1000)})`);
     } catch {
-      await replyCard(interaction, errorCard("I couldn't assign that role. Check my permissions."), { ephemeral: true });
+      await replyCard(interaction, errorCard(t, t("temprole.assign_failed")), { ephemeral: true });
       return;
     }
 
@@ -100,10 +125,10 @@ export default {
       interaction,
       createCard({
         color: 0x57f287,
-        title: "Temp Role",
+        title: t("temprole.title"),
         body: [
-          `<@${target.id}> received <@&${role.id}> for **${formatDuration(durationMs / 1000)}**.`,
-          `- Removed automatically: <t:${until}:F> (<t:${until}:R>)`,
+          t("temprole.granted", { userId: target.id, roleId: role.id, duration: formatDuration(durationMs / 1000) }),
+          t("temprole.removed_line", { until }),
         ].join("\n"),
       }),
       { ephemeral: true },

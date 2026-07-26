@@ -9,7 +9,39 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard, replyError } from "#utils/respond.js";
+
+registerStrings("say", {
+  en: {
+    title: "Say",
+    guild_only_form: "This form only works in a server.",
+    need_manage_server: "You need the **Manage Server** permission to post announcements.",
+    channel_unavailable: "That channel is no longer available.",
+    empty_body: "The message body cannot be empty.",
+    send_failed: "I couldn't send the message to that channel. Check my permissions there.",
+    posted_by: "Posted by {tag}",
+    posted: "Announcement posted to <#{channel_id}>.",
+    pick_text_channel: "Pick a text channel I can post in.",
+    modal_title: "Compose announcement",
+    modal_label_title: "Title (optional)",
+    modal_label_body: "Message",
+  },
+  id: {
+    title: "Say",
+    guild_only_form: "Form ini hanya bisa dipakai di server.",
+    need_manage_server: "Kamu butuh permission **Manage Server** untuk memposting pengumuman.",
+    channel_unavailable: "Channel itu sudah tidak tersedia.",
+    empty_body: "Isi pesan tidak boleh kosong.",
+    send_failed: "Aku tidak bisa mengirim pesan ke channel itu. Cek permission-ku di sana.",
+    posted_by: "Diposting oleh {tag}",
+    posted: "Pengumuman diposting ke <#{channel_id}>.",
+    pick_text_channel: "Pilih text channel yang bisa kupakai untuk posting.",
+    modal_title: "Tulis pengumuman",
+    modal_label_title: "Judul (opsional)",
+    modal_label_body: "Pesan",
+  },
+});
 
 const CUSTOM_ID_PREFIX = "say:";
 
@@ -32,35 +64,35 @@ export default {
         .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
         .setRequired(false),
     ),
-  async onComponent({ interaction }) {
+  async onComponent({ interaction, t }) {
     if (!interaction.isModalSubmit()) return false;
     if (!interaction.customId.startsWith(CUSTOM_ID_PREFIX)) return false;
 
     const channelId = interaction.customId.slice(CUSTOM_ID_PREFIX.length);
     const guild = interaction.guild;
     if (!guild) {
-      await replyError(interaction, "This form only works in a server.");
+      await replyError(interaction, t("say.guild_only_form"));
       return true;
     }
 
     // Re-check permission at submit time: the modal could be resolved after
     // the member's roles changed.
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
-      await replyError(interaction, "You need the **Manage Server** permission to post announcements.");
+      await replyError(interaction, t("say.need_manage_server"));
       return true;
     }
 
     const channel = guild.channels.cache.get(channelId)
       ?? (await guild.channels.fetch(channelId).catch(() => null));
     if (!channel || !channel.isTextBased() || typeof channel.send !== "function") {
-      await replyError(interaction, "That channel is no longer available.");
+      await replyError(interaction, t("say.channel_unavailable"));
       return true;
     }
 
     const title = interaction.fields.getTextInputValue("title")?.trim() ?? "";
     const body = interaction.fields.getTextInputValue("body")?.trim();
     if (!body) {
-      await replyError(interaction, "The message body cannot be empty.");
+      await replyError(interaction, t("say.empty_body"));
       return true;
     }
 
@@ -71,14 +103,14 @@ export default {
             color: 0x5865f2,
             title: title || null,
             body,
-            footer: `Posted by ${interaction.user.tag}`,
+            footer: t("say.posted_by", { tag: interaction.user.tag }),
           }),
         ],
         flags: MessageFlags.IsComponentsV2,
         allowedMentions: { parse: [] },
       });
     } catch {
-      await replyError(interaction, "I couldn't send the message to that channel. Check my permissions there.");
+      await replyError(interaction, t("say.send_failed"));
       return true;
     }
 
@@ -86,14 +118,14 @@ export default {
       interaction,
       createCard({
         color: 0x57f287,
-        title: "Say",
-        body: `Announcement posted to <#${channel.id}>.`,
+        title: t("say.title"),
+        body: t("say.posted", { channel_id: channel.id }),
       }),
       { ephemeral: true },
     );
     return true;
   },
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for say command.");
@@ -101,18 +133,18 @@ export default {
 
     const channel = interaction.options.getChannel("channel") ?? interaction.channel;
     if (!channel || !channel.isTextBased()) {
-      await replyError(interaction, "Pick a text channel I can post in.");
+      await replyError(interaction, ctx.t("say.pick_text_channel"));
       return;
     }
 
     const modal = new ModalBuilder()
       .setCustomId(`${CUSTOM_ID_PREFIX}${channel.id}`)
-      .setTitle("Compose announcement")
+      .setTitle(ctx.t("say.modal_title"))
       .addComponents(
         new ActionRowBuilder().addComponents(
           new TextInputBuilder()
             .setCustomId("title")
-            .setLabel("Title (optional)")
+            .setLabel(ctx.t("say.modal_label_title"))
             .setStyle(TextInputStyle.Short)
             .setMaxLength(100)
             .setRequired(false),
@@ -120,7 +152,7 @@ export default {
         new ActionRowBuilder().addComponents(
           new TextInputBuilder()
             .setCustomId("body")
-            .setLabel("Message")
+            .setLabel(ctx.t("say.modal_label_body"))
             .setStyle(TextInputStyle.Paragraph)
             .setMaxLength(2000)
             .setRequired(true),

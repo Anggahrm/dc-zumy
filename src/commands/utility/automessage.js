@@ -9,15 +9,47 @@ import {
   MAX_INTERVAL_MS,
   MIN_INTERVAL_MS,
 } from "#services/automessages.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
 import { formatDuration, parseDuration } from "#utils/time.js";
 
-function successCard(body) {
-  return createCard({ color: 0x57f287, title: "Auto-messages", body });
+registerStrings("automessage", {
+  en: {
+    title: "Auto-messages",
+    interval_invalid: "Interval must be between **30m** and **7d** (e.g. `1h`, `12h`, `1d`).",
+    pick_text_channel: "Pick a text channel in this server.",
+    reason_invalid_name: "Names must be 1-32 chars: lowercase letters, numbers, `-`, `_`.",
+    reason_exists: "An auto-message with that name already exists.",
+    reason_full: "Limit reached (max {max}).",
+    create_failed: "Could not create it.",
+    created: "Auto-message `{name}` created.\n- Channel: <#{channel_id}>\n- Every: **{interval}** (first post in one interval)",
+    deleted: "Auto-message deleted.",
+    not_found: "No auto-message with that name.",
+    list_line: "- `{name}` — every **{interval}** in <#{channel_id}>",
+    list_empty: "No auto-messages yet. Use `/automessage add`.",
+  },
+  id: {
+    title: "Pesan Otomatis",
+    interval_invalid: "Interval harus antara **30m** dan **7d** (contoh: `1h`, `12h`, `1d`).",
+    pick_text_channel: "Pilih text channel di server ini.",
+    reason_invalid_name: "Nama harus 1-32 karakter: huruf kecil, angka, `-`, `_`.",
+    reason_exists: "Pesan otomatis dengan nama itu sudah ada.",
+    reason_full: "Limit tercapai (maksimal {max}).",
+    create_failed: "Tidak bisa membuatnya.",
+    created: "Pesan otomatis `{name}` dibuat.\n- Channel: <#{channel_id}>\n- Setiap: **{interval}** (post pertama setelah satu interval)",
+    deleted: "Pesan otomatis dihapus.",
+    not_found: "Tidak ada pesan otomatis dengan nama itu.",
+    list_line: "- `{name}` — setiap **{interval}** di <#{channel_id}>",
+    list_empty: "Belum ada pesan otomatis. Pakai `/automessage add`.",
+  },
+});
+
+function successCard(t, body) {
+  return createCard({ color: 0x57f287, title: t("automessage.title"), body });
 }
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Auto-messages", body });
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("automessage.title"), body });
 }
 
 export default {
@@ -99,7 +131,7 @@ export default {
     if (subcommand === "add") {
       const intervalMs = parseDuration(interaction.options.getString("interval", true));
       if (!intervalMs || intervalMs < MIN_INTERVAL_MS || intervalMs > MAX_INTERVAL_MS) {
-        await replyCard(interaction, errorCard("Interval must be between **30m** and **7d** (e.g. `1h`, `12h`, `1d`)."), {
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("automessage.interval_invalid")), {
           ephemeral: true,
         });
         return;
@@ -107,7 +139,7 @@ export default {
 
       const channel = interaction.options.getChannel("channel") ?? interaction.channel;
       if (!channel?.isTextBased() || typeof channel.send !== "function" || channel.guildId !== guild.id) {
-        await replyCard(interaction, errorCard("Pick a text channel in this server."), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("automessage.pick_text_channel")), { ephemeral: true });
         return;
       }
 
@@ -119,11 +151,11 @@ export default {
 
       if (!result.ok) {
         const reasons = {
-          invalid_name: "Names must be 1-32 chars: lowercase letters, numbers, `-`, `_`.",
-          exists: "An auto-message with that name already exists.",
-          full: `Limit reached (max ${MAX_AUTOMESSAGES}).`,
+          invalid_name: ctx.t("automessage.reason_invalid_name"),
+          exists: ctx.t("automessage.reason_exists"),
+          full: ctx.t("automessage.reason_full", { max: MAX_AUTOMESSAGES }),
         };
-        await replyCard(interaction, errorCard(reasons[result.reason] ?? "Could not create it."), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, reasons[result.reason] ?? ctx.t("automessage.create_failed")), { ephemeral: true });
         return;
       }
 
@@ -137,11 +169,11 @@ export default {
 
       await replyCard(
         interaction,
-        successCard([
-          `Auto-message \`${result.name}\` created.`,
-          `- Channel: <#${channel.id}>`,
-          `- Every: **${formatDuration(intervalMs / 1000)}** (first post in one interval)`,
-        ].join("\n")),
+        successCard(ctx.t, ctx.t("automessage.created", {
+          name: result.name,
+          channel_id: channel.id,
+          interval: formatDuration(intervalMs / 1000),
+        })),
         { ephemeral: true },
       );
       return;
@@ -156,7 +188,7 @@ export default {
 
       await replyCard(
         interaction,
-        removed ? successCard("Auto-message deleted.") : errorCard("No auto-message with that name."),
+        removed ? successCard(ctx.t, ctx.t("automessage.deleted")) : errorCard(ctx.t, ctx.t("automessage.not_found")),
         { ephemeral: true },
       );
       return;
@@ -170,15 +202,19 @@ export default {
         interaction,
         createCard({
           color: 0x3498db,
-          title: "Auto-messages",
+          title: ctx.t("automessage.title"),
           body: names.length > 0
             ? names
               .map((name) => {
                 const entry = automessages[name];
-                return `- \`${name}\` — every **${formatDuration(entry.intervalMs / 1000)}** in <#${entry.channelId}>`;
+                return ctx.t("automessage.list_line", {
+                  name,
+                  interval: formatDuration(entry.intervalMs / 1000),
+                  channel_id: entry.channelId,
+                });
               })
               .join("\n")
-            : "No auto-messages yet. Use `/automessage add`.",
+            : ctx.t("automessage.list_empty"),
         }),
         { ephemeral: true },
       );

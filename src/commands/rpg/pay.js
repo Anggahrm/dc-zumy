@@ -1,5 +1,25 @@
 import { SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("pay", {
+  en: {
+    title: "Pay",
+    bots_no_money: "Bots don't need money.",
+    cannot_pay_self: "You can't pay yourself.",
+    not_enough_money: "Not enough money. Your balance: **{balance}** 💰",
+    sent_line: "💸 Sent **{amount}** to <@{user_id}>.",
+    balance_line: "- Your balance: **{balance}**",
+  },
+  id: {
+    title: "Pay",
+    bots_no_money: "Bot tidak butuh uang.",
+    cannot_pay_self: "Kamu tidak bisa bayar ke diri sendiri.",
+    not_enough_money: "Uangmu tidak cukup. Saldomu: **{balance}** 💰",
+    sent_line: "💸 Terkirim **{amount}** ke <@{user_id}>.",
+    balance_line: "- Saldomu: **{balance}**",
+  },
+});
 
 export default {
   category: "rpg",
@@ -20,7 +40,7 @@ export default {
     if (target.bot) {
       await replyCard(
         interaction,
-        createCard({ color: 0xed4245, title: "Pay", body: "Bots don't need money." }),
+        createCard({ color: 0xed4245, title: ctx.t("pay.title"), body: ctx.t("pay.bots_no_money") }),
         { ephemeral: true },
       );
       return;
@@ -29,7 +49,7 @@ export default {
     if (target.id === interaction.user.id) {
       await replyCard(
         interaction,
-        createCard({ color: 0xed4245, title: "Pay", body: "You can't pay yourself." }),
+        createCard({ color: 0xed4245, title: ctx.t("pay.title"), body: ctx.t("pay.cannot_pay_self") }),
         { ephemeral: true },
       );
       return;
@@ -43,8 +63,8 @@ export default {
         interaction,
         createCard({
           color: 0xed4245,
-          title: "Pay",
-          body: `Not enough money. Your balance: **${balance}** 💰`,
+          title: ctx.t("pay.title"),
+          body: ctx.t("pay.not_enough_money", { balance }),
         }),
         { ephemeral: true },
       );
@@ -59,10 +79,10 @@ export default {
       interaction,
       createCard({
         color: 0x57f287,
-        title: "Pay",
+        title: ctx.t("pay.title"),
         body: [
-          `💸 Sent **${amount}** to <@${target.id}>.`,
-          `- Your balance: **${sender.money}**`,
+          ctx.t("pay.sent_line", { amount, user_id: target.id }),
+          ctx.t("pay.balance_line", { balance: sender.money }),
         ].join("\n"),
       }),
     );

@@ -1,6 +1,28 @@
 import { InteractionContextType, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { getLeaderboard, getLevelsConfig } from "#services/levels.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("leaderboard", {
+  en: {
+    title: "Leaderboard",
+    leveling_disabled: "Leveling is disabled here. An admin can enable it with `/levelconfig toggle`.",
+    empty_first_page: "Nobody has XP yet. Start chatting!",
+    empty_page: "This page is empty.",
+    row_line: "{badge} <@{user_id}> — level **{level}**, {xp} XP",
+    board_title: "{guild} Leaderboard",
+    footer: "Page {page}/{total_pages} · {total} ranked member(s)",
+  },
+  id: {
+    title: "Leaderboard",
+    leveling_disabled: "Leveling dimatikan di sini. Admin bisa menyalakannya lagi dengan `/levelconfig toggle`.",
+    empty_first_page: "Belum ada yang punya XP. Ayo mulai ngobrol!",
+    empty_page: "Halaman ini kosong.",
+    row_line: "{badge} <@{user_id}> — level **{level}**, {xp} XP",
+    board_title: "Leaderboard {guild}",
+    footer: "Halaman {page}/{total_pages} · {total} member masuk peringkat",
+  },
+});
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 const PAGE_SIZE = 10;
@@ -20,7 +42,7 @@ export default {
     .addIntegerOption((option) =>
       option.setName("page").setDescription("Page number").setMinValue(1).setMaxValue(100).setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for leaderboard command.");
@@ -32,8 +54,8 @@ export default {
         interaction,
         createCard({
           color: 0xf1c40f,
-          title: "Leaderboard",
-          body: "Leveling is disabled here. An admin can enable it with `/levelconfig toggle`.",
+          title: ctx.t("leaderboard.title"),
+          body: ctx.t("leaderboard.leveling_disabled"),
         }),
         { ephemeral: true },
       );
@@ -48,8 +70,8 @@ export default {
         interaction,
         createCard({
           color: 0x3498db,
-          title: "Leaderboard",
-          body: page === 1 ? "Nobody has XP yet. Start chatting!" : "This page is empty.",
+          title: ctx.t("leaderboard.title"),
+          body: page === 1 ? ctx.t("leaderboard.empty_first_page") : ctx.t("leaderboard.empty_page"),
         }),
         { ephemeral: true },
       );
@@ -61,16 +83,25 @@ export default {
     const lines = rows.map((row, index) => {
       const rank = startRank + index + 1;
       const badge = MEDALS[rank - 1] ?? `**#${rank}**`;
-      return `${badge} <@${row.userId}> — level **${row.level}**, ${numberFormatter.format(row.xp)} XP`;
+      return ctx.t("leaderboard.row_line", {
+        badge,
+        user_id: row.userId,
+        level: row.level,
+        xp: numberFormatter.format(row.xp),
+      });
     });
 
     await replyCard(
       interaction,
       createCard({
         color: 0x5865f2,
-        title: `${guild.name} Leaderboard`,
+        title: ctx.t("leaderboard.board_title", { guild: guild.name }),
         body: lines.join("\n"),
-        footer: `Page ${page}/${totalPages} · ${numberFormatter.format(total)} ranked member(s)`,
+        footer: ctx.t("leaderboard.footer", {
+          page,
+          total_pages: totalPages,
+          total: numberFormatter.format(total),
+        }),
       }),
     );
   },

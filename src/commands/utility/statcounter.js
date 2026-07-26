@@ -1,4 +1,5 @@
 import { ChannelType, InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import {
   addStatcounter,
   createCounterChannel,
@@ -9,20 +10,44 @@ import {
 } from "#services/statcounters.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
-function successCard(body) {
-  return createCard({ color: 0x57f287, title: "Stat Counters", body });
+registerStrings("statcounter", {
+  en: {
+    title: "Stat Counters",
+    template_members: "👥 Members: {count}",
+    template_bots: "🤖 Bots: {count}",
+    template_channels: "📁 Channels: {count}",
+    template_roles: "🏷️ Roles: {count}",
+    template_missing_count: "The template must contain `{count}`.",
+    limit_reached: "Counter limit reached (max {max}).",
+    create_failed: "I couldn't create the channel. I need **Manage Channels**.",
+    created: "Counter created: **{name}**\n- Updates every ~10 minutes (Discord limits channel renames).",
+    not_counter: "That channel is not a stat counter.",
+    removed: "Counter removed.",
+    list_empty: "No counters yet. Use `/statcounter add`.",
+  },
+  id: {
+    title: "Stat Counter",
+    template_members: "👥 Member: {count}",
+    template_bots: "🤖 Bot: {count}",
+    template_channels: "📁 Channel: {count}",
+    template_roles: "🏷️ Role: {count}",
+    template_missing_count: "Template harus mengandung `{count}`.",
+    limit_reached: "Batas counter tercapai (maksimal {max}).",
+    create_failed: "Aku tidak bisa membuat channel-nya. Aku butuh permission **Manage Channels**.",
+    created: "Counter dibuat: **{name}**\n- Update tiap ~10 menit (Discord membatasi rename channel).",
+    not_counter: "Channel itu bukan stat counter.",
+    removed: "Counter dihapus.",
+    list_empty: "Belum ada counter. Pakai `/statcounter add`.",
+  },
+});
+
+function successCard(t, body) {
+  return createCard({ color: 0x57f287, title: t("statcounter.title"), body });
 }
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Stat Counters", body });
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("statcounter.title"), body });
 }
-
-const DEFAULT_TEMPLATES = {
-  members: "👥 Members: {count}",
-  bots: "🤖 Bots: {count}",
-  channels: "📁 Channels: {count}",
-  roles: "🏷️ Roles: {count}",
-};
 
 export default {
   category: "utility",
@@ -79,16 +104,16 @@ export default {
 
     if (subcommand === "add") {
       const type = interaction.options.getString("type", true);
-      const template = interaction.options.getString("template")?.trim() || DEFAULT_TEMPLATES[type];
+      const template = interaction.options.getString("template")?.trim() || ctx.t(`statcounter.template_${type}`);
 
       if (!template.includes("{count}")) {
-        await replyCard(interaction, errorCard("The template must contain `{count}`."), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("statcounter.template_missing_count")), { ephemeral: true });
         return;
       }
 
       const counters = await getStatcounters(guildId);
       if (Object.keys(counters).length >= MAX_STATCOUNTERS) {
-        await replyCard(interaction, errorCard(`Counter limit reached (max ${MAX_STATCOUNTERS}).`), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("statcounter.limit_reached", { max: MAX_STATCOUNTERS })), { ephemeral: true });
         return;
       }
 
@@ -96,7 +121,7 @@ export default {
 
       const channel = await createCounterChannel(guild, { type, template });
       if (!channel) {
-        await replyCard(interaction, errorCard("I couldn't create the channel. I need **Manage Channels**."), {
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("statcounter.create_failed")), {
           ephemeral: true,
         });
         return;
@@ -105,10 +130,7 @@ export default {
       await addStatcounter(guildId, channel.id, { type, template });
       await replyCard(
         interaction,
-        successCard([
-          `Counter created: **${channel.name}**`,
-          "- Updates every ~10 minutes (Discord limits channel renames).",
-        ].join("\n")),
+        successCard(ctx.t, ctx.t("statcounter.created", { name: channel.name })),
         { ephemeral: true },
       );
       return;
@@ -118,12 +140,12 @@ export default {
       const channel = interaction.options.getChannel("channel", true);
       const removed = await removeStatcounter(guildId, channel.id);
       if (!removed) {
-        await replyCard(interaction, errorCard("That channel is not a stat counter."), { ephemeral: true });
+        await replyCard(interaction, errorCard(ctx.t, ctx.t("statcounter.not_counter")), { ephemeral: true });
         return;
       }
 
       await channel.delete("Stat counter removed").catch(() => {});
-      await replyCard(interaction, successCard("Counter removed."), { ephemeral: true });
+      await replyCard(interaction, successCard(ctx.t, ctx.t("statcounter.removed")), { ephemeral: true });
       return;
     }
 
@@ -134,10 +156,10 @@ export default {
         interaction,
         createCard({
           color: 0x3498db,
-          title: "Stat Counters",
+          title: ctx.t("statcounter.title"),
           body: entries.length > 0
             ? entries.map(([channelId, entry]) => `- <#${channelId}> — ${entry.type} (\`${entry.template}\`)`).join("\n")
-            : "No counters yet. Use `/statcounter add`.",
+            : ctx.t("statcounter.list_empty"),
         }),
         { ephemeral: true },
       );

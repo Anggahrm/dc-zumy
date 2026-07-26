@@ -1,5 +1,17 @@
 import { InteractionContextType, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("poll", {
+  en: {
+    title: "Poll",
+    need_two_answers: "A poll needs at least two answers.",
+  },
+  id: {
+    title: "Polling",
+    need_two_answers: "Polling butuh minimal dua jawaban.",
+  },
+});
 
 const DURATION_CHOICES = [
   { name: "1 hour", value: 1 },
@@ -48,7 +60,7 @@ export default {
     .addBooleanOption((option) =>
       option.setName("multiselect").setDescription("Allow picking multiple answers").setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const answers = [];
     for (let i = 1; i <= 5; i += 1) {
       const answer = interaction.options.getString(`answer${i}`)?.trim();
@@ -58,7 +70,7 @@ export default {
     if (answers.length < 2) {
       await replyCard(
         interaction,
-        createCard({ color: 0xed4245, title: "Poll", body: "A poll needs at least two answers." }),
+        createCard({ color: 0xed4245, title: ctx.t("poll.title"), body: ctx.t("poll.need_two_answers") }),
         { ephemeral: true },
       );
       return;

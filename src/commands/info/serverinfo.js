@@ -7,6 +7,20 @@ import {
   SlashCommandBuilder,
   TextDisplayBuilder,
 } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
+
+registerStrings("serverinfo", {
+  en: {
+    info_body:
+      "## Server Info\n- Name: **{name}**\n- Server ID: `{id}`\n- Owner: {owner}\n- Members: **{members}**\n- Channels: **{text}** text · **{voice}** voice\n- Roles: **{roles}**\n- Emojis: **{emojis}**\n- Boosts: **{boosts}** (tier {tier})\n- Created: <t:{created}:F> (<t:{created}:R>)",
+    icon_alt: "{name} icon",
+  },
+  id: {
+    info_body:
+      "## Info Server\n- Nama: **{name}**\n- ID Server: `{id}`\n- Owner: {owner}\n- Member: **{members}**\n- Channel: **{text}** text · **{voice}** voice\n- Role: **{roles}**\n- Emoji: **{emojis}**\n- Boost: **{boosts}** (tier {tier})\n- Dibuat: <t:{created}:F> (<t:{created}:R>)",
+    icon_alt: "Ikon {name}",
+  },
+});
 
 export default {
   category: "info",
@@ -18,7 +32,7 @@ export default {
     .setName("serverinfo")
     .setDescription("Show information about this server")
     .setContexts(InteractionContextType.Guild),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for serverinfo command.");
@@ -32,21 +46,22 @@ export default {
       channel.type === ChannelType.GuildVoice || channel.type === ChannelType.GuildStageVoice).size;
     const createdAt = Math.floor(guild.createdTimestamp / 1000);
 
-    const lines = [
-      "## Server Info",
-      `- Name: **${guild.name}**`,
-      `- Server ID: \`${guild.id}\``,
-      `- Owner: ${owner ? `**${owner.user.tag}**` : `\`${guild.ownerId}\``}`,
-      `- Members: **${guild.memberCount}**`,
-      `- Channels: **${textChannels}** text · **${voiceChannels}** voice`,
-      `- Roles: **${guild.roles.cache.size}**`,
-      `- Emojis: **${guild.emojis.cache.size}**`,
-      `- Boosts: **${guild.premiumSubscriptionCount ?? 0}** (tier ${guild.premiumTier})`,
-      `- Created: <t:${createdAt}:F> (<t:${createdAt}:R>)`,
-    ];
+    const body = ctx.t("serverinfo.info_body", {
+      name: guild.name,
+      id: guild.id,
+      owner: owner ? `**${owner.user.tag}**` : `\`${guild.ownerId}\``,
+      members: guild.memberCount,
+      text: textChannels,
+      voice: voiceChannels,
+      roles: guild.roles.cache.size,
+      emojis: guild.emojis.cache.size,
+      boosts: guild.premiumSubscriptionCount ?? 0,
+      tier: guild.premiumTier,
+      created: createdAt,
+    });
 
     const iconUrl = guild.iconURL({ extension: "png", size: 1024 });
-    const text = new TextDisplayBuilder().setContent(lines.join("\n"));
+    const text = new TextDisplayBuilder().setContent(body);
     const card = new ContainerBuilder().setAccentColor(0x5865f2);
 
     if (iconUrl) {
@@ -54,7 +69,7 @@ export default {
         new SectionBuilder()
           .addTextDisplayComponents(text)
           .setThumbnailAccessory((thumbnail) =>
-            thumbnail.setURL(iconUrl).setDescription(`${guild.name} icon`),
+            thumbnail.setURL(iconUrl).setDescription(ctx.t("serverinfo.icon_alt", { name: guild.name })),
           ),
       );
     } else {

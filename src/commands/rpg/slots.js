@@ -1,5 +1,25 @@
 import { SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("slots", {
+  en: {
+    title: "Slots",
+    not_enough_money: "Not enough money. Your balance: **{balance}** 💰",
+    reels_line: "🎰 {reels}",
+    win_line: "You win **{amount}** 💰 (x{multiplier})!",
+    lose_line: "No match — you lose **{amount}** 💰",
+    balance_line: "- Balance: **{balance}**",
+  },
+  id: {
+    title: "Slots",
+    not_enough_money: "Uangmu kurang. Saldomu: **{balance}** 💰",
+    reels_line: "🎰 {reels}",
+    win_line: "Kamu menang **{amount}** 💰 (x{multiplier})!",
+    lose_line: "Tidak ada yang cocok — kamu kalah **{amount}** 💰",
+    balance_line: "- Saldo: **{balance}**",
+  },
+});
 
 const MIN_BET = 10;
 const MAX_BET = 25_000;
@@ -34,7 +54,7 @@ export default {
     if (balance < amount) {
       await replyCard(
         interaction,
-        createCard({ color: 0xed4245, title: "Slots", body: `Not enough money. Your balance: **${balance}** 💰` }),
+        createCard({ color: 0xed4245, title: ctx.t("slots.title"), body: ctx.t("slots.not_enough_money", { balance }) }),
         { ephemeral: true },
       );
       return;
@@ -49,14 +69,14 @@ export default {
       interaction,
       createCard({
         color: multiplier > 0 ? 0x57f287 : 0xed4245,
-        title: "Slots",
+        title: ctx.t("slots.title"),
         body: [
-          `🎰 ${reels.join(" | ")}`,
+          ctx.t("slots.reels_line", { reels: reels.join(" | ") }),
           "",
           multiplier > 0
-            ? `You win **${amount * multiplier}** 💰 (x${multiplier})!`
-            : `No match — you lose **${amount}** 💰`,
-          `- Balance: **${user.money}**`,
+            ? ctx.t("slots.win_line", { amount: amount * multiplier, multiplier })
+            : ctx.t("slots.lose_line", { amount }),
+          ctx.t("slots.balance_line", { balance: user.money }),
         ].join("\n"),
       }),
     );

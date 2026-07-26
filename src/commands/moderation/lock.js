@@ -1,9 +1,31 @@
 import { ChannelType, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
-import { canManageChannel, normalizeReason, setChannelLock } from "#utils/moderation.js";
+import { registerStrings } from "#services/i18n.js";
+import { canManageChannel, setChannelLock } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Moderation", body });
+registerStrings("lock", {
+  en: {
+    title: "Moderation",
+    no_reason: "No reason provided.",
+    cannot_lock: "That channel can't be locked.",
+    need_manage_roles: "I need **Manage Roles** permission in that channel.",
+    audit_reason: "Locked by {user}: {reason}",
+    lock_failed: "Lock failed. Please check my channel permissions.",
+    locked_body: "🔒 <#{channel}> is now locked.\n- Reason: {reason}",
+  },
+  id: {
+    title: "Moderasi",
+    no_reason: "Tidak ada alasan yang diberikan.",
+    cannot_lock: "Channel itu tidak bisa dikunci.",
+    need_manage_roles: "Aku butuh permission **Manage Roles** di channel itu.",
+    audit_reason: "Dikunci oleh {user}: {reason}",
+    lock_failed: "Gagal mengunci. Cek permission-ku di channel itu ya.",
+    locked_body: "🔒 <#{channel}> sekarang dikunci.\n- Alasan: {reason}",
+  },
+});
+
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("lock.title"), body });
 }
 
 export default {
@@ -28,29 +50,29 @@ export default {
     .addStringOption((option) =>
       option.setName("reason").setDescription("Reason").setMaxLength(400).setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for lock command.");
     }
 
     const channel = interaction.options.getChannel("channel") ?? interaction.channel;
-    const reason = normalizeReason(interaction.options.getString("reason"));
+    const reason = interaction.options.getString("reason")?.trim() || ctx.t("lock.no_reason");
 
     if (!channel || !channel.permissionOverwrites) {
-      await replyCard(interaction, errorCard("That channel can't be locked."), { ephemeral: true });
+      await replyCard(interaction, errorCard(ctx.t, ctx.t("lock.cannot_lock")), { ephemeral: true });
       return;
     }
 
     if (!canManageChannel(channel)) {
-      await replyCard(interaction, errorCard("I need **Manage Roles** permission in that channel."), { ephemeral: true });
+      await replyCard(interaction, errorCard(ctx.t, ctx.t("lock.need_manage_roles")), { ephemeral: true });
       return;
     }
 
     try {
-      await setChannelLock(channel, true, `Locked by ${interaction.user.tag}: ${reason}`);
+      await setChannelLock(channel, true, ctx.t("lock.audit_reason", { user: interaction.user.tag, reason }));
     } catch {
-      await replyCard(interaction, errorCard("Lock failed. Please check my channel permissions."), { ephemeral: true });
+      await replyCard(interaction, errorCard(ctx.t, ctx.t("lock.lock_failed")), { ephemeral: true });
       return;
     }
 
@@ -58,11 +80,8 @@ export default {
       interaction,
       createCard({
         color: 0xf1c40f,
-        title: "Moderation",
-        body: [
-          `🔒 <#${channel.id}> is now locked.`,
-          `- Reason: ${reason}`,
-        ].join("\n"),
+        title: ctx.t("lock.title"),
+        body: ctx.t("lock.locked_body", { channel: channel.id, reason }),
       }),
     );
   },

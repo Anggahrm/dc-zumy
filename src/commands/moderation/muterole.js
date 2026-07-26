@@ -1,6 +1,40 @@
 import { ChannelType, InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { getModConfig, setMuteRole } from "#services/mod-config.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("muterole", {
+  en: {
+    title: "Mute Role",
+    current_role: "Current mute role: <@&{role}>",
+    role_missing: "Configured role `{roleId}` no longer exists. Run `/muterole set` or `/muterole create`.",
+    none_configured: "No mute role configured. Run `/muterole set` or `/muterole create`.",
+    need_manage_roles: "I need the **Manage Roles** permission for this.",
+    role_unusable: "That role can't be used as a mute role.",
+    role_too_high: "That role is equal to or higher than my highest role, so I can't assign it.",
+    set_success: "Mute role set to <@&{role}>.",
+    set_tip: "-# Tip: make sure this role denies Send Messages in your channels, or use `/muterole create` to set overwrites automatically.",
+    create_failed: "Failed to create the role. Check my permissions.",
+    created: "Created <@&{role}> and set it as the mute role.",
+    overwrites_line: "- Channel overwrites applied: **{applied}/{total}**",
+    skipped_channels_line: "- Some channels were skipped (missing permission there).",
+  },
+  id: {
+    title: "Role Mute",
+    current_role: "Role mute saat ini: <@&{role}>",
+    role_missing: "Role `{roleId}` yang tersimpan sudah tidak ada. Jalankan `/muterole set` atau `/muterole create` lagi ya.",
+    none_configured: "Role mute belum diatur. Jalankan `/muterole set` atau `/muterole create` dulu.",
+    need_manage_roles: "Aku butuh permission **Manage Roles** untuk ini.",
+    role_unusable: "Role itu tidak bisa dipakai sebagai role mute.",
+    role_too_high: "Role itu posisinya sama atau lebih tinggi dari role tertinggiku, jadi aku tidak bisa memberikannya.",
+    set_success: "Role mute diatur ke <@&{role}>.",
+    set_tip: "-# Tips: pastikan role ini menolak Send Messages di channel-mu, atau pakai `/muterole create` biar overwrites-nya diatur otomatis.",
+    create_failed: "Gagal membuat role. Cek permission-ku ya.",
+    created: "Berhasil membuat <@&{role}> dan mengaturnya sebagai role mute.",
+    overwrites_line: "- Channel overwrites diterapkan: **{applied}/{total}**",
+    skipped_channels_line: "- Beberapa channel dilewati (aku tidak punya permission di sana).",
+  },
+});
 
 const LOCKED_OVERWRITES = {
   SendMessages: false,
@@ -11,8 +45,8 @@ const LOCKED_OVERWRITES = {
   Speak: false,
 };
 
-function errorCard(body) {
-  return createCard({ color: 0xed4245, title: "Mute Role", body });
+function errorCard(t, body) {
+  return createCard({ color: 0xed4245, title: t("muterole.title"), body });
 }
 
 async function applyMuteOverwrites(guild, role) {
@@ -63,6 +97,7 @@ export default {
       throw new Error("Guild context is required for muterole command.");
     }
 
+    const t = ctx.t;
     const guildId = ctx.guild ?? guild.id;
     const subcommand = interaction.options.getSubcommand();
 
@@ -73,12 +108,12 @@ export default {
         interaction,
         createCard({
           color: 0x3498db,
-          title: "Mute Role",
+          title: t("muterole.title"),
           body: role
-            ? `Current mute role: <@&${role.id}>`
+            ? t("muterole.current_role", { role: role.id })
             : muteRoleId
-              ? `Configured role \`${muteRoleId}\` no longer exists. Run \`/muterole set\` or \`/muterole create\`.`
-              : "No mute role configured. Run `/muterole set` or `/muterole create`.",
+              ? t("muterole.role_missing", { roleId: muteRoleId })
+              : t("muterole.none_configured"),
         }),
         { ephemeral: true },
       );
@@ -87,20 +122,20 @@ export default {
 
     const me = guild.members.me;
     if (!me?.permissions.has(PermissionFlagsBits.ManageRoles)) {
-      await replyCard(interaction, errorCard("I need the **Manage Roles** permission for this."), { ephemeral: true });
+      await replyCard(interaction, errorCard(t, t("muterole.need_manage_roles")), { ephemeral: true });
       return;
     }
 
     if (subcommand === "set") {
       const role = interaction.options.getRole("role", true);
       if (role.id === guild.id || role.managed) {
-        await replyCard(interaction, errorCard("That role can't be used as a mute role."), { ephemeral: true });
+        await replyCard(interaction, errorCard(t, t("muterole.role_unusable")), { ephemeral: true });
         return;
       }
       if (role.position >= me.roles.highest.position) {
         await replyCard(
           interaction,
-          errorCard("That role is equal to or higher than my highest role, so I can't assign it."),
+          errorCard(t, t("muterole.role_too_high")),
           { ephemeral: true },
         );
         return;
@@ -111,10 +146,10 @@ export default {
         interaction,
         createCard({
           color: 0x57f287,
-          title: "Mute Role",
+          title: t("muterole.title"),
           body: [
-            `Mute role set to <@&${role.id}>.`,
-            "-# Tip: make sure this role denies Send Messages in your channels, or use `/muterole create` to set overwrites automatically.",
+            t("muterole.set_success", { role: role.id }),
+            t("muterole.set_tip"),
           ].join("\n"),
         }),
         { ephemeral: true },
@@ -133,7 +168,7 @@ export default {
           reason: `Mute role created by ${interaction.user.tag}`,
         });
       } catch {
-        await replyCard(interaction, errorCard("Failed to create the role. Check my permissions."), { ephemeral: true });
+        await replyCard(interaction, errorCard(t, t("muterole.create_failed")), { ephemeral: true });
         return;
       }
 
@@ -144,11 +179,11 @@ export default {
         interaction,
         createCard({
           color: 0x57f287,
-          title: "Mute Role",
+          title: t("muterole.title"),
           body: [
-            `Created <@&${role.id}> and set it as the mute role.`,
-            `- Channel overwrites applied: **${applied}/${total}**`,
-            ...(applied < total ? ["- Some channels were skipped (missing permission there)."] : []),
+            t("muterole.created", { role: role.id }),
+            t("muterole.overwrites_line", { applied, total }),
+            ...(applied < total ? [t("muterole.skipped_channels_line")] : []),
           ].join("\n"),
         }),
         { ephemeral: true },

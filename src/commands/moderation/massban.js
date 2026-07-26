@@ -1,7 +1,41 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { recordCase } from "#services/cases.js";
+import { registerStrings } from "#services/i18n.js";
 import { normalizeReason } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("massban", {
+  en: {
+    title: "Massban",
+    invalid_ids: "These don't look like user IDs: {ids}",
+    count_range: "Provide between 1 and {max} user IDs per run.",
+    skip_protected: "protected",
+    skip_hierarchy: "hierarchy",
+    skip_not_bannable: "not bannable",
+    skip_api_error: "api error",
+    case_suffix: " — Case #{caseNumber}",
+    complete_title: "**Massban Complete**{caseSuffix}",
+    banned_line: "- Banned: **{banned}**/{total}",
+    ids_line: "- IDs: {ids}",
+    skipped_line: "- Skipped: {skipped}",
+    reason_line: "- Reason: {reason}",
+  },
+  id: {
+    title: "Massban",
+    invalid_ids: "Ini kayaknya bukan user ID deh: {ids}",
+    count_range: "Masukkan 1 sampai {max} user ID per sekali jalan ya.",
+    skip_protected: "dilindungi",
+    skip_hierarchy: "hierarki role",
+    skip_not_bannable: "tidak bisa di-ban",
+    skip_api_error: "error API",
+    case_suffix: " — Case #{caseNumber}",
+    complete_title: "**Massban Selesai**{caseSuffix}",
+    banned_line: "- Di-ban: **{banned}**/{total}",
+    ids_line: "- ID: {ids}",
+    skipped_line: "- Dilewati: {skipped}",
+    reason_line: "- Alasan: {reason}",
+  },
+});
 
 const MAX_MASSBAN = 20;
 const ID_PATTERN = /^\d{5,30}$/;
@@ -35,12 +69,13 @@ export default {
         .setMaxValue(7)
         .setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
       throw new Error("Guild context is required for massban command.");
     }
 
+    const t = ctx.t;
     const reason = normalizeReason(interaction.options.getString("reason"));
     const days = interaction.options.getInteger("days") ?? 0;
     const rawIds = interaction.options.getString("ids", true)
@@ -56,8 +91,10 @@ export default {
         interaction,
         createCard({
           color: 0xed4245,
-          title: "Massban",
-          body: `These don't look like user IDs: ${invalid.slice(0, 5).map((id) => `\`${id.slice(0, 25)}\``).join(", ")}`,
+          title: t("massban.title"),
+          body: t("massban.invalid_ids", {
+            ids: invalid.slice(0, 5).map((id) => `\`${id.slice(0, 25)}\``).join(", "),
+          }),
         }),
         { ephemeral: true },
       );
@@ -69,8 +106,8 @@ export default {
         interaction,
         createCard({
           color: 0xed4245,
-          title: "Massban",
-          body: `Provide between 1 and ${MAX_MASSBAN} user IDs per run.`,
+          title: t("massban.title"),
+          body: t("massban.count_range", { max: MAX_MASSBAN }),
         }),
         { ephemeral: true },
       );
@@ -85,7 +122,7 @@ export default {
 
     for (const id of ids) {
       if (id === interaction.user.id || id === guild.ownerId || id === guild.client.user.id) {
-        skipped.push({ id, why: "protected" });
+        skipped.push({ id, why: t("massban.skip_protected") });
         continue;
       }
 
@@ -96,11 +133,11 @@ export default {
           && interaction.user.id !== guild.ownerId
           && member.roles.highest.position >= actorMember.roles.highest.position
         ) {
-          skipped.push({ id, why: "hierarchy" });
+          skipped.push({ id, why: t("massban.skip_hierarchy") });
           continue;
         }
         if (!member.bannable) {
-          skipped.push({ id, why: "not bannable" });
+          skipped.push({ id, why: t("massban.skip_not_bannable") });
           continue;
         }
       }
@@ -112,7 +149,7 @@ export default {
         });
         banned.push(id);
       } catch {
-        skipped.push({ id, why: "api error" });
+        skipped.push({ id, why: t("massban.skip_api_error") });
       }
     }
 
@@ -126,22 +163,22 @@ export default {
         reason: `${reason} (massban: ${banned.length} users)`,
         metadata: { massban: banned },
       });
-      caseNumbers = first ? ` — Case #${first.caseNumber}` : "";
+      caseNumbers = first ? t("massban.case_suffix", { caseNumber: first.caseNumber }) : "";
     }
 
     await replyCard(
       interaction,
       createCard({
         color: banned.length > 0 ? 0xf1c40f : 0xed4245,
-        title: "Massban",
+        title: t("massban.title"),
         body: [
-          `**Massban Complete**${caseNumbers}`,
-          `- Banned: **${banned.length}**/${ids.length}`,
-          ...(banned.length > 0 ? [`- IDs: ${banned.map((id) => `\`${id}\``).join(", ")}`] : []),
+          t("massban.complete_title", { caseSuffix: caseNumbers }),
+          t("massban.banned_line", { banned: banned.length, total: ids.length }),
+          ...(banned.length > 0 ? [t("massban.ids_line", { ids: banned.map((id) => `\`${id}\``).join(", ") })] : []),
           ...(skipped.length > 0
-            ? [`- Skipped: ${skipped.map((entry) => `\`${entry.id}\` (${entry.why})`).join(", ")}`]
+            ? [t("massban.skipped_line", { skipped: skipped.map((entry) => `\`${entry.id}\` (${entry.why})`).join(", ") })]
             : []),
-          `- Reason: ${reason}`,
+          t("massban.reason_line", { reason }),
         ].join("\n"),
       }),
       { ephemeral: true },

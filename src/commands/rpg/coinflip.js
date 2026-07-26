@@ -1,5 +1,27 @@
 import { SlashCommandBuilder } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
+
+registerStrings("coinflip", {
+  en: {
+    title: "Coinflip",
+    not_enough_money: "Not enough money. Your balance: **{balance}** 💰",
+    land_win: "🪙 The coin lands on **{result}** — you win!",
+    land_lose: "🪙 The coin lands on **{result}** — you lose!",
+    won_line: "- Won: **{amount}** 💰",
+    lost_line: "- Lost: **{amount}** 💰",
+    balance_line: "- Balance: **{balance}**",
+  },
+  id: {
+    title: "Coinflip",
+    not_enough_money: "Uangmu tidak cukup. Saldomu: **{balance}** 💰",
+    land_win: "🪙 Koinnya mendarat di **{result}** — kamu menang!",
+    land_lose: "🪙 Koinnya mendarat di **{result}** — kamu kalah!",
+    won_line: "- Menang: **{amount}** 💰",
+    lost_line: "- Kalah: **{amount}** 💰",
+    balance_line: "- Saldo: **{balance}**",
+  },
+});
 
 const MIN_BET = 10;
 const MAX_BET = 50_000;
@@ -29,7 +51,7 @@ export default {
     if (balance < amount) {
       await replyCard(
         interaction,
-        createCard({ color: 0xed4245, title: "Coinflip", body: `Not enough money. Your balance: **${balance}** 💰` }),
+        createCard({ color: 0xed4245, title: ctx.t("coinflip.title"), body: ctx.t("coinflip.not_enough_money", { balance }) }),
         { ephemeral: true },
       );
       return;
@@ -43,11 +65,11 @@ export default {
       interaction,
       createCard({
         color: won ? 0x57f287 : 0xed4245,
-        title: "Coinflip",
+        title: ctx.t("coinflip.title"),
         body: [
-          `🪙 The coin lands on **${result}** — you ${won ? "win" : "lose"}!`,
-          `- ${won ? "Won" : "Lost"}: **${amount}** 💰`,
-          `- Balance: **${user.money}**`,
+          won ? ctx.t("coinflip.land_win", { result }) : ctx.t("coinflip.land_lose", { result }),
+          won ? ctx.t("coinflip.won_line", { amount }) : ctx.t("coinflip.lost_line", { amount }),
+          ctx.t("coinflip.balance_line", { balance: user.money }),
         ].join("\n"),
       }),
     );
