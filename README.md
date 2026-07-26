@@ -196,7 +196,6 @@ Notes:
   - `/daily` (money + exp every 24 hours, streak bonuses up to +1400), `/profile` (stats + level progress)
   - `/work` (hourly), `/pay`, `/coinflip`, `/slots`, `/shop list|buy|add|remove` (per-guild role shop)
   - Message + voice XP per guild: `/rank` (rank card with progress bar), `/leaderboard` (paginated), `/levelconfig` (Manage Server: toggle, XP rate/cooldown/multiplier, voice XP, level-up announcements with templates, no-XP channels/roles, role rewards at levels with stack/replace mode, xp-set)
-  - `/xp-import` (Administrator) — migrate member XP from a public MEE6 leaderboard (up to 1000 members)
 
 ## Hot reload workflows
 
