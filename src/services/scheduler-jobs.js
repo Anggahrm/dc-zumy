@@ -1,3 +1,4 @@
+import { automessageJobKey, getAutomessages, renderAutomessage } from "#services/automessages.js";
 import {
   getBirthdaysConfig,
   isBirthdayOn,
@@ -147,6 +148,44 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
       reason: "Tempban expired",
       metadata: { source: "scheduler", caseNumber: job.payload?.caseNumber },
       logger,
+    });
+  });
+
+  scheduler.registerHandler("automessage", async (job) => {
+    const guild = await resolveGuild(client, job.guildId);
+    if (!guild) return;
+
+    const name = job.payload?.name;
+    if (!name) return;
+
+    const automessages = await getAutomessages(guild.id);
+    const entry = automessages[name];
+    // Deleted config: stop the recurrence by simply not rescheduling.
+    if (!entry) return;
+
+    const channel = guild.channels.cache.get(entry.channelId)
+      ?? (await guild.channels.fetch(entry.channelId).catch(() => null));
+    if (channel?.isTextBased() && typeof channel.send === "function") {
+      await channel
+        .send({
+          content: renderAutomessage(entry.content, { guildName: guild.name }),
+          allowedMentions: { parse: [] },
+        })
+        .catch((error) => {
+          logger?.warn("Automessage send failed", {
+            guildId: guild.id,
+            name,
+            message: error?.message || String(error),
+          });
+        });
+    }
+
+    await scheduler.schedule({
+      type: "automessage",
+      runAt: new Date(Date.now() + entry.intervalMs),
+      guildId: guild.id,
+      payload: { name },
+      dedupeKey: automessageJobKey(guild.id, name),
     });
   });
 
