@@ -27,6 +27,7 @@ function configCard(config) {
       `${config.enabled ? "✅" : "❌"} Leveling ${config.enabled ? "enabled" : "disabled"}`,
       `- XP per message: **${config.xpMin}-${config.xpMax}** (multiplier x${config.multiplier})`,
       `- Cooldown: **${config.cooldownSeconds}s**`,
+      `- Voice XP: ${config.voiceXpEnabled ? `**${config.voiceXpPerMinute}/min** (2+ members, not deafened)` : "off"}`,
       `- Level-up announce: ${config.announce ? (config.announceChannelId ? `in <#${config.announceChannelId}>` : "in the same channel") : "off"}`,
       `- Level-up message: ${config.levelUpMessage ?? "(default)"}`,
       `- Reward mode: **${config.stackRewards ? "stack" : "replace"}**`,
@@ -147,6 +148,17 @@ export default {
         .setDescription("Choose whether rewards stack or replace")
         .addBooleanOption((option) =>
           option.setName("enabled").setDescription("true = keep all earned roles, false = only highest").setRequired(true),
+        ),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("voice")
+        .setDescription("Configure voice XP")
+        .addBooleanOption((option) =>
+          option.setName("enabled").setDescription("Award XP for voice activity").setRequired(true),
+        )
+        .addIntegerOption((option) =>
+          option.setName("xp_per_minute").setDescription("XP per minute (1-20, default 2)").setMinValue(1).setMaxValue(20).setRequired(false),
         ),
     )
     .addSubcommand((sub) =>
@@ -334,6 +346,26 @@ export default {
       await replyCard(
         interaction,
         successCard(enabled ? "Rewards now **stack** (members keep all earned roles)." : "Rewards now **replace** (only the highest earned role is kept)."),
+        { ephemeral: true },
+      );
+      return;
+    }
+
+    if (subcommand === "voice") {
+      const enabled = interaction.options.getBoolean("enabled", true);
+      const xpPerMinute = interaction.options.getInteger("xp_per_minute");
+      const { config } = await updateLevelsConfig(guildId, (c) => {
+        c.voiceXpEnabled = enabled;
+        if (xpPerMinute != null) c.voiceXpPerMinute = xpPerMinute;
+      });
+
+      await replyCard(
+        interaction,
+        successCard(
+          config.voiceXpEnabled
+            ? `Voice XP ✅ enabled: **${config.voiceXpPerMinute}/min** for channels with 2+ members (deafened members earn nothing).`
+            : "Voice XP ❌ disabled.",
+        ),
         { ephemeral: true },
       );
       return;

@@ -1,5 +1,6 @@
 import { Events } from "discord.js";
 import { primeGuildInvites } from "#services/invites.js";
+import { runVoiceXpTick, VOICE_TICK_MINUTES } from "#services/levels.js";
 
 export default {
   name: Events.ClientReady,
@@ -11,6 +12,13 @@ export default {
       commands: client.zumy?.registry.size(),
     });
     client.zumy?.scheduler?.start();
+
+    // Voice XP is ephemeral by nature — a plain interval is enough.
+    const voiceTimer = setInterval(
+      () => void runVoiceXpTick(client, logger),
+      VOICE_TICK_MINUTES * 60 * 1000,
+    );
+    voiceTimer.unref?.();
 
     // Warm the invite-use cache so join attribution works from the start.
     const results = await Promise.allSettled(

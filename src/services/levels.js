@@ -19,6 +19,8 @@ const LEVELS_DEFAULTS = {
   noXpRoles: [],
   rewards: [],
   stackRewards: true,
+  voiceXpEnabled: false,
+  voiceXpPerMinute: 2,
 };
 
 function cleanIdList(values) {
@@ -42,6 +44,10 @@ function normalizeLevels(config) {
   if (typeof config.announceChannelId !== "string") config.announceChannelId = null;
   if (typeof config.levelUpMessage !== "string" || !config.levelUpMessage.trim()) config.levelUpMessage = null;
   if (typeof config.stackRewards !== "boolean") config.stackRewards = true;
+  if (typeof config.voiceXpEnabled !== "boolean") config.voiceXpEnabled = false;
+  if (!Number.isInteger(config.voiceXpPerMinute) || config.voiceXpPerMinute < 1 || config.voiceXpPerMinute > 20) {
+    config.voiceXpPerMinute = 2;
+  }
 
   const noXpChannels = cleanIdList(config.noXpChannels);
   if (!Array.isArray(config.noXpChannels) || noXpChannels.length !== config.noXpChannels.length) {
@@ -91,6 +97,8 @@ function cloneConfig(config) {
     noXpRoles: [...config.noXpRoles],
     rewards: config.rewards.map((reward) => ({ ...reward })),
     stackRewards: config.stackRewards,
+    voiceXpEnabled: config.voiceXpEnabled,
+    voiceXpPerMinute: config.voiceXpPerMinute,
   };
 }
 
@@ -266,4 +274,69 @@ export function renderLevelUpMessage(template, { member, level, guild }) {
     .replaceAll("{username}", member.user?.username ?? member.id)
     .replaceAll("{level}", String(level))
     .replaceAll("{server}", guild.name);
+}
+
+// --- voice XP ---
+
+export const VOICE_TICK_MINUTES = 5;
+
+// Awards voice XP to every eligible member currently in voice. Anti-farm:
+// a channel needs at least 2 non-bot members, and self-deafened members
+// (present but not listening) earn nothing.
+export async function runVoiceXpTick(client, logger) {
+  for (const guild of client.guilds.cache.values()) {
+    let config;
+    try {
+      config = await getLevelsConfig(guild.id, { preferCache: true });
+    } catch {
+      continue;
+    }
+    if (!config.enabled || !config.voiceXpEnabled) continue;
+
+    const byChannel = new Map();
+    for (const state of guild.voiceStates.cache.values()) {
+      if (!state.channelId || !state.member || state.member.user.bot) continue;
+      if (state.selfDeaf || state.deaf) continue;
+      if (config.noXpChannels.includes(state.channelId)) continue;
+      if (config.noXpRoles.some((roleId) => state.member.roles.cache.has(roleId))) continue;
+
+      let members = byChannel.get(state.channelId);
+      if (!members) {
+        members = [];
+        byChannel.set(state.channelId, members);
+      }
+      members.push(state.member);
+    }
+
+    const amount = config.voiceXpPerMinute * VOICE_TICK_MINUTES;
+    for (const members of byChannel.values()) {
+      if (members.length < 2) continue;
+
+      for (const member of members) {
+        try {
+          const result = await addMemberXp(guild.id, member.id, amount);
+          if (result.leveledUp) {
+            await applyLevelRewards({ guild, member, config, level: result.level, logger });
+            if (config.announce && config.announceChannelId) {
+              const channel = guild.channels.cache.get(config.announceChannelId);
+              if (channel?.isTextBased() && typeof channel.send === "function") {
+                await channel
+                  .send({
+                    content: renderLevelUpMessage(config.levelUpMessage, { member, level: result.level, guild }),
+                    allowedMentions: { users: [member.id] },
+                  })
+                  .catch(() => {});
+              }
+            }
+          }
+        } catch (error) {
+          logger?.warn("Voice XP award failed", {
+            guildId: guild.id,
+            userId: member.id,
+            message: error?.message || String(error),
+          });
+        }
+      }
+    }
+  }
 }
