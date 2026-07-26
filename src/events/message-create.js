@@ -1,4 +1,5 @@
 import { Events, PermissionFlagsBits } from "discord.js";
+import { clearAfk, getAfkMap, shouldNotifyAfk } from "#services/afk.js";
 import { checkMessage, getAutomodConfig, isAutomodActive, isExemptFromAutomod } from "#services/automod.js";
 import { recordCase } from "#services/cases.js";
 import { applyWarnEscalation } from "#services/escalation.js";
@@ -241,6 +242,48 @@ async function runTriggers(message) {
     .catch(() => {});
 }
 
+async function handleAfk(message) {
+  let afkMap;
+  try {
+    afkMap = await getAfkMap(message.guild.id, { preferCache: true });
+  } catch {
+    return;
+  }
+  if (Object.keys(afkMap).length === 0) return;
+
+  if (afkMap[message.author.id]) {
+    const removed = await clearAfk(message.guild.id, message.author.id).catch(() => null);
+    if (removed) {
+      await message
+        .reply({
+          content: `Welcome back <@${message.author.id}>! Your AFK is cleared (away since <t:${Math.floor(removed.since / 1000)}:R>).`,
+          allowedMentions: { users: [message.author.id], repliedUser: false },
+        })
+        .catch(() => {});
+    }
+  }
+
+  const mentioned = message.mentions?.users
+    ? [...message.mentions.users.keys()].filter((id) => afkMap[id] && id !== message.author.id)
+    : [];
+  const notices = mentioned
+    .filter((id) => shouldNotifyAfk(message.channelId, id))
+    .slice(0, 3)
+    .map((id) => {
+      const entry = afkMap[id];
+      return `💤 <@${id}> is AFK (<t:${Math.floor(entry.since / 1000)}:R>): ${entry.reason}`;
+    });
+
+  if (notices.length > 0) {
+    await message
+      .reply({
+        content: notices.join("\n"),
+        allowedMentions: { parse: [], repliedUser: false },
+      })
+      .catch(() => {});
+  }
+}
+
 export default {
   name: Events.MessageCreate,
   async execute(message) {
@@ -251,6 +294,7 @@ export default {
     const violated = await runAutomod(message, logger);
     if (violated) return;
 
+    await handleAfk(message);
     await runTriggers(message);
     await awardXp(message, logger);
   },
