@@ -24,3 +24,25 @@ export function resolveSsl(connectionString) {
   if (LOCAL_HOSTS.has(host)) return false;
   return { rejectUnauthorized: false };
 }
+
+// drizzle-kit ignores `dbCredentials.ssl` whenever `url` is set (it builds its
+// Pool from the connection string alone), so SSL has to be encoded in the URL
+// itself. pg maps `sslmode=no-verify` to `ssl: { rejectUnauthorized: false }`.
+export function withSslMode(connectionString) {
+  const ssl = resolveSsl(connectionString);
+  if (ssl === false) return connectionString;
+
+  let url;
+  try {
+    url = new URL(connectionString);
+  } catch {
+    return connectionString;
+  }
+
+  if (url.searchParams.has("sslmode") || url.searchParams.has("ssl")) {
+    return connectionString;
+  }
+
+  url.searchParams.set("sslmode", ssl.rejectUnauthorized ? "verify-full" : "no-verify");
+  return url.toString();
+}
