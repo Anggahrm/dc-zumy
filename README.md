@@ -173,6 +173,9 @@ Notes:
   - `/statcounter add|remove|list` (Manage Channels) — locked voice channels showing live member/bot/channel/role counts
   - `/tempvoice trigger|off|show` (Manage Channels) — join-to-create temporary voice channels that self-delete when empty
   - `/diagnose` (Manage Server) — health-check every bot permission and configured channel/role, with the exact fix command per issue
+  - `/setup` (Manage Server) — 5-step guided onboarding wizard with native channel/role pickers and a recommended automod preset
+  - `/language` (Manage Server) — per-server bot language (English / Bahasa Indonesia) for system messages and default greetings
+  - `/set card` — rendered welcome/leave image cards (avatar, member count) generated with @napi-rs/canvas
 - `moderation` (each gated by the matching Discord permission, both in the client UI and at runtime):
   - `/purge` (Manage Messages) — subcommands `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`
   - `/kick` (Kick Members), `/ban` (Ban Members), `/tempban` (Ban Members, auto-unban via scheduler), `/unban` (Ban Members, by user ID) — kick/ban DM the target first
@@ -186,12 +189,14 @@ Notes:
   - `/softban` (Ban Members) — kick + purge messages via ban/unban; `/massban` (Administrator) — up to 20 IDs for raid cleanup; `/note add|list` (Moderate Members) — staff notes on the case system
   - `/joinguard show|age|surge|action` (Manage Server) — account-age gate and join-surge detection with alert/kick/quarantine/ban responses
   - `/rolepersist toggle|show` (Manage Server) — restore roles on rejoin (stops mute evasion)
+  - `/temprole` (Manage Roles) — self-expiring role assignment (1m-90d, scheduler-backed)
   - `/autorole add/remove/show/blacklist/unblacklist` (Manage Roles)
 - `owner`: `/reloadcommands` (reload + redeploy), `/maintenance [enabled]` (block non-owner commands); both require user ID in `BOT_OWNERS`
 - `rpg` / leveling / economy:
   - `/daily` (money + exp every 24 hours, streak bonuses up to +1400), `/profile` (stats + level progress)
   - `/work` (hourly), `/pay`, `/coinflip`, `/slots`, `/shop list|buy|add|remove` (per-guild role shop)
   - Message + voice XP per guild: `/rank` (rank card with progress bar), `/leaderboard` (paginated), `/levelconfig` (Manage Server: toggle, XP rate/cooldown/multiplier, voice XP, level-up announcements with templates, no-XP channels/roles, role rewards at levels with stack/replace mode, xp-set)
+  - `/xp-import` (Administrator) — migrate member XP from a public MEE6 leaderboard (up to 1000 members)
 
 ## Hot reload workflows
 
