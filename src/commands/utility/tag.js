@@ -41,7 +41,7 @@ export default {
         .setName("show")
         .setDescription("Post a tag in this channel")
         .addStringOption((option) =>
-          option.setName("name").setDescription("Tag name").setMaxLength(32).setRequired(true),
+          option.setName("name").setDescription("Tag name").setMaxLength(32).setAutocomplete(true).setRequired(true),
         ),
     )
     .addSubcommand((subcommand) =>
@@ -71,9 +71,24 @@ export default {
         .setName("remove")
         .setDescription("Delete a tag (Manage Server only)")
         .addStringOption((option) =>
-          option.setName("name").setDescription("Tag name").setMaxLength(32).setRequired(true),
+          option.setName("name").setDescription("Tag name").setMaxLength(32).setAutocomplete(true).setRequired(true),
         ),
     ),
+  async autocomplete({ interaction }) {
+    if (!interaction.guildId) {
+      await interaction.respond([]);
+      return;
+    }
+
+    const query = String(interaction.options.getFocused() ?? "").toLowerCase();
+    const tags = await getTags(interaction.guildId);
+    const matches = Object.keys(tags)
+      .filter((name) => !query || name.includes(query))
+      .sort()
+      .slice(0, 25)
+      .map((name) => ({ name, value: name }));
+    await interaction.respond(matches);
+  },
   async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {

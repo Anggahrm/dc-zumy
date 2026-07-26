@@ -1,10 +1,10 @@
 import { InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { recordCase } from "#services/cases.js";
+import { getModConfig } from "#services/mod-config.js";
+import { unmuteJobKey } from "#services/scheduler-jobs.js";
 import { checkActorHierarchy, dmModerationNotice, normalizeReason } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 import { formatDuration, parseDuration } from "#utils/time.js";
-
-const MAX_TIMEOUT_MS = 28 * 24 * 60 * 60 * 1000;
 
 function errorCard(body) {
   return createCard({ color: 0xed4245, title: "Moderation", body });
@@ -18,43 +18,50 @@ export default {
     member: [PermissionFlagsBits.ModerateMembers],
   },
   data: new SlashCommandBuilder()
-    .setName("timeout")
-    .setDescription("Time out a member")
+    .setName("mute")
+    .setDescription("Mute a member with the mute role (no 28-day limit)")
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
     .setContexts(InteractionContextType.Guild)
     .addUserOption((option) =>
-      option.setName("target").setDescription("Member to time out").setRequired(true),
+      option.setName("target").setDescription("Member to mute").setRequired(true),
     )
     .addStringOption((option) =>
       option
         .setName("duration")
-        .setDescription("Duration, e.g. 10m, 2h, 1d (bare number = minutes, max 28d)")
-        .setRequired(true),
+        .setDescription("Duration, e.g. 2h, 7d, 90d (empty = until unmuted)")
+        .setRequired(false),
     )
     .addStringOption((option) =>
-      option.setName("reason").setDescription("Reason for the timeout").setMaxLength(400).setRequired(false),
+      option.setName("reason").setDescription("Reason").setMaxLength(400).setRequired(false),
     ),
   async execute({ interaction }) {
     const guild = interaction.guild;
     if (!guild) {
-      throw new Error("Guild context is required for timeout command.");
+      throw new Error("Guild context is required for mute command.");
     }
 
     const target = interaction.options.getUser("target", true);
-    const durationMs = parseDuration(interaction.options.getString("duration", true));
     const reason = normalizeReason(interaction.options.getString("reason"));
+    const durationRaw = interaction.options.getString("duration");
+    const durationMs = durationRaw ? parseDuration(durationRaw) : null;
 
-    if (!durationMs) {
+    if (durationRaw && !durationMs) {
       await replyCard(
         interaction,
-        errorCard("Invalid duration. Use formats like `30s`, `10m`, `2h`, `1d` or a bare number of minutes."),
+        errorCard("Invalid duration. Use formats like `30m`, `2h`, `7d` or leave it empty for indefinite."),
         { ephemeral: true },
       );
       return;
     }
 
-    if (durationMs > MAX_TIMEOUT_MS) {
-      await replyCard(interaction, errorCard("Timeout duration cannot exceed **28 days**."), { ephemeral: true });
+    const { muteRoleId } = await getModConfig(guild.id);
+    const muteRole = muteRoleId ? guild.roles.cache.get(muteRoleId) : null;
+    if (!muteRole) {
+      await replyCard(
+        interaction,
+        errorCard("No mute role configured. Run `/muterole create` (or `/muterole set`) first."),
+        { ephemeral: true },
+      );
       return;
     }
 
@@ -65,7 +72,7 @@ export default {
 
     const targetMember = await guild.members.fetch(target.id).catch(() => null);
     if (!targetMember) {
-      await replyCard(interaction, errorCard("I can only time out members of this server."), { ephemeral: true });
+      await replyCard(interaction, errorCard("I can only mute members of this server."), { ephemeral: true });
       return;
     }
 
@@ -81,54 +88,61 @@ export default {
       return;
     }
 
-    if (!targetMember.moderatable) {
-      await replyCard(
-        interaction,
-        errorCard("I cannot time out that user due to role hierarchy or missing permissions."),
-        { ephemeral: true },
-      );
+    if (targetMember.roles.cache.has(muteRole.id)) {
+      await replyCard(interaction, errorCard(`**${target.tag}** is already muted.`), { ephemeral: true });
       return;
     }
 
     try {
-      await targetMember.timeout(durationMs, reason);
+      await targetMember.roles.add(muteRole, `Muted by ${interaction.user.tag}: ${reason}`);
     } catch {
       await replyCard(
         interaction,
-        errorCard("Timeout failed. Please check role hierarchy and bot permissions."),
+        errorCard("Mute failed. Check that my role is above the mute role and I have Manage Roles."),
         { ephemeral: true },
       );
       return;
     }
 
-    const durationLabel = formatDuration(durationMs / 1000);
+    const scheduler = interaction.client.zumy?.scheduler;
+    const durationLabel = durationMs ? formatDuration(durationMs / 1000) : null;
+    if (durationMs && scheduler) {
+      await scheduler.schedule({
+        type: "unmute",
+        runAt: new Date(Date.now() + durationMs),
+        guildId: guild.id,
+        payload: { userId: target.id },
+        dedupeKey: unmuteJobKey(guild.id, target.id),
+      });
+    }
+
     const caseRow = await recordCase({
       guild,
-      type: "timeout",
+      type: "mute",
       target,
       moderator: interaction.user,
       reason,
-      metadata: { duration: durationLabel },
+      metadata: durationLabel ? { duration: durationLabel } : {},
     });
 
     await dmModerationNotice(target, {
       guildName: guild.name,
-      actionLabel: "Timeout",
+      actionLabel: "Mute",
       reason,
-      lines: [`- Duration: ${durationLabel}`],
+      lines: durationLabel ? [`- Duration: ${durationLabel}`] : ["- Duration: until unmuted"],
     });
 
-    const until = Math.floor((Date.now() + durationMs) / 1000);
+    const until = durationMs ? Math.floor((Date.now() + durationMs) / 1000) : null;
     await replyCard(
       interaction,
       createCard({
         color: 0xf1c40f,
         title: "Moderation",
         body: [
-          `**Timeout Applied**${caseRow ? ` — Case #${caseRow.caseNumber}` : ""}`,
+          `**Mute Applied**${caseRow ? ` — Case #${caseRow.caseNumber}` : ""}`,
           `- Target: **${target.tag}** (\`${target.id}\`)`,
           `- Moderator: **${interaction.user.tag}**`,
-          `- Until: <t:${until}:F> (<t:${until}:R>)`,
+          until ? `- Until: <t:${until}:F> (<t:${until}:R>)` : "- Duration: until unmuted",
           `- Reason: ${reason}`,
         ].join("\n"),
       }),

@@ -23,12 +23,14 @@ bun run deploy:guild
 ## Current built-in commands
 
 - `info`: `/ping`, `/help`, `/serverinfo`, `/avatar`
-- `utility`: `/userinfo`, `/set` (`welcome/leave/welcome-message/leave-message/show`), `/log` (`channel/config`), `/rolemenu`, `/tag` (`show/list/add/remove`)
-- `moderation`: `/purge` (`all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`), `/kick`, `/ban`, `/unban`, `/timeout`, `/untimeout`, `/warn` (`add/list/remove/clear`), `/slowmode`, `/lock`, `/unlock`, `/automod` (`show/invite/mentions/word-add/word-remove`), `/autorole` (`add/remove/show/blacklist/unblacklist`)
+- `utility`: `/userinfo`, `/set` (`welcome/leave/welcome-message/leave-message/show`), `/log` (`channel/config`), `/rolemenu` (`create/add/remove/post/delete/list`), `/tag` (`show/list/add/remove`), `/say`
+- `moderation`: `/purge` (`all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`), `/kick`, `/ban`, `/tempban`, `/unban`, `/timeout`, `/untimeout`, `/mute`, `/unmute`, `/muterole` (`set/create/show`), `/quarantine` (`role/add/remove`), `/warn` (`add/list/remove/clear`), `/case` (`view/list/reason`), `/slowmode`, `/lock`, `/unlock`, `/automod` (rules, actions, exemptions, escalation), `/autorole` (`add/remove/show/blacklist/unblacklist`)
 - `owner`: `/reloadcommands`, `/maintenance`
 - `rpg`: `/daily`, `/profile`
 
 Moderation commands declare `setDefaultMemberPermissions` on the builder (client-side gating) **and** a matching `permissions.member` array (runtime gating).
+
+Moderation actions create numbered cases in the `moderation_cases` table and, when the `cases` log event is enabled, post a modlog card. Timed actions (`/tempban`, `/mute` with duration) are handled by a persistent scheduler (`scheduled_jobs` table) that survives restarts.
 
 ## Minimal command example
 

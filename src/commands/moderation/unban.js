@@ -1,4 +1,5 @@
 import { InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { recordCase } from "#services/cases.js";
 import { normalizeReason } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
@@ -53,13 +54,21 @@ export default {
       return;
     }
 
+    const caseRow = await recordCase({
+      guild,
+      type: "unban",
+      target: ban.user ?? { id: userId, tag: null },
+      moderator: interaction.user,
+      reason,
+    });
+
     await replyCard(
       interaction,
       createCard({
         color: 0x57f287,
         title: "Moderation",
         body: [
-          "**Unban Complete**",
+          `**Unban Complete**${caseRow ? ` — Case #${caseRow.caseNumber}` : ""}`,
           `- Target: **${ban.user?.tag ?? userId}** (\`${userId}\`)`,
           `- Moderator: **${interaction.user.tag}**`,
           `- Reason: ${reason}`,

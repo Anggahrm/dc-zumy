@@ -9,5 +9,6 @@ export default {
       user: client.user?.tag,
       commands: client.zumy?.registry.size(),
     });
+    client.zumy?.scheduler?.start();
   },
 };

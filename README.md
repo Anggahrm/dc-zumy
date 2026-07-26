@@ -151,16 +151,20 @@ Notes:
 - `utility`:
   - `/userinfo` — user details card
   - `/set welcome|leave [channel]` — greeter channels; `/set welcome-message|leave-message [message]` — custom templates with `{user}`, `{username}`, `{server}`, `{count}`; `/set show`
-  - `/log channel [channel]`, `/log config [event]` — 25 toggleable log events (messages, members, voice, channels, roles, server, emojis, automod)
-  - `/rolemenu` — post a button-based self-assign role menu (up to 5 roles)
-  - `/tag show|list|add|remove` — custom text snippets (add/remove need Manage Server)
+  - `/log channel [channel]`, `/log config [event]` — 26 toggleable log events with autocomplete (messages, members, voice, channels, roles, server, emojis, automod, cases)
+  - `/rolemenu create|add|remove|post|delete|list` — persistent self-assign role menus: up to 25 roles per menu, buttons or select-menu mode, optional `unique` (one role at a time), editable after posting
+  - `/tag show|list|add|remove` — custom text snippets with name autocomplete (add/remove need Manage Server)
+  - `/say [channel]` — compose an announcement card via a modal form (Manage Server)
 - `moderation` (each gated by the matching Discord permission, both in the client UI and at runtime):
   - `/purge` (Manage Messages) — subcommands `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`
-  - `/kick` (Kick Members), `/ban` (Ban Members, optional `days`/`reason`), `/unban` (Ban Members, by user ID)
+  - `/kick` (Kick Members), `/ban` (Ban Members), `/tempban` (Ban Members, auto-unban via scheduler), `/unban` (Ban Members, by user ID) — kick/ban DM the target first
   - `/timeout` (Moderate Members, durations like `10m`, `2h`, `1d`, max 28d), `/untimeout`
-  - `/warn add|list|remove|clear` (Moderate Members) — persistent warnings with DM notice
+  - `/mute`, `/unmute` (Moderate Members) — role-based mutes with no 28-day limit and scheduled auto-unmute; configure via `/muterole set|create|show` (Manage Server)
+  - `/quarantine role|add|remove` (Moderate Members) — strip roles, isolate with a quarantine role, restore the exact snapshot on release
+  - `/warn add|list|remove|clear` (Moderate Members) — persistent warnings with DM notice, warning-id autocomplete, and automatic escalation
+  - `/case view|list|reason` (Moderate Members) — every mod action becomes a numbered case; external actions (manual bans, other bots) are attributed from the audit log
   - `/slowmode` (Manage Channels, 0-21600s), `/lock`, `/unlock` (Manage Channels)
-  - `/automod show|invite|mentions|word-add|word-remove` (Manage Server) — anti-invite, banned words, mention spam; members with Manage Messages are exempt
+  - `/automod` (Manage Server) — anti-invite, banned words (word-boundary + `*` wildcards), link filter with domain allowlist, mention spam, message/duplicate spam detection, exempt channels/roles, per-rule actions (`delete`/`warn`/`timeout`), and a warn-count escalation ladder (timeout → kick → ban)
   - `/autorole add/remove/show/blacklist/unblacklist` (Manage Roles)
 - `owner`: `/reloadcommands` (reload + redeploy), `/maintenance [enabled]` (block non-owner commands); both require user ID in `BOT_OWNERS`
 - `rpg`: `/daily` (money + exp every 24 hours, with level-ups), `/profile` (stats + level progress)

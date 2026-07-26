@@ -2,8 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { EventEmitter } from "node:events";
 import { loadCommands } from "#core/loader/commands.js";
 import { loadEvents } from "#core/loader/events.js";
-import { checkMessage, isAutomodActive } from "#services/automod.js";
+import { checkMessage, compileWordRegex, isAutomodActive, trackSpam } from "#services/automod.js";
 import { renderGreeterTemplate } from "#services/greeter.js";
+import { sanitizeMenuName } from "#services/rolemenus.js";
 import { sanitizeTagName } from "#services/tags.js";
 import { expForLevel, levelFromExp, levelProgress } from "#utils/level.js";
 import { PROJECT_ROOT } from "#utils/paths.js";
@@ -94,11 +95,19 @@ describe("levels", () => {
 });
 
 describe("automod rules", () => {
-  const config = { antiInvite: true, bannedWords: ["badword"], mentionLimit: 3 };
+  const config = {
+    antiInvite: true,
+    bannedWords: ["badword"],
+    mentionLimit: 3,
+    linkFilter: false,
+    linkAllowlist: [],
+    spamEnabled: false,
+  };
 
   function fakeMessage(content, mentions = 0) {
     return {
       content,
+      guildId: "100000000000000001",
       mentions: { users: { size: mentions }, roles: { size: 0 } },
     };
   }
@@ -119,8 +128,64 @@ describe("automod rules", () => {
   });
 
   test("inactive config short-circuits", () => {
-    expect(isAutomodActive({ antiInvite: false, bannedWords: [], mentionLimit: 0 })).toBe(false);
+    expect(isAutomodActive({ antiInvite: false, bannedWords: [], mentionLimit: 0, linkFilter: false, spamEnabled: false })).toBe(false);
     expect(isAutomodActive(config)).toBe(true);
+  });
+
+  test("word matching respects word boundaries", () => {
+    const regex = compileWordRegex(["ass"]);
+    expect(regex.test("class dismissed")).toBe(false);
+    expect(regex.test("you ass!")).toBe(true);
+    expect(regex.test("ASS")).toBe(true);
+  });
+
+  test("wildcard words match extensions", () => {
+    const regex = compileWordRegex(["spam*"]);
+    expect(regex.test("stop the spammers")).toBe(true);
+    expect(regex.test("spam")).toBe(true);
+    expect(regex.test("antispam")).toBe(false);
+  });
+
+  test("link filter honors the domain allowlist", () => {
+    const linkConfig = {
+      ...config,
+      antiInvite: false,
+      bannedWords: [],
+      mentionLimit: 0,
+      linkFilter: true,
+      linkAllowlist: ["youtube.com"],
+    };
+    expect(checkMessage(linkConfig, fakeMessage("https://youtube.com/watch?v=x"))).toBeNull();
+    expect(checkMessage(linkConfig, fakeMessage("https://music.youtube.com/abc"))).toBeNull();
+    expect(checkMessage(linkConfig, fakeMessage("https://evil.example.com/x"))?.rule).toBe("link_filter");
+  });
+
+  test("spam tracker triggers on message rate", () => {
+    const options = { maxMessages: 4, intervalMs: 5000, duplicateLimit: 10 };
+    const base = 1_000_000;
+    let violation = null;
+    for (let i = 0; i < 4; i += 1) {
+      violation = trackSpam("g1", "u1", `msg ${i}`, options, base + i * 100);
+    }
+    expect(violation?.rule).toBe("spam");
+  });
+
+  test("spam tracker triggers on duplicates", () => {
+    const options = { maxMessages: 20, intervalMs: 5000, duplicateLimit: 3 };
+    const base = 2_000_000;
+    let violation = null;
+    for (let i = 0; i < 3; i += 1) {
+      violation = trackSpam("g2", "u2", "same text", options, base + i * 100);
+    }
+    expect(violation?.rule).toBe("spam");
+  });
+});
+
+describe("rolemenus", () => {
+  test("sanitizes menu names", () => {
+    expect(sanitizeMenuName("Colors")).toBe("colors");
+    expect(sanitizeMenuName("game-roles")).toBe("game-roles");
+    expect(sanitizeMenuName("bad name")).toBeNull();
   });
 });
 

@@ -24,6 +24,7 @@ export const LOG_EVENT_META = {
   server_updates: { key: "server_updates", label: "Server updates" },
   emojis: { key: "emojis", label: "Emojis" },
   automod: { key: "automod", label: "Automod actions" },
+  cases: { key: "cases", label: "Moderation cases" },
 };
 
 export const LOG_EVENT_ORDER = Object.keys(LOG_EVENT_META);

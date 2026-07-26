@@ -33,6 +33,7 @@ function isValidCommand(command) {
     }
   }
   if (command.onComponent != null && typeof command.onComponent !== "function") return false;
+  if (command.autocomplete != null && typeof command.autocomplete !== "function") return false;
   return true;
 }
 

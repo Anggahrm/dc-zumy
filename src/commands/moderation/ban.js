@@ -1,4 +1,6 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { recordCase } from "#services/cases.js";
+import { dmModerationNotice } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
 function normalizeReason(reason) {
@@ -107,6 +109,16 @@ export default {
       flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
     });
 
+    // DM before the ban lands — afterwards the bot may share no guild with them.
+    const dmDelivered = targetMember
+      ? await dmModerationNotice(target, {
+        guildName: guild.name,
+        actionLabel: "Ban",
+        color: 0xed4245,
+        reason,
+      })
+      : false;
+
     try {
       await guild.bans.create(target, {
         reason,
@@ -125,15 +137,25 @@ export default {
       return;
     }
 
+    const caseRow = await recordCase({
+      guild,
+      type: "ban",
+      target,
+      moderator: interaction.user,
+      reason,
+      metadata: { deleteMessageDays: days },
+    });
+
     const card = createCard({
       color: 0xf1c40f,
       title: "Moderation",
       body: [
-        "**Ban Complete**",
+        `**Ban Complete**${caseRow ? ` — Case #${caseRow.caseNumber}` : ""}`,
         `- Target: **${target.tag}** (\`${target.id}\`)`,
         `- Moderator: **${interaction.user.tag}**`,
         `- Delete messages: **${days}** day(s)`,
         `- Reason: ${reason}`,
+        ...(targetMember && !dmDelivered ? ["- Note: could not DM the member."] : []),
       ].join("\n"),
     });
 

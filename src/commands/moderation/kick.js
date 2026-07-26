@@ -1,4 +1,6 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { recordCase } from "#services/cases.js";
+import { dmModerationNotice } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
 function normalizeReason(reason) {
@@ -99,6 +101,14 @@ export default {
       return;
     }
 
+    // DM before the kick lands — afterwards the bot may share no guild with them.
+    const dmDelivered = await dmModerationNotice(target, {
+      guildName: guild.name,
+      actionLabel: "Kick",
+      color: 0xe67e22,
+      reason,
+    });
+
     try {
       await targetMember.kick(reason);
     } catch {
@@ -111,14 +121,23 @@ export default {
       return;
     }
 
+    const caseRow = await recordCase({
+      guild,
+      type: "kick",
+      target,
+      moderator: interaction.user,
+      reason,
+    });
+
     const card = createCard({
       color: 0xf1c40f,
       title: "Moderation",
       body: [
-        "**Kick Complete**",
+        `**Kick Complete**${caseRow ? ` — Case #${caseRow.caseNumber}` : ""}`,
         `- Target: **${target.tag}** (\`${target.id}\`)`,
         `- Moderator: **${interaction.user.tag}**`,
         `- Reason: ${reason}`,
+        ...(dmDelivered ? [] : ["- Note: could not DM the member."]),
       ].join("\n"),
     });
 

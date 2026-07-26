@@ -1,4 +1,6 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { recordCase } from "#services/cases.js";
+import { applyWarnEscalation } from "#services/escalation.js";
 import { addWarning, clearWarnings, getWarnings, removeWarning } from "#services/warnings.js";
 import { checkActorHierarchy, normalizeReason } from "#utils/moderation.js";
 import { createCard, replyCard } from "#utils/respond.js";
@@ -57,7 +59,7 @@ export default {
           option.setName("target").setDescription("Member whose warning to remove").setRequired(true),
         )
         .addStringOption((option) =>
-          option.setName("id").setDescription("Warning id (from /warn list)").setRequired(true),
+          option.setName("id").setDescription("Warning id (from /warn list)").setAutocomplete(true).setRequired(true),
         ),
     )
     .addSubcommand((subcommand) =>
@@ -68,6 +70,29 @@ export default {
           option.setName("target").setDescription("Member whose warnings to clear").setRequired(true),
         ),
     ),
+  async autocomplete({ interaction }) {
+    if (!interaction.guildId) {
+      await interaction.respond([]);
+      return;
+    }
+
+    const targetId = interaction.options.get("target")?.value;
+    if (typeof targetId !== "string") {
+      await interaction.respond([]);
+      return;
+    }
+
+    const query = String(interaction.options.getFocused() ?? "").toLowerCase();
+    const warnings = await getWarnings(interaction.guildId, targetId);
+    const matches = warnings
+      .filter((entry) => !query || entry.id.includes(query) || entry.reason.toLowerCase().includes(query))
+      .slice(-25)
+      .map((entry) => ({
+        name: `${entry.id} — ${entry.reason}`.slice(0, 100),
+        value: entry.id,
+      }));
+    await interaction.respond(matches);
+  },
   async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
@@ -108,6 +133,15 @@ export default {
         reason,
       });
 
+      const caseRow = await recordCase({
+        guild,
+        type: "warn",
+        target,
+        moderator: interaction.user,
+        reason,
+        metadata: { warningId: entry.id, totalWarnings: count },
+      });
+
       let dmDelivered = true;
       try {
         await target.send({
@@ -128,14 +162,22 @@ export default {
         dmDelivered = false;
       }
 
+      const escalated = await applyWarnEscalation({
+        guild,
+        user: target,
+        warningCount: count,
+        logger: interaction.client.zumy?.logger,
+      });
+
       await replyCard(
         interaction,
         successCard([
-          "**Warning Issued**",
+          `**Warning Issued**${caseRow ? ` — Case #${caseRow.caseNumber}` : ""}`,
           `- Target: **${target.tag}** (\`${target.id}\`)`,
           `- Reason: ${reason}`,
           `- Warning ID: \`${entry.id}\``,
           `- Total warnings: **${count}**`,
+          ...(escalated ? [`- ⚖️ Escalation triggered: **${escalated}**`] : []),
           ...(dmDelivered ? [] : ["- Note: could not DM the member."]),
         ].join("\n")),
       );

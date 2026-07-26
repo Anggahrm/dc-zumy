@@ -1,12 +1,98 @@
 import { Events, PermissionFlagsBits } from "discord.js";
-import { checkMessage, getAutomodConfig, isAutomodActive } from "#services/automod.js";
+import { checkMessage, getAutomodConfig, isAutomodActive, isExemptFromAutomod } from "#services/automod.js";
+import { recordCase } from "#services/cases.js";
+import { applyWarnEscalation } from "#services/escalation.js";
 import { sendGuildLog } from "#services/logging.js";
+import { addWarning } from "#services/warnings.js";
 import { formatError } from "#utils/error.js";
 
-function isExempt(message) {
+function isModExempt(message) {
   const member = message.member;
   if (!member) return false;
   return member.permissions.has(PermissionFlagsBits.ManageMessages);
+}
+
+async function applyAction({ message, config, violation, logger }) {
+  const guild = message.guild;
+  const action = config.actions[violation.rule] ?? "delete";
+  const outcomes = [];
+
+  try {
+    await message.delete();
+    outcomes.push("message deleted");
+  } catch (error) {
+    const details = formatError(error);
+    logger?.warn("Automod delete failed", {
+      guildId: guild.id,
+      channelId: message.channelId,
+      messageId: message.id,
+      rule: violation.rule,
+      message: details.message,
+    });
+    outcomes.push("delete failed (missing permission)");
+  }
+
+  if (action === "warn") {
+    try {
+      const { count } = await addWarning(guild.id, message.author.id, {
+        moderatorId: guild.client.user.id,
+        reason: `Automod: ${violation.label}`,
+      });
+      outcomes.push(`warned (total ${count})`);
+
+      await recordCase({
+        guild,
+        type: "warn",
+        target: message.author,
+        moderator: guild.client.user,
+        reason: `Automod: ${violation.label}`,
+        metadata: { source: "automod", totalWarnings: count },
+        logger,
+      });
+
+      const escalated = await applyWarnEscalation({
+        guild,
+        user: message.author,
+        warningCount: count,
+        logger,
+      });
+      if (escalated) {
+        outcomes.push(`escalated: ${escalated}`);
+      }
+    } catch (error) {
+      logger?.warn("Automod warn failed", {
+        guildId: guild.id,
+        userId: message.author.id,
+        message: error?.message || String(error),
+      });
+    }
+  }
+
+  if (action === "timeout") {
+    const member = message.member ?? (await guild.members.fetch(message.author.id).catch(() => null));
+    if (member?.moderatable) {
+      try {
+        await member.timeout(config.timeoutMinutes * 60 * 1000, `Automod: ${violation.label}`);
+        outcomes.push(`timed out for ${config.timeoutMinutes}m`);
+
+        await recordCase({
+          guild,
+          type: "timeout",
+          target: message.author,
+          moderator: guild.client.user,
+          reason: `Automod: ${violation.label}`,
+          metadata: { source: "automod", duration: `${config.timeoutMinutes}m` },
+          logger,
+        });
+      } catch {
+        outcomes.push("timeout failed");
+      }
+    } else {
+      outcomes.push("timeout skipped (not moderatable)");
+    }
+  }
+
+  return outcomes;
 }
 
 export default {
@@ -29,25 +115,21 @@ export default {
     }
 
     if (!isAutomodActive(config)) return;
-    if (isExempt(message)) return;
+    if (isModExempt(message)) return;
+    if (
+      isExemptFromAutomod(config, {
+        channelId: message.channelId,
+        parentChannelId: message.channel?.parentId ?? null,
+        roleIds: message.member ? [...message.member.roles.cache.keys()] : [],
+      })
+    ) {
+      return;
+    }
 
     const violation = checkMessage(config, message);
     if (!violation) return;
 
-    let deleted = false;
-    try {
-      await message.delete();
-      deleted = true;
-    } catch (error) {
-      const details = formatError(error);
-      logger?.warn("Automod delete failed", {
-        guildId: message.guild.id,
-        channelId: message.channelId,
-        messageId: message.id,
-        rule: violation.rule,
-        message: details.message,
-      });
-    }
+    const outcomes = await applyAction({ message, config, violation, logger });
 
     await sendGuildLog({
       guild: message.guild,
@@ -59,7 +141,7 @@ export default {
         `- User ID: \`${message.author.id}\``,
         `- Channel: <#${message.channelId}>`,
         `- Rule: ${violation.label}`,
-        `- Action: ${deleted ? "message deleted" : "delete failed (missing permission)"}`,
+        `- Action: ${outcomes.join(", ")}`,
       ],
       actorId: message.author.id,
       actorName: message.author.tag,

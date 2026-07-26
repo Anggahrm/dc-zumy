@@ -73,23 +73,23 @@ export default {
       subcommand
         .setName("config")
         .setDescription("Show or toggle logging events")
-        .addStringOption((option) => {
-          let configured = option
+        .addStringOption((option) =>
+          option
             .setName("event")
-            .setDescription("Event key to toggle")
-            .setRequired(false);
-
-          for (const key of LOG_EVENT_ORDER) {
-            const meta = getLogEventMeta(key);
-            configured = configured.addChoices({
-              name: meta?.label ?? key,
-              value: key,
-            });
-          }
-
-          return configured;
-        }),
+            .setDescription("Event to toggle (leave empty to show all)")
+            .setAutocomplete(true)
+            .setRequired(false),
+        ),
     ),
+  async autocomplete({ interaction }) {
+    const query = String(interaction.options.getFocused() ?? "").toLowerCase();
+    const matches = LOG_EVENT_ORDER
+      .map((key) => ({ key, label: getLogEventMeta(key)?.label ?? key }))
+      .filter(({ key, label }) => !query || key.includes(query) || label.toLowerCase().includes(query))
+      .slice(0, 25)
+      .map(({ key, label }) => ({ name: label, value: key }));
+    await interaction.respond(matches);
+  },
   async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {

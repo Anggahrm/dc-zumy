@@ -7,6 +7,8 @@ import { createInteractionHandler } from "#app/handler.js";
 import { createCooldownService } from "#services/cooldown.js";
 import { createLogger } from "#services/logger.js";
 import { createPermissionService } from "#services/permission.js";
+import { createScheduler } from "#services/scheduler.js";
+import { registerDefaultJobs } from "#services/scheduler-jobs.js";
 import { db } from "#db/index.js";
 import { PROJECT_ROOT } from "#utils/paths.js";
 import { REST, Routes } from "discord.js";
@@ -96,6 +98,10 @@ async function bootstrap() {
 
   await db.init();
 
+  const scheduler = createScheduler({ logger });
+  registerDefaultJobs({ scheduler, client, logger });
+  runtime.scheduler = scheduler;
+
   const reloadCommands = async (bustCache = false, { deploy = false } = {}) => {
     await replaceCommands({
       logger,
@@ -126,6 +132,7 @@ async function bootstrap() {
     cooldowns,
     permission,
     db,
+    scheduler,
     onInteraction,
     startedAt: Date.now(),
     hotReload: false,
@@ -147,6 +154,7 @@ async function bootstrap() {
 const runtime = {
   client: null,
   cooldowns: null,
+  scheduler: null,
 };
 
 function withTimeout(promise, ms, label) {
@@ -161,6 +169,7 @@ function withTimeout(promise, ms, label) {
 async function shutdown(signal) {
   try {
     runtime.cooldowns?.stop();
+    runtime.scheduler?.stop();
     await withTimeout(db.close(), 10_000, "Database shutdown");
   } catch (error) {
     console.error("Database shutdown error", error);

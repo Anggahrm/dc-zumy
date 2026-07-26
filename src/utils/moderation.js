@@ -1,7 +1,33 @@
-import { PermissionFlagsBits } from "discord.js";
+import { MessageFlags, PermissionFlagsBits } from "discord.js";
+import { createCard } from "#utils/respond.js";
 
 export function normalizeReason(reason) {
   return reason?.trim() || "No reason provided.";
+}
+
+// Best-effort DM to a user about a moderation action. Returns true when the
+// DM was delivered.
+export async function dmModerationNotice(user, { guildName, actionLabel, color = 0xf1c40f, reason, lines = [] }) {
+  try {
+    await user.send({
+      components: [
+        createCard({
+          color,
+          title: actionLabel,
+          body: [
+            `You received a moderation action in **${guildName}**.`,
+            `- Action: **${actionLabel}**`,
+            `- Reason: ${reason || "No reason provided."}`,
+            ...lines,
+          ].join("\n"),
+        }),
+      ],
+      flags: MessageFlags.IsComponentsV2,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // Locks or unlocks a channel by toggling the @everyone SendMessages overwrite.

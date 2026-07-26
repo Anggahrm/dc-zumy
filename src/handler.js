@@ -98,7 +98,34 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
     }
   }
 
+  async function handleAutocomplete(interaction) {
+    const command = registry.get(interaction.commandName);
+    if (!command || typeof command.autocomplete !== "function") {
+      await interaction.respond([]).catch(() => {});
+      return;
+    }
+
+    try {
+      await command.autocomplete({ interaction, registry, logger });
+    } catch (error) {
+      logger.warn("Autocomplete failed", {
+        command: interaction.commandName,
+        message: error?.message || String(error),
+      });
+      if (!interaction.responded) {
+        await interaction.respond([]).catch(() => {});
+      }
+    }
+  }
+
   async function handleComponent(interaction) {
+    const rateKey = `component:${interaction.customId}`;
+    if (cooldowns.getRemaining(rateKey, interaction.user.id) > 0) {
+      await replyError(interaction, "You're clicking a bit fast. Try again in a second.");
+      return;
+    }
+    cooldowns.consume(rateKey, interaction.user.id, 1);
+
     const handler = registry.getComponentHandler(interaction.customId);
     if (handler) {
       try {
@@ -146,7 +173,16 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
       return;
     }
 
-    if (interaction.isButton() || interaction.isStringSelectMenu()) {
+    if (interaction.isAutocomplete()) {
+      await handleAutocomplete(interaction);
+      return;
+    }
+
+    if (
+      interaction.isButton()
+      || interaction.isAnySelectMenu()
+      || interaction.isModalSubmit()
+    ) {
       await handleComponent(interaction);
     }
   };
