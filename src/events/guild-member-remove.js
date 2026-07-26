@@ -1,5 +1,6 @@
 import { Events } from "discord.js";
 import { sendLeaveGreeting } from "#services/greeter.js";
+import { recordInviteLeave } from "#services/invites.js";
 import { sendGuildLog } from "#services/logging.js";
 import { saveRoleSnapshot } from "#services/rolepersist.js";
 import { formatError } from "#utils/error.js";
@@ -18,6 +19,8 @@ export default {
   name: Events.GuildMemberRemove,
   async execute(member) {
     const logger = member.client.zumy?.logger;
+
+    await recordInviteLeave(member.guild.id, member.id).catch(() => {});
 
     try {
       const roleIds = member.roles?.cache

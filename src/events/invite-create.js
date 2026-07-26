@@ -1,10 +1,12 @@
 import { Events } from "discord.js";
+import { primeInviteCacheEntry } from "#services/invites.js";
 import { sendGuildLog } from "#services/logging.js";
 
 export default {
   name: Events.InviteCreate,
   async execute(invite) {
     if (!invite.guild) return;
+    primeInviteCacheEntry(invite);
     const logger = invite.client.zumy?.logger;
     const inviter = invite.inviter ?? null;
     await sendGuildLog({

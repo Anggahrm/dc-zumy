@@ -3,6 +3,7 @@ import { getAutoroleConfig } from "#services/autorole.js";
 import { recordCase } from "#services/cases.js";
 import { sendWelcomeGreeting } from "#services/greeter.js";
 import { checkJoin, getJoinguardConfig, isJoinguardActive } from "#services/joinguard.js";
+import { recordInviteJoin, resolveInviter } from "#services/invites.js";
 import { sendGuildLog } from "#services/logging.js";
 import { getModConfig } from "#services/mod-config.js";
 import { takeRoleSnapshot } from "#services/rolepersist.js";
@@ -213,6 +214,20 @@ export default {
       });
     }
 
+    let inviteInfo = null;
+    try {
+      inviteInfo = await resolveInviter(member.guild);
+      if (inviteInfo?.inviterId && inviteInfo.inviterId !== member.id) {
+        await recordInviteJoin(member.guild.id, member.id, inviteInfo.inviterId);
+      }
+    } catch (error) {
+      const details = formatError(error);
+      logger?.debug?.("Invite attribution failed", {
+        guildId: member.guild.id,
+        message: details.message,
+      });
+    }
+
     await sendGuildLog({
       guild: member.guild,
       eventKey: "joins",
@@ -221,6 +236,9 @@ export default {
       lines: [
         `- <@${member.id}> ${formatOrdinal(member.guild.memberCount)} to join`,
         `- created ${formatElapsedSince(member.user.createdTimestamp)} ago`,
+        ...(inviteInfo?.inviterId
+          ? [`- invited by <@${inviteInfo.inviterId}> (\`${inviteInfo.code}\`)`]
+          : []),
       ],
       actorId: member.id,
       actorName: member.user.tag,

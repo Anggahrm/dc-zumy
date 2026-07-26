@@ -1,10 +1,12 @@
 import { Events } from "discord.js";
+import { dropInviteCacheEntry } from "#services/invites.js";
 import { sendGuildLog } from "#services/logging.js";
 
 export default {
   name: Events.InviteDelete,
   async execute(invite) {
     if (!invite.guild) return;
+    dropInviteCacheEntry(invite.guild.id, invite.code);
     const logger = invite.client.zumy?.logger;
     await sendGuildLog({
       guild: invite.guild,
