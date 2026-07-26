@@ -147,36 +147,37 @@ Notes:
 
 ## Built-in commands
 
-- `info`: `/ping`, `/help`, `/serverinfo`, `/avatar`
-- `utility`:
+Commands are organized into 10 categories (`src/config/categories.js`), browsable from `/help` (interactive category menu, clickable command mentions, and `/help command:<name>` for per-command subcommand details).
+
+- `info` ℹ️:
+  - `/ping`, `/help`, `/serverinfo`, `/avatar`
   - `/userinfo` — user details card
-  - `/set welcome|leave [channel]` — greeter channels; `/set welcome-message|leave-message [message]` — custom templates with `{user}`, `{username}`, `{server}`, `{count}`; `/set show`; `/set test` — ephemeral preview of both greetings exactly as they would send
-  - `/log channel [channel]`, `/log config [event]`, `/log panel` — 26 toggleable log events with autocomplete plus an interactive panel that toggles everything from two select menus
-  - `/rolemenu create|add|remove|post|delete|list` — persistent self-assign role menus: up to 25 roles per menu, buttons or select-menu mode, optional `unique` (one role at a time), editable after posting
+- `levels` 📈:
+  - Message + voice XP per guild: `/rank` (rank card with progress bar), `/leaderboard` (paginated), `/levelconfig` (Manage Server: toggle, XP rate/cooldown/multiplier, voice XP, level-up announcements with templates, no-XP channels/roles, role rewards at levels with stack/replace mode, xp-set)
+- `economy` 💰:
+  - `/daily` (money + exp every 24 hours, streak bonuses up to +1400), `/profile` (stats + level progress)
+  - `/work` (hourly), `/pay`, `/coinflip`, `/slots`, `/shop list|buy|add|remove` (per-guild role shop)
+- `utility` 🔧:
   - `/tag show|list|add|remove` — custom text snippets with name autocomplete (add/remove need Manage Server)
-  - `/say [channel]` — compose an announcement card via a modal form (Manage Server)
-  - `/starboard channel|threshold|emoji|selfstar|ignore|show` (Manage Server) — community-curated highlights: reactions past the threshold repost the message to the starboard with a live star count, custom emoji support, self-star rule, and ignored channels
-  - `/suggest` + `/suggestion channel|approve|deny|consider` — numbered suggestion cards with 👍/👎 vote buttons and staff review states
-  - `/giveaway start|end|reroll|list` (Manage Server) — button-entry giveaways that survive restarts (scheduler-backed), random winner picks and rerolls
-  - `/trigger add|remove|channel|list` (Manage Server) — autoresponders with contains/exact/wildcard matching, reply chance, cooldowns, and channel restrictions
   - `/remind set|list|cancel` — personal reminders (1m-90d) that survive restarts, channel delivery with DM fallback
   - `/poll` — native Discord polls (2-5 answers, 1h-1w, optional multiselect)
   - `/afk` — away status with reason; mentions get a notice, your next message clears it
   - `/snipe` (Manage Messages) — peek at the most recently deleted message in a channel (5-minute window)
-  - `/sticky set|remove|list` (Manage Messages) — keep a message pinned to the bottom of up to 5 channels (debounced reposting)
-  - `/birthday set|remove|next|channel|role|message` — daily 00:00 UTC birthday announcements with an optional birthday role
-  - `/automessage add|remove|list` (Manage Server) — recurring scheduled posts (30m-7d intervals, restart-safe)
-  - `/ticket panel|category|role|list|close` (Manage Server) — support tickets: private channels with claim/close buttons and text transcripts
-  - `/alert add|remove|list` (Manage Server) — YouTube upload notifications via RSS polling every ~10 minutes (no API key needed)
-  - `/invites show|leaderboard` — invite tracking with join attribution (who invited whom, joins/leaves/net)
   - `/highlight add|remove|list|clear` — DM notifications when your keywords are mentioned (privacy-guarded, rate-limited)
-  - `/statcounter add|remove|list` (Manage Channels) — locked voice channels showing live member/bot/channel/role counts
+- `community` 🎉:
+  - `/giveaway start|end|reroll|list` (Manage Server) — button-entry giveaways that survive restarts (scheduler-backed), random winner picks and rerolls
+  - `/starboard channel|threshold|emoji|selfstar|ignore|show` (Manage Server) — community-curated highlights: reactions past the threshold repost the message to the starboard with a live star count, custom emoji support, self-star rule, and ignored channels
+  - `/suggest` + `/suggestion channel|approve|deny|consider` — numbered suggestion cards with 👍/👎 vote buttons and staff review states
+  - `/ticket panel|category|role|list|close` (Manage Server) — support tickets: private channels with claim/close buttons and text transcripts
+  - `/birthday set|remove|next|channel|role|message` — daily 00:00 UTC birthday announcements with an optional birthday role
+  - `/invites show|leaderboard` — invite tracking with join attribution (who invited whom, joins/leaves/net)
   - `/tempvoice trigger|off|show` (Manage Channels) — join-to-create temporary voice channels that self-delete when empty
-  - `/diagnose` (Manage Server) — health-check every bot permission and configured channel/role, with the exact fix command per issue
-  - `/setup` (Manage Server) — 5-step guided onboarding wizard with native channel/role pickers and a recommended automod preset
-  - `/language` (Manage Server) — per-server bot language (English / Bahasa Indonesia): every command response, system message, and default greeting is fully localized (~600 strings per language)
-  - `/set card` — rendered welcome/leave image cards (avatar, member count) generated with @napi-rs/canvas
-- `moderation` (each gated by the matching Discord permission, both in the client UI and at runtime):
+- `roles` 🎭:
+  - `/rolemenu create|add|remove|post|delete|list` — persistent self-assign role menus: up to 25 roles per menu, buttons or select-menu mode, optional `unique` (one role at a time), editable after posting
+  - `/autorole add/remove/show/blacklist/unblacklist` (Manage Roles)
+  - `/temprole` (Manage Roles) — self-expiring role assignment (1m-90d, scheduler-backed)
+  - `/rolepersist toggle|show` (Manage Server) — restore roles on rejoin (stops mute evasion)
+- `moderation` 🔨 (each gated by the matching Discord permission, both in the client UI and at runtime):
   - `/purge` (Manage Messages) — subcommands `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`
   - `/kick` (Kick Members), `/ban` (Ban Members), `/tempban` (Ban Members, auto-unban via scheduler), `/unban` (Ban Members, by user ID) — kick/ban DM the target first
   - `/timeout` (Moderate Members, durations like `10m`, `2h`, `1d`, max 28d), `/untimeout`
@@ -185,17 +186,23 @@ Notes:
   - `/warn add|list|remove|clear` (Moderate Members) — persistent warnings with DM notice, warning-id autocomplete, and automatic escalation
   - `/case view|list|reason` (Moderate Members) — every mod action becomes a numbered case; external actions (manual bans, other bots) are attributed from the audit log
   - `/slowmode` (Manage Channels, 0-21600s), `/lock`, `/unlock` (Manage Channels)
-  - `/automod` (Manage Server) — anti-invite, banned words (word-boundary + `*` wildcards), link filter with domain allowlist, mention spam, message/duplicate spam detection, exempt channels/roles, per-rule actions (`delete`/`warn`/`timeout`), and a warn-count escalation ladder (timeout → kick → ban)
   - `/softban` (Ban Members) — kick + purge messages via ban/unban; `/massban` (Administrator) — up to 20 IDs for raid cleanup; `/note add|list` (Moderate Members) — staff notes on the case system
+- `automod` 🛡️:
+  - `/automod` (Manage Server) — anti-invite, banned words (word-boundary + `*` wildcards), link filter with domain allowlist, mention spam, message/duplicate spam detection, exempt channels/roles, per-rule actions (`delete`/`warn`/`timeout`), and a warn-count escalation ladder (timeout → kick → ban)
   - `/joinguard show|age|surge|action` (Manage Server) — account-age gate and join-surge detection with alert/kick/quarantine/ban responses
-  - `/rolepersist toggle|show` (Manage Server) — restore roles on rejoin (stops mute evasion)
-  - `/temprole` (Manage Roles) — self-expiring role assignment (1m-90d, scheduler-backed)
-  - `/autorole add/remove/show/blacklist/unblacklist` (Manage Roles)
-- `owner`: `/reloadcommands` (reload + redeploy), `/maintenance [enabled]` (block non-owner commands); both require user ID in `BOT_OWNERS`
-- `rpg` / leveling / economy:
-  - `/daily` (money + exp every 24 hours, streak bonuses up to +1400), `/profile` (stats + level progress)
-  - `/work` (hourly), `/pay`, `/coinflip`, `/slots`, `/shop list|buy|add|remove` (per-guild role shop)
-  - Message + voice XP per guild: `/rank` (rank card with progress bar), `/leaderboard` (paginated), `/levelconfig` (Manage Server: toggle, XP rate/cooldown/multiplier, voice XP, level-up announcements with templates, no-XP channels/roles, role rewards at levels with stack/replace mode, xp-set)
+- `server` ⚙️:
+  - `/setup` (Manage Server) — 5-step guided onboarding wizard with native channel/role pickers and a recommended automod preset
+  - `/set welcome|leave [channel]` — greeter channels; `/set welcome-message|leave-message [message]` — custom templates with `{user}`, `{username}`, `{server}`, `{count}`; `/set show`; `/set test` — ephemeral preview of both greetings exactly as they would send; `/set card` — rendered welcome/leave image cards (avatar, member count) generated with @napi-rs/canvas
+  - `/log channel [channel]`, `/log config [event]`, `/log panel` — 26 toggleable log events with autocomplete plus an interactive panel that toggles everything from two select menus
+  - `/language` (Manage Server) — per-server bot language (English / Bahasa Indonesia): every command response, system message, and default greeting is fully localized (~600 strings per language)
+  - `/say [channel]` — compose an announcement card via a modal form (Manage Server)
+  - `/automessage add|remove|list` (Manage Server) — recurring scheduled posts (30m-7d intervals, restart-safe)
+  - `/alert add|remove|list` (Manage Server) — YouTube upload notifications via RSS polling every ~10 minutes (no API key needed)
+  - `/statcounter add|remove|list` (Manage Channels) — locked voice channels showing live member/bot/channel/role counts
+  - `/sticky set|remove|list` (Manage Messages) — keep a message pinned to the bottom of up to 5 channels (debounced reposting)
+  - `/trigger add|remove|channel|list` (Manage Server) — autoresponders with contains/exact/wildcard matching, reply chance, cooldowns, and channel restrictions
+  - `/diagnose` (Manage Server) — health-check every bot permission and configured channel/role, with the exact fix command per issue
+- `owner` 🔒: `/reloadcommands` (reload + redeploy), `/maintenance [enabled]` (block non-owner commands); both require user ID in `BOT_OWNERS`
 
 ## Hot reload workflows
 
