@@ -29,6 +29,10 @@ export function unmuteJobKey(guildId, userId) {
   return `unmute:${guildId}:${userId}`;
 }
 
+export function temproleJobKey(guildId, userId, roleId) {
+  return `temprole:${guildId}:${userId}:${roleId}`;
+}
+
 const UNKNOWN_GUILD = 10004;
 const UNKNOWN_MEMBER = 10007;
 const UNKNOWN_BAN = 10026;
@@ -310,6 +314,22 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
     if (!Number.isInteger(giveawayId)) return;
 
     await finishGiveaway({ guild, giveawayId, logger });
+  });
+
+  scheduler.registerHandler("temprole_remove", async (job) => {
+    const guild = await resolveGuild(client, job.guildId);
+    if (!guild) return;
+
+    const { userId, roleId } = job.payload ?? {};
+    if (!userId || !roleId) return;
+
+    const role = guild.roles.cache.get(roleId);
+    if (!role) return;
+
+    const member = await fetchOrNull(guild.members.fetch(userId), [UNKNOWN_MEMBER]);
+    if (!member || !member.roles.cache.has(roleId)) return;
+
+    await member.roles.remove(role, "Temporary role expired");
   });
 
   scheduler.registerHandler("unmute", async (job) => {
