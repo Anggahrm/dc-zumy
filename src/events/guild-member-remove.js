@@ -1,6 +1,8 @@
 import { Events } from "discord.js";
 import { sendLeaveGreeting } from "#services/greeter.js";
+import { recordInviteLeave } from "#services/invites.js";
 import { sendGuildLog } from "#services/logging.js";
+import { saveRoleSnapshot } from "#services/rolepersist.js";
 import { formatError } from "#utils/error.js";
 import { formatElapsedSince } from "#utils/time.js";
 
@@ -17,6 +19,32 @@ export default {
   name: Events.GuildMemberRemove,
   async execute(member) {
     const logger = member.client.zumy?.logger;
+
+    await recordInviteLeave(member.guild.id, member.id).catch(() => {});
+
+    try {
+      const roleIds = member.roles?.cache
+        ? [...member.roles.cache.filter((role) => role.id !== member.guild.id && !role.managed).keys()]
+        : [];
+      if (roleIds.length > 0) {
+        await saveRoleSnapshot(member.guild.id, member.id, roleIds);
+      } else if (member.partial) {
+        // Partial member: role data unavailable here — the snapshot kept by
+        // guildMemberUpdate (if any) remains the restore source.
+        logger?.debug?.("Role persist: partial member on leave, keeping last snapshot", {
+          guildId: member.guild.id,
+          userId: member.id,
+        });
+      }
+    } catch (error) {
+      const details = formatError(error);
+      logger?.warn("Role persist snapshot failed", {
+        guildId: member.guild.id,
+        userId: member.id,
+        message: details.message,
+      });
+    }
+
     try {
       await sendLeaveGreeting(member, logger);
     } catch (error) {

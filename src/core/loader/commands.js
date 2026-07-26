@@ -6,9 +6,14 @@ import { createCommandRegistry } from "#core/registry/command-registry.js";
 function validatePermissions(permissions) {
   if (permissions == null) return true;
   if (typeof permissions !== "object" || Array.isArray(permissions)) return false;
-  const keys = ["owner", "admin", "guildOnly"];
+  const keys = ["owner", "admin", "guildOnly", "member"];
   for (const key of Object.keys(permissions)) {
     if (!keys.includes(key)) return false;
+    if (key === "member") {
+      if (!Array.isArray(permissions.member)) return false;
+      if (permissions.member.some((flag) => typeof flag !== "bigint")) return false;
+      continue;
+    }
     if (typeof permissions[key] !== "boolean") return false;
   }
   return true;
@@ -28,6 +33,7 @@ function isValidCommand(command) {
     }
   }
   if (command.onComponent != null && typeof command.onComponent !== "function") return false;
+  if (command.autocomplete != null && typeof command.autocomplete !== "function") return false;
   return true;
 }
 

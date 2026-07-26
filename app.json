@@ -18,12 +18,26 @@
       "size": "standard-2x"
     }
   },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:essential-0"
+    }
+  ],
   "env": {
     "DISCORD_TOKEN": {
       "description": "Discord bot token"
     },
     "DISCORD_CLIENT_ID": {
       "description": "Discord application client ID"
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string (set automatically by the heroku-postgresql addon)",
+      "required": false
+    },
+    "ZUMY_STARTUP_DEPLOY_MODE": {
+      "description": "Slash command deploy mode on startup: off|global|guild",
+      "value": "global",
+      "required": false
     },
     "DISCORD_GUILD_ID": {
       "description": "Discord guild ID for guild command deploy",

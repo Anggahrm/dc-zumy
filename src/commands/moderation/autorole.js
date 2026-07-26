@@ -1,4 +1,4 @@
-import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import {
   addAutoroleBlacklist,
   addAutoroleRole,
@@ -6,71 +6,123 @@ import {
   removeAutoroleBlacklist,
   removeAutoroleRole,
 } from "#services/autorole.js";
+import { registerStrings } from "#services/i18n.js";
 import { createCard, replyCard } from "#utils/respond.js";
 
-function formatRoleList(guild, roleIds) {
-  if (roleIds.length === 0) return "- (none)";
+registerStrings("autorole", {
+  en: {
+    title: "Autorole",
+    none_line: "- (none)",
+    deleted_role_line: "- `{roleId}` (deleted role)",
+    everyone_not_allowed: "The @everyone role cannot be used as an autorole.",
+    managed_not_allowed: "Managed/integration roles cannot be used as autoroles.",
+    perms_unverified: "I couldn't verify my role permissions in this server.",
+    need_manage_roles: "I need the **Manage Roles** permission to manage autoroles.",
+    role_too_high: "I can't assign that role because it is equal to or higher than my highest role.",
+    current_settings_header: "**Current Settings**",
+    autorole_list_header: "**Autorole list**",
+    blacklist_header: "**Blacklist**",
+    role_blacklisted: "That role is blacklisted. Use `/autorole unblacklist` first.",
+    role_added: "Role <@&{role}> has been added to autorole list.",
+    role_already_added: "Role <@&{role}> is already in autorole list.",
+    role_removed: "Role <@&{role}> has been removed from autorole list.",
+    role_not_in_list: "Role <@&{role}> is not in autorole list.",
+    everyone_no_blacklist: "The @everyone role cannot be blacklisted.",
+    blacklist_added: "Role <@&{role}> has been added to blacklist.",
+    blacklist_already: "Role <@&{role}> is already blacklisted.",
+    blacklist_autoremoved_note: "That role was removed from autorole list automatically.",
+    blacklist_removed: "Role <@&{role}> has been removed from blacklist.",
+    blacklist_not_found: "Role <@&{role}> is not in blacklist.",
+  },
+  id: {
+    title: "Autorole",
+    none_line: "- (kosong)",
+    deleted_role_line: "- `{roleId}` (role terhapus)",
+    everyone_not_allowed: "Role @everyone tidak bisa dipakai sebagai autorole.",
+    managed_not_allowed: "Role managed/integrasi tidak bisa dipakai sebagai autorole.",
+    perms_unverified: "Aku tidak bisa memeriksa permission role-ku di server ini.",
+    need_manage_roles: "Aku butuh permission **Manage Roles** untuk mengatur autorole.",
+    role_too_high: "Aku tidak bisa memberikan role itu karena posisinya sama atau lebih tinggi dari role tertinggiku.",
+    current_settings_header: "**Pengaturan Saat Ini**",
+    autorole_list_header: "**Daftar autorole**",
+    blacklist_header: "**Blacklist**",
+    role_blacklisted: "Role itu masuk blacklist. Pakai `/autorole unblacklist` dulu ya.",
+    role_added: "Role <@&{role}> berhasil ditambahkan ke daftar autorole.",
+    role_already_added: "Role <@&{role}> sudah ada di daftar autorole.",
+    role_removed: "Role <@&{role}> dihapus dari daftar autorole.",
+    role_not_in_list: "Role <@&{role}> tidak ada di daftar autorole.",
+    everyone_no_blacklist: "Role @everyone tidak bisa dimasukkan ke blacklist.",
+    blacklist_added: "Role <@&{role}> ditambahkan ke blacklist.",
+    blacklist_already: "Role <@&{role}> sudah ada di blacklist.",
+    blacklist_autoremoved_note: "Role itu otomatis dihapus dari daftar autorole.",
+    blacklist_removed: "Role <@&{role}> dihapus dari blacklist.",
+    blacklist_not_found: "Role <@&{role}> tidak ada di blacklist.",
+  },
+});
+
+function formatRoleList(t, guild, roleIds) {
+  if (roleIds.length === 0) return t("autorole.none_line");
   return roleIds
     .map((roleId) => {
       const role = guild.roles.cache.get(roleId);
-      return role ? `- <@&${roleId}>` : `- \`${roleId}\` (deleted role)`;
+      return role ? `- <@&${roleId}>` : t("autorole.deleted_role_line", { roleId });
     })
     .join("\n");
 }
 
-async function validateRoleForAutorole(guild, role) {
+async function validateRoleForAutorole(t, guild, role) {
   if (role.id === guild.id) {
-    return "The @everyone role cannot be used as an autorole.";
+    return t("autorole.everyone_not_allowed");
   }
 
   if (role.managed) {
-    return "Managed/integration roles cannot be used as autoroles.";
+    return t("autorole.managed_not_allowed");
   }
 
   const me = guild.members.me ?? (await guild.members.fetchMe().catch(() => null));
   if (!me) {
-    return "I couldn't verify my role permissions in this server.";
+    return t("autorole.perms_unverified");
   }
 
   if (!me.permissions.has(PermissionFlagsBits.ManageRoles)) {
-    return "I need the **Manage Roles** permission to manage autoroles.";
+    return t("autorole.need_manage_roles");
   }
 
   if (role.position >= me.roles.highest.position) {
-    return "I can't assign that role because it is equal to or higher than my highest role.";
+    return t("autorole.role_too_high");
   }
 
   return null;
 }
 
-function showConfigCard(guild, config) {
+function showConfigCard(t, guild, config) {
   return createCard({
     color: 0x3498db,
-    title: "Autorole",
+    title: t("autorole.title"),
     body: [
-      "**Current Settings**",
+      t("autorole.current_settings_header"),
       "",
-      "**Autorole list**",
-      formatRoleList(guild, config.roles),
+      t("autorole.autorole_list_header"),
+      formatRoleList(t, guild, config.roles),
       "",
-      "**Blacklist**",
-      formatRoleList(guild, config.blacklist),
+      t("autorole.blacklist_header"),
+      formatRoleList(t, guild, config.blacklist),
     ].join("\n"),
   });
 }
 
-function successCard(message) {
+function successCard(t, message) {
   return createCard({
     color: 0x57f287,
-    title: "Autorole",
+    title: t("autorole.title"),
     body: message,
   });
 }
 
-function warningCard(message) {
+function warningCard(t, message) {
   return createCard({
     color: 0xf1c40f,
-    title: "Autorole",
+    title: t("autorole.title"),
     body: message,
   });
 }
@@ -80,11 +132,13 @@ export default {
   cooldown: 3,
   permissions: {
     guildOnly: true,
-    admin: true,
+    member: [PermissionFlagsBits.ManageRoles],
   },
   data: new SlashCommandBuilder()
     .setName("autorole")
     .setDescription("Manage automatic role assignment")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
+    .setContexts(InteractionContextType.Guild)
     .addSubcommand((subcommand) =>
       subcommand
         .setName("add")
@@ -140,21 +194,22 @@ export default {
       throw new Error("Guild context is required for autorole command.");
     }
 
+    const t = ctx.t;
     const guildId = ctx.guild ?? guild.id;
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === "show") {
       const config = await getAutoroleConfig(guildId);
-      await replyCard(interaction, showConfigCard(guild, config), { ephemeral: true });
+      await replyCard(interaction, showConfigCard(t, guild, config), { ephemeral: true });
       return;
     }
 
     const role = interaction.options.getRole("role", true);
 
     if (subcommand === "add") {
-      const reason = await validateRoleForAutorole(guild, role);
+      const reason = await validateRoleForAutorole(t, guild, role);
       if (reason) {
-        await replyCard(interaction, warningCard(reason), { ephemeral: true });
+        await replyCard(interaction, warningCard(t, reason), { ephemeral: true });
         return;
       }
 
@@ -162,7 +217,7 @@ export default {
       if (config.blacklist.includes(role.id)) {
         await replyCard(
           interaction,
-          warningCard("That role is blacklisted. Use `/autorole unblacklist` first."),
+          warningCard(t, t("autorole.role_blacklisted")),
           { ephemeral: true },
         );
         return;
@@ -172,8 +227,8 @@ export default {
       await replyCard(
         interaction,
         added
-          ? successCard(`Role <@&${role.id}> has been added to autorole list.`)
-          : warningCard(`Role <@&${role.id}> is already in autorole list.`),
+          ? successCard(t, t("autorole.role_added", { role: role.id }))
+          : warningCard(t, t("autorole.role_already_added", { role: role.id })),
         { ephemeral: true },
       );
       return;
@@ -184,8 +239,8 @@ export default {
       await replyCard(
         interaction,
         removed
-          ? successCard(`Role <@&${role.id}> has been removed from autorole list.`)
-          : warningCard(`Role <@&${role.id}> is not in autorole list.`),
+          ? successCard(t, t("autorole.role_removed", { role: role.id }))
+          : warningCard(t, t("autorole.role_not_in_list", { role: role.id })),
         { ephemeral: true },
       );
       return;
@@ -193,7 +248,7 @@ export default {
 
     if (subcommand === "blacklist") {
       if (role.id === guild.id) {
-        await replyCard(interaction, warningCard("The @everyone role cannot be blacklisted."), { ephemeral: true });
+        await replyCard(interaction, warningCard(t, t("autorole.everyone_no_blacklist")), { ephemeral: true });
         return;
       }
 
@@ -201,14 +256,14 @@ export default {
       const lines = [];
       lines.push(
         added
-          ? `Role <@&${role.id}> has been added to blacklist.`
-          : `Role <@&${role.id}> is already blacklisted.`,
+          ? t("autorole.blacklist_added", { role: role.id })
+          : t("autorole.blacklist_already", { role: role.id }),
       );
       if (removedFromRoles) {
-        lines.push("That role was removed from autorole list automatically.");
+        lines.push(t("autorole.blacklist_autoremoved_note"));
       }
 
-      await replyCard(interaction, successCard(lines.join("\n")), { ephemeral: true });
+      await replyCard(interaction, successCard(t, lines.join("\n")), { ephemeral: true });
       return;
     }
 
@@ -217,8 +272,8 @@ export default {
       await replyCard(
         interaction,
         removed
-          ? successCard(`Role <@&${role.id}> has been removed from blacklist.`)
-          : warningCard(`Role <@&${role.id}> is not in blacklist.`),
+          ? successCard(t, t("autorole.blacklist_removed", { role: role.id }))
+          : warningCard(t, t("autorole.blacklist_not_found", { role: role.id })),
         { ephemeral: true },
       );
     }

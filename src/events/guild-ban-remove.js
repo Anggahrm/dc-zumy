@@ -1,11 +1,17 @@
 import { Events } from "discord.js";
 import { sendGuildLog } from "#services/logging.js";
+import { unbanJobKey } from "#services/scheduler-jobs.js";
 
 export default {
   name: Events.GuildBanRemove,
   async execute(ban) {
     const logger = ban.client.zumy?.logger;
     const user = ban.user ?? null;
+
+    // Any unban (bot, mod, or Discord UI) invalidates a pending tempban job.
+    if (user?.id) {
+      await ban.client.zumy?.scheduler?.cancelByKey(unbanJobKey(ban.guild.id, user.id)).catch(() => {});
+    }
     await sendGuildLog({
       guild: ban.guild,
       eventKey: "unbans",

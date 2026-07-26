@@ -1,4 +1,5 @@
 import { DEFAULT_COOLDOWN_SECONDS } from "#config/constants.js";
+import { getGuildLanguage, makeTranslator, t } from "#services/i18n.js";
 import { formatError } from "#utils/error.js";
 import { replyError as sendErrorReply } from "#utils/respond.js";
 
@@ -35,10 +36,14 @@ async function createContext({ interaction }) {
     await global.db.loadUser(mentionId);
   }
 
+  const lang = await getGuildLanguage(guildId);
+
   return {
     user: userId,
     guild: guildId,
     mention: mentionId,
+    lang,
+    t: makeTranslator(lang),
     loadUser: (id) => global.db.loadUser(id),
     loadGuild: (id) => global.db.loadGuild(id),
     loadBot: () => global.db.loadBot(),
@@ -53,20 +58,25 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
   async function handleChatInput(interaction) {
     const command = registry.get(interaction.commandName);
     if (!command) {
-      await replyError(interaction, "I couldn't find that command.");
+      await replyError(interaction, await t(interaction.guildId, "handler.command_not_found"));
       return;
     }
 
     const perm = permission.hasAccess(interaction, command.permissions);
     if (!perm.ok) {
-      await replyError(interaction, perm.reason);
+      await replyError(interaction, await t(interaction.guildId, perm.reasonKey, perm.reasonVars ?? {}));
+      return;
+    }
+
+    if (global.db?.bot?.maintenance && !permission.isOwner(interaction.user.id)) {
+      await replyError(interaction, await t(interaction.guildId, "handler.maintenance"));
       return;
     }
 
     const cooldownSeconds = command.cooldown ?? DEFAULT_COOLDOWN_SECONDS;
     const remaining = cooldowns.getRemaining(command.data.name, interaction.user.id);
     if (remaining > 0) {
-      await replyError(interaction, `You're a bit fast. Try again in ${remaining}s.`);
+      await replyError(interaction, await t(interaction.guildId, "handler.cooldown", { seconds: remaining }));
       return;
     }
 
@@ -76,6 +86,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
       const ctx = await createContext({ interaction });
       await command.execute({ interaction, registry, logger, ctx });
     } catch (error) {
+      cooldowns.refund(command.data.name, interaction.user.id);
       const details = formatError(error);
       logger.error("Command execution failed", {
         command: command.data.name,
@@ -88,15 +99,44 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
         return;
       }
 
-      await replyError(interaction, "Something went wrong while running that command.");
+      await replyError(interaction, await t(interaction.guildId, "handler.something_wrong"));
+    }
+  }
+
+  async function handleAutocomplete(interaction) {
+    const command = registry.get(interaction.commandName);
+    if (!command || typeof command.autocomplete !== "function") {
+      await interaction.respond([]).catch(() => {});
+      return;
+    }
+
+    try {
+      await command.autocomplete({ interaction, registry, logger });
+    } catch (error) {
+      logger.warn("Autocomplete failed", {
+        command: interaction.commandName,
+        message: error?.message || String(error),
+      });
+      if (!interaction.responded) {
+        await interaction.respond([]).catch(() => {});
+      }
     }
   }
 
   async function handleComponent(interaction) {
+    const rateKey = `component:${interaction.customId}`;
+    if (cooldowns.getRemaining(rateKey, interaction.user.id) > 0) {
+      await replyError(interaction, await t(interaction.guildId, "handler.click_fast"));
+      return;
+    }
+    cooldowns.consume(rateKey, interaction.user.id, 1);
+
+    const componentT = makeTranslator(await getGuildLanguage(interaction.guildId));
+
     const handler = registry.getComponentHandler(interaction.customId);
     if (handler) {
       try {
-        await handler({ interaction, registry, logger });
+        await handler({ interaction, registry, logger, t: componentT });
         return;
       } catch (error) {
         const details = formatError(error);
@@ -106,7 +146,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
           message: details.message,
           stack: details.stack,
         });
-        await replyError(interaction, "Something broke in this menu action.");
+        await replyError(interaction, await t(interaction.guildId, "handler.component_error"));
         return;
       }
     }
@@ -115,7 +155,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
       if (typeof command.onComponent !== "function") continue;
 
       try {
-        const handled = await command.onComponent({ interaction, registry, logger });
+        const handled = await command.onComponent({ interaction, registry, logger, t: componentT });
         if (handled) {
           return;
         }
@@ -128,7 +168,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
           message: details.message,
           stack: details.stack,
         });
-        await replyError(interaction, "Something broke in this menu action.");
+        await replyError(interaction, await t(interaction.guildId, "handler.component_error"));
         return;
       }
     }
@@ -140,7 +180,16 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
       return;
     }
 
-    if (interaction.isButton() || interaction.isStringSelectMenu()) {
+    if (interaction.isAutocomplete()) {
+      await handleAutocomplete(interaction);
+      return;
+    }
+
+    if (
+      interaction.isButton()
+      || interaction.isAnySelectMenu()
+      || interaction.isModalSubmit()
+    ) {
       await handleComponent(interaction);
     }
   };

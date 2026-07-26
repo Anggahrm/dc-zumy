@@ -14,6 +14,36 @@ export function formatDiscordTimestamp(now = new Date(), style = "F") {
   return `<t:${Math.floor(now.getTime() / 1000)}:${style}>`;
 }
 
+const DURATION_UNITS = {
+  s: 1000,
+  m: 60 * 1000,
+  h: 60 * 60 * 1000,
+  d: 24 * 60 * 60 * 1000,
+  w: 7 * 24 * 60 * 60 * 1000,
+};
+
+export function parseDuration(input) {
+  if (typeof input !== "string") return null;
+  const text = input.trim().toLowerCase().replaceAll(/\s+/g, "");
+  if (!text) return null;
+
+  // A bare number means minutes.
+  if (/^\d+$/.test(text)) {
+    return Number(text) * DURATION_UNITS.m;
+  }
+
+  if (!/^(\d+[smhdw])+$/.test(text)) {
+    return null;
+  }
+
+  let totalMs = 0;
+  for (const [, amount, unit] of text.matchAll(/(\d+)([smhdw])/g)) {
+    totalMs += Number(amount) * DURATION_UNITS[unit];
+  }
+
+  return totalMs > 0 ? totalMs : null;
+}
+
 function toDateParts(date) {
   return {
     year: date.getUTCFullYear(),

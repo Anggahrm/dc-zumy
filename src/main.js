@@ -7,6 +7,8 @@ import { createInteractionHandler } from "#app/handler.js";
 import { createCooldownService } from "#services/cooldown.js";
 import { createLogger } from "#services/logger.js";
 import { createPermissionService } from "#services/permission.js";
+import { createScheduler } from "#services/scheduler.js";
+import { registerDefaultJobs } from "#services/scheduler-jobs.js";
 import { db } from "#db/index.js";
 import { PROJECT_ROOT } from "#utils/paths.js";
 import { REST, Routes } from "discord.js";
@@ -91,15 +93,26 @@ async function bootstrap() {
   const cooldowns = createCooldownService();
   const permission = createPermissionService({ owners: env.owners });
 
+  runtime.client = client;
+  runtime.cooldowns = cooldowns;
+
   await db.init();
 
-  const reloadCommands = async (bustCache = false) => {
+  const scheduler = createScheduler({ logger });
+  registerDefaultJobs({ scheduler, client, logger });
+  runtime.scheduler = scheduler;
+
+  const reloadCommands = async (bustCache = false, { deploy = false } = {}) => {
     await replaceCommands({
       logger,
       registry,
       rootDir: PROJECT_ROOT,
       bustCache,
     });
+
+    if (deploy) {
+      await deployCommandsOnStart({ env, logger, registry });
+    }
   };
 
   await reloadCommands(false);
@@ -119,6 +132,7 @@ async function bootstrap() {
     cooldowns,
     permission,
     db,
+    scheduler,
     onInteraction,
     startedAt: Date.now(),
     hotReload: false,
@@ -137,15 +151,40 @@ async function bootstrap() {
   await client.login(env.token);
 }
 
+const runtime = {
+  client: null,
+  cooldowns: null,
+  scheduler: null,
+};
+
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    timer.unref?.();
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 async function shutdown(signal) {
   try {
-    await db.close();
+    runtime.cooldowns?.stop();
+    runtime.scheduler?.stop();
+    await withTimeout(db.close(), 10_000, "Database shutdown");
   } catch (error) {
     console.error("Database shutdown error", error);
-  } finally {
-    if (signal) {
-      process.exit(0);
+  }
+
+  try {
+    if (runtime.client) {
+      await withTimeout(runtime.client.destroy(), 5_000, "Client shutdown");
     }
+  } catch (error) {
+    console.error("Client shutdown error", error);
+  }
+
+  if (signal) {
+    process.exit(0);
   }
 }
 

@@ -1,5 +1,6 @@
 import { Events } from "discord.js";
 import { sendGuildLog } from "#services/logging.js";
+import { saveRoleSnapshot } from "#services/rolepersist.js";
 
 function sortIds(values) {
   return [...values].sort((a, b) => a.localeCompare(b));
@@ -62,6 +63,13 @@ export default {
       Array.from(newMember.roles.cache.values()),
     );
     if (roleChanges.added.length > 0 || roleChanges.removed.length > 0) {
+      // Keep the role-persist snapshot current on every role change: leaves
+      // of uncached (partial) members carry no role data, so the snapshot
+      // taken here is what makes restore-on-rejoin reliable.
+      const roleIds = Array.from(newMember.roles.cache.values())
+        .filter((role) => role.id !== newMember.guild.id && !role.managed)
+        .map((role) => role.id);
+      await saveRoleSnapshot(newMember.guild.id, newMember.id, roleIds).catch(() => {});
       await sendGuildLog({
         guild: newMember.guild,
         eventKey: "member_roles",

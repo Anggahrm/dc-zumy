@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "tickets_guild_number_idx" ON "tickets" USING btree ("guild_id","ticket_number");

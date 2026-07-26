@@ -5,6 +5,30 @@ import {
   SlashCommandBuilder,
   TextDisplayBuilder,
 } from "discord.js";
+import { registerStrings } from "#services/i18n.js";
+
+registerStrings("userinfo", {
+  en: {
+    title: "## User Info",
+    line_username: "- Username: **{tag}**",
+    line_id: "- User ID: `{id}`",
+    line_bot: "- Bot account: **{value}**",
+    bot_yes: "yes",
+    bot_no: "no",
+    line_created: "- Created: <t:{timestamp}:F>",
+    avatar_alt: "{tag} avatar",
+  },
+  id: {
+    title: "## Info User",
+    line_username: "- Username: **{tag}**",
+    line_id: "- User ID: `{id}`",
+    line_bot: "- Akun bot: **{value}**",
+    bot_yes: "ya",
+    bot_no: "bukan",
+    line_created: "- Dibuat: <t:{timestamp}:F>",
+    avatar_alt: "Avatar {tag}",
+  },
+});
 
 export default {
   category: "utility",
@@ -18,7 +42,7 @@ export default {
         .setDescription("Pick a user")
         .setRequired(false),
     ),
-  async execute({ interaction }) {
+  async execute({ interaction, ctx }) {
     const target = interaction.options.getUser("target") ?? interaction.user;
     const avatarUrl = target.displayAvatarURL({ extension: "png", size: 1024 });
 
@@ -26,18 +50,18 @@ export default {
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
           [
-            "## User Info",
-            `- Username: **${target.tag}**`,
-            `- User ID: \`${target.id}\``,
-            `- Bot account: **${target.bot ? "yes" : "no"}**`,
-            `- Created: <t:${Math.floor(target.createdTimestamp / 1000)}:F>`,
+            ctx.t("userinfo.title"),
+            ctx.t("userinfo.line_username", { tag: target.tag }),
+            ctx.t("userinfo.line_id", { id: target.id }),
+            ctx.t("userinfo.line_bot", { value: target.bot ? ctx.t("userinfo.bot_yes") : ctx.t("userinfo.bot_no") }),
+            ctx.t("userinfo.line_created", { timestamp: Math.floor(target.createdTimestamp / 1000) }),
           ].join("\n"),
         ),
       )
       .setThumbnailAccessory((thumbnail) =>
         thumbnail
           .setURL(avatarUrl)
-          .setDescription(`${target.tag} avatar`),
+          .setDescription(ctx.t("userinfo.avatar_alt", { tag: target.tag })),
       );
 
     const card = new ContainerBuilder()

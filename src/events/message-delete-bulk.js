@@ -1,5 +1,6 @@
 import { Events } from "discord.js";
 import { sendGuildLog } from "#services/logging.js";
+import { cleanupStarboardEntry } from "#services/starboard.js";
 
 export default {
   name: Events.MessageBulkDelete,
@@ -8,6 +9,10 @@ export default {
     if (!guild) return;
 
     const logger = channel?.client?.zumy?.logger;
+
+    for (const messageId of messages.keys()) {
+      await cleanupStarboardEntry(guild, messageId).catch(() => {});
+    }
     await sendGuildLog({
       guild,
       eventKey: "purged_messages",
