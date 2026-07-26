@@ -150,8 +150,8 @@ Notes:
 - `info`: `/ping`, `/help`, `/serverinfo`, `/avatar`
 - `utility`:
   - `/userinfo` — user details card
-  - `/set welcome|leave [channel]` — greeter channels; `/set welcome-message|leave-message [message]` — custom templates with `{user}`, `{username}`, `{server}`, `{count}`; `/set show`
-  - `/log channel [channel]`, `/log config [event]` — 26 toggleable log events with autocomplete (messages, members, voice, channels, roles, server, emojis, automod, cases)
+  - `/set welcome|leave [channel]` — greeter channels; `/set welcome-message|leave-message [message]` — custom templates with `{user}`, `{username}`, `{server}`, `{count}`; `/set show`; `/set test` — ephemeral preview of both greetings exactly as they would send
+  - `/log channel [channel]`, `/log config [event]`, `/log panel` — 26 toggleable log events with autocomplete plus an interactive panel that toggles everything from two select menus
   - `/rolemenu create|add|remove|post|delete|list` — persistent self-assign role menus: up to 25 roles per menu, buttons or select-menu mode, optional `unique` (one role at a time), editable after posting
   - `/tag show|list|add|remove` — custom text snippets with name autocomplete (add/remove need Manage Server)
   - `/say [channel]` — compose an announcement card via a modal form (Manage Server)
@@ -174,7 +174,7 @@ Notes:
   - `/tempvoice trigger|off|show` (Manage Channels) — join-to-create temporary voice channels that self-delete when empty
   - `/diagnose` (Manage Server) — health-check every bot permission and configured channel/role, with the exact fix command per issue
   - `/setup` (Manage Server) — 5-step guided onboarding wizard with native channel/role pickers and a recommended automod preset
-  - `/language` (Manage Server) — per-server bot language (English / Bahasa Indonesia) for system messages and default greetings
+  - `/language` (Manage Server) — per-server bot language (English / Bahasa Indonesia): every command response, system message, and default greeting is fully localized (~600 strings per language)
   - `/set card` — rendered welcome/leave image cards (avatar, member count) generated with @napi-rs/canvas
 - `moderation` (each gated by the matching Discord permission, both in the client UI and at runtime):
   - `/purge` (Manage Messages) — subcommands `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`

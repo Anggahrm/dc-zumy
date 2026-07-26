@@ -1,7 +1,14 @@
-import { InteractionContextType, SlashCommandBuilder } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  InteractionContextType,
+  MessageFlags,
+  SlashCommandBuilder,
+} from "discord.js";
 import { registerStrings } from "#services/i18n.js";
 import { getLeaderboard, getLevelsConfig } from "#services/levels.js";
-import { createCard, replyCard } from "#utils/respond.js";
+import { createCard, replyCard, replyError } from "#utils/respond.js";
 
 registerStrings("leaderboard", {
   en: {
@@ -12,6 +19,7 @@ registerStrings("leaderboard", {
     row_line: "{badge} <@{user_id}> — level **{level}**, {xp} XP",
     board_title: "{guild} Leaderboard",
     footer: "Page {page}/{total_pages} · {total} ranked member(s)",
+    page_gone: "That page no longer exists.",
   },
   id: {
     title: "Leaderboard",
@@ -21,13 +29,61 @@ registerStrings("leaderboard", {
     row_line: "{badge} <@{user_id}> — level **{level}**, {xp} XP",
     board_title: "Leaderboard {guild}",
     footer: "Halaman {page}/{total_pages} · {total} member masuk peringkat",
+    page_gone: "Halaman itu sudah tidak ada.",
   },
 });
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 const PAGE_SIZE = 10;
+const PAGE_PREFIX = "lb:";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
+
+// Builds the card + prev/next buttons for a page, or null when the page is
+// empty (beyond the last page).
+async function buildBoardPayload(t, guild, page) {
+  const { rows, total } = await getLeaderboard(guild.id, { page, pageSize: PAGE_SIZE });
+  if (rows.length === 0 && page !== 1) return null;
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const startRank = (page - 1) * PAGE_SIZE;
+  const lines = rows.map((row, index) => {
+    const rank = startRank + index + 1;
+    const badge = MEDALS[rank - 1] ?? `**#${rank}**`;
+    return t("leaderboard.row_line", {
+      badge,
+      user_id: row.userId,
+      level: row.level,
+      xp: numberFormatter.format(row.xp),
+    });
+  });
+
+  const card = createCard({
+    color: 0x5865f2,
+    title: t("leaderboard.board_title", { guild: guild.name }),
+    body: rows.length > 0 ? lines.join("\n") : t("leaderboard.empty_first_page"),
+    footer: t("leaderboard.footer", {
+      page,
+      total_pages: totalPages,
+      total: numberFormatter.format(total),
+    }),
+  });
+
+  const controls = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`${PAGE_PREFIX}${page - 1}`)
+      .setEmoji("◀️")
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(page <= 1),
+    new ButtonBuilder()
+      .setCustomId(`${PAGE_PREFIX}${page + 1}`)
+      .setEmoji("▶️")
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(page >= totalPages),
+  );
+
+  return { components: [card, controls] };
+}
 
 export default {
   category: "rpg",
@@ -42,6 +98,23 @@ export default {
     .addIntegerOption((option) =>
       option.setName("page").setDescription("Page number").setMinValue(1).setMaxValue(100).setRequired(false),
     ),
+  async onComponent({ interaction, t }) {
+    if (!interaction.isButton()) return false;
+    if (!interaction.customId.startsWith(PAGE_PREFIX)) return false;
+
+    const guild = interaction.guild;
+    const page = Number(interaction.customId.slice(PAGE_PREFIX.length));
+    if (!guild || !Number.isInteger(page) || page < 1) return false;
+
+    const payload = await buildBoardPayload(t, guild, page);
+    if (!payload) {
+      await replyError(interaction, t("leaderboard.page_gone"));
+      return true;
+    }
+
+    await interaction.update({ ...payload, allowedMentions: { parse: [] } });
+    return true;
+  },
   async execute({ interaction, ctx }) {
     const guild = interaction.guild;
     if (!guild) {
@@ -63,46 +136,25 @@ export default {
     }
 
     const page = interaction.options.getInteger("page") ?? 1;
-    const { rows, total } = await getLeaderboard(guild.id, { page, pageSize: PAGE_SIZE });
+    const payload = await buildBoardPayload(ctx.t, guild, page);
 
-    if (rows.length === 0) {
+    if (!payload) {
       await replyCard(
         interaction,
         createCard({
           color: 0x3498db,
           title: ctx.t("leaderboard.title"),
-          body: page === 1 ? ctx.t("leaderboard.empty_first_page") : ctx.t("leaderboard.empty_page"),
+          body: ctx.t("leaderboard.empty_page"),
         }),
         { ephemeral: true },
       );
       return;
     }
 
-    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    const startRank = (page - 1) * PAGE_SIZE;
-    const lines = rows.map((row, index) => {
-      const rank = startRank + index + 1;
-      const badge = MEDALS[rank - 1] ?? `**#${rank}**`;
-      return ctx.t("leaderboard.row_line", {
-        badge,
-        user_id: row.userId,
-        level: row.level,
-        xp: numberFormatter.format(row.xp),
-      });
+    await interaction.reply({
+      ...payload,
+      flags: MessageFlags.IsComponentsV2,
+      allowedMentions: { parse: [] },
     });
-
-    await replyCard(
-      interaction,
-      createCard({
-        color: 0x5865f2,
-        title: ctx.t("leaderboard.board_title", { guild: guild.name }),
-        body: lines.join("\n"),
-        footer: ctx.t("leaderboard.footer", {
-          page,
-          total_pages: totalPages,
-          total: numberFormatter.format(total),
-        }),
-      }),
-    );
   },
 };

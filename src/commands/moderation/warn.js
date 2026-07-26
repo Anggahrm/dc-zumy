@@ -4,10 +4,11 @@ import { applyWarnEscalation } from "#services/escalation.js";
 import { registerStrings } from "#services/i18n.js";
 import { addWarning, clearWarnings, getWarnings, removeWarning } from "#services/warnings.js";
 import { checkActorHierarchy, normalizeReason } from "#utils/moderation.js";
-import { createCard, replyCard } from "#utils/respond.js";
+import { awaitConfirmation, createCard, replyCard } from "#utils/respond.js";
 
 registerStrings("warn", {
   en: {
+    confirm_clear: "Clear **all** warnings for **{user}**? This cannot be undone.",
     title: "Moderation",
     dm_title: "Warning",
     cannot_warn_bot: "You cannot warn a bot.",
@@ -31,6 +32,7 @@ registerStrings("warn", {
     clear_none: "**{user}** has no warnings to clear.",
   },
   id: {
+    confirm_clear: "Hapus **semua** peringatan milik **{user}**? Tidak bisa dibatalkan.",
     title: "Moderasi",
     dm_title: "Peringatan",
     cannot_warn_bot: "Kamu tidak bisa warn bot.",
@@ -288,6 +290,12 @@ export default {
     }
 
     if (subcommand === "clear") {
+      const { confirmed } = await awaitConfirmation(interaction, {
+        lang: ctx.lang,
+        body: t("warn.confirm_clear", { user: target.tag }),
+      });
+      if (!confirmed) return;
+
       const cleared = await clearWarnings(guildId, target.id);
       await replyCard(
         interaction,

@@ -27,13 +27,14 @@ import {
   sanitizeMenuName,
   setMenuMessage,
 } from "#services/rolemenus.js";
-import { createCard, replyCard, replyError } from "#utils/respond.js";
+import { awaitConfirmation, createCard, replyCard, replyError } from "#utils/respond.js";
 
 const BUTTON_PREFIX = "rolemenu:";
 const SELECT_PREFIX = "rolemenu-select:";
 
 registerStrings("rolemenu", {
   en: {
+    confirm_delete: "Delete the role menu `{name}` and its posted message? This cannot be undone.",
     title: "Role Menu",
     list_title: "Role Menus",
     role_gone: "That role no longer exists.",
@@ -81,6 +82,7 @@ registerStrings("rolemenu", {
     deleted: "Menu `{name}` deleted.",
   },
   id: {
+    confirm_delete: "Hapus role menu `{name}` beserta pesan yang sudah diposting? Tidak bisa dibatalkan.",
     title: "Role Menu",
     list_title: "Role Menu",
     role_gone: "Role itu sudah tidak ada.",
@@ -628,6 +630,12 @@ export default {
     }
 
     if (subcommand === "delete") {
+      const { confirmed } = await awaitConfirmation(interaction, {
+        lang: ctx.lang,
+        body: ctx.t("rolemenu.confirm_delete", { name }),
+      });
+      if (!confirmed) return;
+
       const removed = await deleteMenu(guildId, name);
       if (removed?.messageId && removed.channelId) {
         const channel = guild.channels.cache.get(removed.channelId);

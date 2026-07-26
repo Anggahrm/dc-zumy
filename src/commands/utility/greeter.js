@@ -1,10 +1,12 @@
 import {
   ChannelType,
   InteractionContextType,
+  MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
 import {
+  buildGreeterPreview,
   getGreeterConfig,
   GREETER_MESSAGE_MAX_LENGTH,
   setGreeterCardEnabled,
@@ -156,6 +158,11 @@ export default {
       subcommand
         .setName("show")
         .setDescription("Show current greeter configuration"),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("test")
+        .setDescription("Preview the welcome and leave messages (only you see it)"),
     ),
   async execute({ interaction, ctx }) {
     const guild = interaction.guild;
@@ -165,6 +172,20 @@ export default {
 
     const guildId = ctx.guild ?? guild.id;
     const subcommand = interaction.options.getSubcommand();
+
+    if (subcommand === "test") {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      const welcome = await buildGreeterPreview({ guild, user: interaction.user, type: "welcome" });
+      const leave = await buildGreeterPreview({ guild, user: interaction.user, type: "leave" });
+
+      await interaction.editReply({
+        components: [...welcome.components, ...leave.components],
+        files: [...welcome.files, ...leave.files],
+        allowedMentions: { parse: [] },
+      });
+      return;
+    }
 
     if (subcommand === "show") {
       const config = await getGreeterConfig(guildId);

@@ -1,9 +1,10 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { registerStrings } from "#services/i18n.js";
-import { createCard, replyCard } from "#utils/respond.js";
+import { awaitConfirmation, createCard, replyCard } from "#utils/respond.js";
 
 registerStrings("purge", {
   en: {
+    confirm_all: "Delete the last **{count}** message(s) in this channel? This cannot be undone.",
     title: "Moderation",
     complete_title: "**Purge Complete**",
     mode_line: "- Mode: **{mode}**",
@@ -21,6 +22,7 @@ registerStrings("purge", {
     detail_member: "member **{user}**",
   },
   id: {
+    confirm_all: "Hapus **{count}** pesan terakhir di channel ini? Tidak bisa dibatalkan.",
     title: "Moderasi",
     complete_title: "**Purge Selesai**",
     mode_line: "- Mode: **{mode}**",
@@ -293,13 +295,22 @@ export default {
   async execute({ interaction, ctx }) {
     const t = ctx.t;
     ensureBulkDeleteChannel(interaction, t);
-    await interaction.deferReply({
-      flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
-    });
+    const subcommand = interaction.options.getSubcommand();
+
+    // "all" is the one filterless nuke — guard it behind a confirmation.
+    if (subcommand === "all") {
+      const { confirmed } = await awaitConfirmation(interaction, {
+        lang: ctx.lang,
+        body: t("purge.confirm_all", { count: interaction.options.getInteger("count", true) }),
+      });
+      if (!confirmed) return;
+    } else {
+      await interaction.deferReply({
+        flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+      });
+    }
 
     try {
-      const subcommand = interaction.options.getSubcommand();
-
       if (subcommand === "all") {
         const count = interaction.options.getInteger("count", true);
         const deleted = await interaction.channel.bulkDelete(count, true);

@@ -13,10 +13,11 @@ import {
   MAX_TAG_CONTENT_LENGTH,
   MAX_TAGS,
 } from "#services/tags.js";
-import { createCard, replyCard } from "#utils/respond.js";
+import { awaitConfirmation, createCard, replyCard } from "#utils/respond.js";
 
 registerStrings("tag", {
   en: {
+    confirm_remove: "Delete the tag `{name}`? This cannot be undone.",
     title: "Tags",
     not_found_try_list: "No tag with that name. Try `/tag list`.",
     show_footer: "Tag: {name}",
@@ -33,6 +34,7 @@ registerStrings("tag", {
     not_found: "No tag with that name.",
   },
   id: {
+    confirm_remove: "Hapus tag `{name}`? Tidak bisa dibatalkan.",
     title: "Tag",
     not_found_try_list: "Tidak ada tag dengan nama itu. Coba `/tag list`.",
     show_footer: "Tag: {name}",
@@ -209,6 +211,12 @@ export default {
 
     if (subcommand === "remove") {
       const name = interaction.options.getString("name", true);
+      const { confirmed } = await awaitConfirmation(interaction, {
+        lang: ctx.lang,
+        body: ctx.t("tag.confirm_remove", { name: name.replaceAll("`", "'") }),
+      });
+      if (!confirmed) return;
+
       const removed = await deleteTag(guildId, name);
       await replyCard(
         interaction,

@@ -227,6 +227,40 @@ export async function setGreeterMessage(guildId, type, message) {
   return cloneConfig(config);
 }
 
+// Builds the exact payload a real greeting would send, for /set test. The
+// attachment name must be unique when multiple previews share one message.
+export async function buildGreeterPreview({ guild, user, type }) {
+  const config = await getGreeterConfig(guild.id);
+  const template = type === "welcome" ? config.welcomeMessage : config.leaveMessage;
+
+  const files = [];
+  let imageAttachmentName = null;
+  if (config.cardEnabled) {
+    const image = await generateGreeterCard({
+      type,
+      username: user.username ?? user.tag ?? user.id,
+      avatarUrl: user.displayAvatarURL({ extension: "png", size: 256 }),
+      guildName: guild.name,
+      memberCount: guild.memberCount,
+    }).catch(() => null);
+    if (image) {
+      imageAttachmentName = `greeter-${type}.png`;
+      files.push(new AttachmentBuilder(image, { name: imageAttachmentName }));
+    }
+  }
+
+  const card = createGreeterCard({
+    type,
+    guild,
+    user,
+    template,
+    language: await getGuildLanguage(guild.id),
+    imageAttachmentName,
+  });
+
+  return { components: [card], files };
+}
+
 export async function sendWelcomeGreeting(member, logger) {
   const config = await getGreeterConfig(member.guild.id);
   await sendGreeterMessage({

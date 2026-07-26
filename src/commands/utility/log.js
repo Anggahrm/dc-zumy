@@ -1,4 +1,13 @@
-import { ChannelType, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import {
+  ActionRowBuilder,
+  ChannelType,
+  InteractionContextType,
+  MessageFlags,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
+} from "discord.js";
 import { registerStrings } from "#services/i18n.js";
 import {
   getLoggingConfig,
@@ -22,6 +31,10 @@ registerStrings("log", {
     event_updated: "**Logging event updated**\n- {label}: {state}",
     state_enabled: "✅ Enabled",
     state_disabled: "❌ Disabled",
+    panel_title: "Logging panel",
+    panel_body: "**Channel:** {channel}\nToggle events by picking them below — selected entries flip on/off instantly.",
+    panel_group_a: "Messages & members...",
+    panel_group_b: "Server, voice & more...",
   },
   id: {
     title: "Logging",
@@ -34,6 +47,10 @@ registerStrings("log", {
     event_updated: "**Event logging diperbarui**\n- {label}: {state}",
     state_enabled: "✅ Aktif",
     state_disabled: "❌ Nonaktif",
+    panel_title: "Panel logging",
+    panel_body: "**Channel:** {channel}\nAktif/nonaktifkan event dengan memilihnya di bawah — pilihan langsung di-toggle.",
+    panel_group_a: "Pesan & member...",
+    panel_group_b: "Server, voice & lainnya...",
   },
 });
 
@@ -73,6 +90,43 @@ function errorCard(t, body) {
   });
 }
 
+const PANEL_PREFIX = "logpanel:";
+
+function buildPanelSelect(t, config, groupKey, keys) {
+  return new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(`${PANEL_PREFIX}${groupKey}`)
+      .setPlaceholder(t(groupKey === "a" ? "log.panel_group_a" : "log.panel_group_b"))
+      .setMinValues(0)
+      .setMaxValues(keys.length)
+      .addOptions(
+        keys.map((key) =>
+          new StringSelectMenuOptionBuilder()
+            .setLabel(`${config.events[key] ? "✅" : "❌"} ${getLogEventMeta(key)?.label ?? key}`)
+            .setValue(key),
+        ),
+      ),
+  );
+}
+
+function buildPanelPayload(t, config) {
+  const half = Math.ceil(LOG_EVENT_ORDER.length / 2);
+  const groupA = LOG_EVENT_ORDER.slice(0, half);
+  const groupB = LOG_EVENT_ORDER.slice(half);
+
+  return {
+    components: [
+      createCard({
+        color: 0x3498db,
+        title: t("log.panel_title"),
+        body: t("log.panel_body", { channel: formatChannel(t, config.channelId) }),
+      }),
+      buildPanelSelect(t, config, "a", groupA),
+      buildPanelSelect(t, config, "b", groupB),
+    ],
+  };
+}
+
 export default {
   category: "utility",
   cooldown: 2,
@@ -108,7 +162,33 @@ export default {
             .setAutocomplete(true)
             .setRequired(false),
         ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("panel")
+        .setDescription("Interactive panel to toggle all log events at once"),
     ),
+  async onComponent({ interaction, t }) {
+    if (!interaction.isStringSelectMenu()) return false;
+    if (!interaction.customId.startsWith(PANEL_PREFIX)) return false;
+
+    const guild = interaction.guild;
+    if (!guild) return false;
+
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+      return false;
+    }
+
+    for (const key of interaction.values) {
+      if (!isValidLogEventKey(key)) continue;
+      const current = await getLoggingConfig(guild.id);
+      await setLoggingEvent(guild.id, key, !current.events[key]);
+    }
+
+    const config = await getLoggingConfig(guild.id);
+    await interaction.update(buildPanelPayload(t, config));
+    return true;
+  },
   async autocomplete({ interaction }) {
     const query = String(interaction.options.getFocused() ?? "").toLowerCase();
     const matches = LOG_EVENT_ORDER
@@ -126,6 +206,15 @@ export default {
 
     const guildId = ctx.guild ?? guild.id;
     const subcommand = interaction.options.getSubcommand();
+
+    if (subcommand === "panel") {
+      const config = await getLoggingConfig(guildId);
+      await interaction.reply({
+        ...buildPanelPayload(ctx.t, config),
+        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+      });
+      return;
+    }
 
     if (subcommand === "channel") {
       const selectedChannel = interaction.options.getChannel("channel");
