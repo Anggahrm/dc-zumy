@@ -19,6 +19,8 @@ export const CASE_TYPE_META = {
   "auto-timeout": { label: "Auto timeout (escalation)", color: 0xe67e22 },
   "auto-kick": { label: "Auto kick (escalation)", color: 0xe67e22 },
   "auto-ban": { label: "Auto ban (escalation)", color: 0xed4245 },
+  softban: { label: "Softban", color: 0xe67e22 },
+  note: { label: "Note", color: 0x95a5a6 },
 };
 
 const MAX_CREATE_RETRIES = 3;
