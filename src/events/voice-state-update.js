@@ -1,5 +1,6 @@
 import { Events } from "discord.js";
 import { sendGuildLog } from "#services/logging.js";
+import { handleTempvoiceUpdate } from "#services/tempvoice.js";
 
 function describeChannel(channel) {
   return channel?.id ? `<#${channel.id}>` : "(none)";
@@ -30,6 +31,15 @@ export default {
     if (oldChannelId === newChannelId) return;
 
     const logger = newState.client.zumy?.logger;
+
+    try {
+      await handleTempvoiceUpdate(oldState, newState, logger);
+    } catch (error) {
+      logger?.warn("Temp voice handling failed", {
+        guildId: guild.id,
+        message: error?.message || String(error),
+      });
+    }
     const actor = resolveActor(oldState, newState);
     const baseLines = [
       `- Member: **${resolveMemberTag(oldState, newState)}**`,
