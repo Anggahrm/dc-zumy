@@ -15,6 +15,7 @@ import {
 import { recordCase } from "#services/cases.js";
 import { finishGiveaway } from "#services/giveaways.js";
 import { getModConfig } from "#services/mod-config.js";
+import { refreshStatcounters } from "#services/statcounters.js";
 
 export function unbanJobKey(guildId, userId) {
   return `unban:${guildId}:${userId}`;
@@ -180,6 +181,17 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
         await runAlertsTickForGuild(guild, logger);
       } catch (error) {
         logger?.warn("Alerts tick failed for guild", {
+          guildId: guild.id,
+          message: error?.message || String(error),
+        });
+      }
+
+      // Stat counters piggyback on the same 10-minute cadence, which also
+      // respects Discord's 2-renames-per-10-minutes channel limit.
+      try {
+        await refreshStatcounters(guild, logger);
+      } catch (error) {
+        logger?.warn("Stat counter refresh failed for guild", {
           guildId: guild.id,
           message: error?.message || String(error),
         });
