@@ -42,6 +42,27 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
     });
   });
 
+  scheduler.registerHandler("reminder", async (job) => {
+    const { userId, channelId, text } = job.payload ?? {};
+    if (!userId || !text) return;
+
+    const content = `⏰ <@${userId}> Reminder: ${text}`;
+    const channel = channelId
+      ? await client.channels.fetch(channelId).catch(() => null)
+      : null;
+
+    if (channel?.isTextBased() && typeof channel.send === "function") {
+      const sent = await channel
+        .send({ content, allowedMentions: { users: [userId] } })
+        .then(() => true)
+        .catch(() => false);
+      if (sent) return;
+    }
+
+    const user = await client.users.fetch(userId).catch(() => null);
+    await user?.send({ content: `⏰ Reminder: ${text}` }).catch(() => {});
+  });
+
   scheduler.registerHandler("giveaway_end", async (job) => {
     const guild = await resolveGuild(client, job.guildId);
     if (!guild) return;
