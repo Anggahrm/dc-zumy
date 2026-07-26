@@ -36,10 +36,19 @@ export default {
     const rewardMoney = randomInt(1000, 3000);
     const rewardExp = randomInt(50, 150);
 
+    // Streak: claiming again within 48h of the previous claim extends it.
+    const lastDailyAt = Number(user.lastDailyAt ?? 0);
+    const streak = lastDailyAt > 0 && now - lastDailyAt < 48 * 60 * 60 * 1000
+      ? Number(user.dailyStreak ?? 0) + 1
+      : 1;
+    const streakBonus = Math.min(streak - 1, 7) * 200;
+
     const previousLevel = levelFromExp(user.exp);
-    user.money = Number(user.money ?? 0) + rewardMoney;
+    user.money = Number(user.money ?? 0) + rewardMoney + streakBonus;
     user.exp = Number(user.exp ?? 0) + rewardExp;
     user.nextDailyAt = now + DAILY_COOLDOWN_MS;
+    user.lastDailyAt = now;
+    user.dailyStreak = streak;
     user.level = levelFromExp(user.exp);
     const leveledUp = user.level > previousLevel;
 
@@ -48,8 +57,9 @@ export default {
       title: "Daily Claimed",
       body: [
         `You received your daily reward.`,
-        `- Money: **+${rewardMoney}**`,
+        `- Money: **+${rewardMoney}**${streakBonus > 0 ? ` (+**${streakBonus}** streak bonus)` : ""}`,
         `- EXP: **+${rewardExp}**`,
+        `- 🔥 Streak: **${streak}** day${streak === 1 ? "" : "s"}`,
         ...(leveledUp ? [`- 🎉 Level up! You are now level **${user.level}**`] : []),
         "",
         "**Your Totals**",
