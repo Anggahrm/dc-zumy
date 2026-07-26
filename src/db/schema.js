@@ -1,4 +1,4 @@
-import { index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { bigint, index, integer, jsonb, pgTable, primaryKey, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const usersData = pgTable("users_data", {
   id: text("id").primaryKey(),
@@ -35,6 +35,18 @@ export const moderationCases = pgTable("moderation_cases", {
 }, (table) => [
   uniqueIndex("moderation_cases_guild_case_idx").on(table.guildId, table.caseNumber),
   index("moderation_cases_guild_target_idx").on(table.guildId, table.targetId),
+]);
+
+export const memberLevels = pgTable("member_levels", {
+  guildId: text("guild_id").notNull(),
+  userId: text("user_id").notNull(),
+  xp: bigint("xp", { mode: "number" }).notNull().default(0),
+  level: integer("level").notNull().default(1),
+  messages: bigint("messages", { mode: "number" }).notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.guildId, table.userId] }),
+  index("member_levels_guild_xp_idx").on(table.guildId, table.xp),
 ]);
 
 export const scheduledJobs = pgTable("scheduled_jobs", {

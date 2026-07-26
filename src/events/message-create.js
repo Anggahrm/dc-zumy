@@ -2,6 +2,14 @@ import { Events, PermissionFlagsBits } from "discord.js";
 import { checkMessage, getAutomodConfig, isAutomodActive, isExemptFromAutomod } from "#services/automod.js";
 import { recordCase } from "#services/cases.js";
 import { applyWarnEscalation } from "#services/escalation.js";
+import {
+  addMemberXp,
+  applyLevelRewards,
+  getLevelsConfig,
+  isOnXpCooldown,
+  randomXp,
+  renderLevelUpMessage,
+} from "#services/levels.js";
 import { sendGuildLog } from "#services/logging.js";
 import { addWarning } from "#services/warnings.js";
 import { formatError } from "#utils/error.js";
@@ -95,6 +103,116 @@ async function applyAction({ message, config, violation, logger }) {
   return outcomes;
 }
 
+// Returns true when the message violated a rule and was actioned (so later
+// steps like XP should be skipped).
+async function runAutomod(message, logger) {
+  let config;
+  try {
+    config = await getAutomodConfig(message.guild.id, { preferCache: true });
+  } catch (error) {
+    const details = formatError(error);
+    logger?.warn("Automod config read failed", {
+      guildId: message.guild.id,
+      message: details.message,
+    });
+    return false;
+  }
+
+  if (!isAutomodActive(config)) return false;
+  if (isModExempt(message)) return false;
+  if (
+    isExemptFromAutomod(config, {
+      channelId: message.channelId,
+      parentChannelId: message.channel?.parentId ?? null,
+      roleIds: message.member ? [...message.member.roles.cache.keys()] : [],
+    })
+  ) {
+    return false;
+  }
+
+  const violation = checkMessage(config, message);
+  if (!violation) return false;
+
+  const outcomes = await applyAction({ message, config, violation, logger });
+
+  await sendGuildLog({
+    guild: message.guild,
+    eventKey: "automod",
+    title: "Automod Action",
+    color: 0xe67e22,
+    lines: [
+      `- Member: **${message.author.tag}**`,
+      `- User ID: \`${message.author.id}\``,
+      `- Channel: <#${message.channelId}>`,
+      `- Rule: ${violation.label}`,
+      `- Action: ${outcomes.join(", ")}`,
+    ],
+    actorId: message.author.id,
+    actorName: message.author.tag,
+    actorAvatarUrl: message.author.displayAvatarURL({ extension: "png", size: 128 }),
+    actorAvatarDescription: `${message.author.tag} avatar`,
+    logger,
+  });
+  return true;
+}
+
+async function awardXp(message, logger) {
+  const guild = message.guild;
+
+  let config;
+  try {
+    config = await getLevelsConfig(guild.id, { preferCache: true });
+  } catch {
+    return;
+  }
+  if (!config.enabled) return;
+  if (config.noXpChannels.includes(message.channelId)) return;
+  if (message.channel?.parentId && config.noXpChannels.includes(message.channel.parentId)) return;
+
+  const member = message.member;
+  if (member && config.noXpRoles.some((roleId) => member.roles.cache.has(roleId))) return;
+  if (isOnXpCooldown(guild.id, message.author.id, config.cooldownSeconds)) return;
+
+  let result;
+  try {
+    result = await addMemberXp(guild.id, message.author.id, randomXp(config));
+  } catch (error) {
+    logger?.warn("XP award failed", {
+      guildId: guild.id,
+      userId: message.author.id,
+      message: error?.message || String(error),
+    });
+    return;
+  }
+
+  if (!result.leveledUp) return;
+
+  if (member) {
+    await applyLevelRewards({ guild, member, config, level: result.level, logger });
+  }
+
+  if (config.announce) {
+    const text = renderLevelUpMessage(config.levelUpMessage, {
+      member: member ?? { id: message.author.id, user: message.author },
+      level: result.level,
+      guild,
+    });
+
+    const channel = config.announceChannelId
+      ? guild.channels.cache.get(config.announceChannelId) ?? message.channel
+      : message.channel;
+
+    if (channel?.isTextBased() && typeof channel.send === "function") {
+      await channel
+        .send({
+          content: text,
+          allowedMentions: { users: [message.author.id] },
+        })
+        .catch(() => {});
+    }
+  }
+}
+
 export default {
   name: Events.MessageCreate,
   async execute(message) {
@@ -102,52 +220,9 @@ export default {
 
     const logger = message.client.zumy?.logger;
 
-    let config;
-    try {
-      config = await getAutomodConfig(message.guild.id, { preferCache: true });
-    } catch (error) {
-      const details = formatError(error);
-      logger?.warn("Automod config read failed", {
-        guildId: message.guild.id,
-        message: details.message,
-      });
-      return;
-    }
+    const violated = await runAutomod(message, logger);
+    if (violated) return;
 
-    if (!isAutomodActive(config)) return;
-    if (isModExempt(message)) return;
-    if (
-      isExemptFromAutomod(config, {
-        channelId: message.channelId,
-        parentChannelId: message.channel?.parentId ?? null,
-        roleIds: message.member ? [...message.member.roles.cache.keys()] : [],
-      })
-    ) {
-      return;
-    }
-
-    const violation = checkMessage(config, message);
-    if (!violation) return;
-
-    const outcomes = await applyAction({ message, config, violation, logger });
-
-    await sendGuildLog({
-      guild: message.guild,
-      eventKey: "automod",
-      title: "Automod Action",
-      color: 0xe67e22,
-      lines: [
-        `- Member: **${message.author.tag}**`,
-        `- User ID: \`${message.author.id}\``,
-        `- Channel: <#${message.channelId}>`,
-        `- Rule: ${violation.label}`,
-        `- Action: ${outcomes.join(", ")}`,
-      ],
-      actorId: message.author.id,
-      actorName: message.author.tag,
-      actorAvatarUrl: message.author.displayAvatarURL({ extension: "png", size: 128 }),
-      actorAvatarDescription: `${message.author.tag} avatar`,
-      logger,
-    });
+    await awardXp(message, logger);
   },
 };

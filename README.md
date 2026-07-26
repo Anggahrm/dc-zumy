@@ -167,7 +167,9 @@ Notes:
   - `/automod` (Manage Server) — anti-invite, banned words (word-boundary + `*` wildcards), link filter with domain allowlist, mention spam, message/duplicate spam detection, exempt channels/roles, per-rule actions (`delete`/`warn`/`timeout`), and a warn-count escalation ladder (timeout → kick → ban)
   - `/autorole add/remove/show/blacklist/unblacklist` (Manage Roles)
 - `owner`: `/reloadcommands` (reload + redeploy), `/maintenance [enabled]` (block non-owner commands); both require user ID in `BOT_OWNERS`
-- `rpg`: `/daily` (money + exp every 24 hours, with level-ups), `/profile` (stats + level progress)
+- `rpg` / leveling:
+  - `/daily` (money + exp every 24 hours, with level-ups), `/profile` (stats + level progress)
+  - Message XP per guild: `/rank` (rank card with progress bar), `/leaderboard` (paginated), `/levelconfig` (Manage Server: toggle, XP rate/cooldown/multiplier, level-up announcements with templates, no-XP channels/roles, role rewards at levels with stack/replace mode, xp-set)
 
 ## Hot reload workflows
 
