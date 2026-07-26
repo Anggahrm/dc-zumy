@@ -1,3 +1,9 @@
+import {
+  fetchYoutubeFeed,
+  getAlerts,
+  renderAlertMessage,
+  setAlertLastVideo,
+} from "#services/alerts.js";
 import { automessageJobKey, getAutomessages, renderAutomessage } from "#services/automessages.js";
 import {
   getBirthdaysConfig,
@@ -44,6 +50,51 @@ async function resolveGuild(client, guildId) {
 }
 
 const BIRTHDAY_TICK_KEY = "birthday:tick";
+const ALERTS_TICK_KEY = "alerts:tick";
+const ALERTS_INTERVAL_MS = 10 * 60 * 1000;
+
+async function runAlertsTickForGuild(guild, logger) {
+  const alerts = await getAlerts(guild.id);
+  const names = Object.keys(alerts);
+  if (names.length === 0) return;
+
+  for (const name of names) {
+    const alert = alerts[name];
+    const feed = await fetchYoutubeFeed(alert.youtubeChannelId);
+    if (!feed || feed.videos.length === 0) continue;
+
+    const newest = feed.videos[0];
+    if (alert.lastVideoId === newest.videoId) continue;
+
+    // Announce everything newer than the last seen id, oldest first, max 3.
+    const lastIndex = alert.lastVideoId
+      ? feed.videos.findIndex((video) => video.videoId === alert.lastVideoId)
+      : 1;
+    const fresh = (lastIndex === -1 ? feed.videos.slice(0, 3) : feed.videos.slice(0, lastIndex)).reverse();
+
+    const channel = guild.channels.cache.get(alert.targetChannelId)
+      ?? (await guild.channels.fetch(alert.targetChannelId).catch(() => null));
+
+    if (channel?.isTextBased() && typeof channel.send === "function") {
+      for (const video of fresh) {
+        await channel
+          .send({
+            content: renderAlertMessage(alert.message, { video, guildName: guild.name }),
+            allowedMentions: { parse: [] },
+          })
+          .catch((error) => {
+            logger?.warn("Alert announce failed", {
+              guildId: guild.id,
+              name,
+              message: error?.message || String(error),
+            });
+          });
+      }
+    }
+
+    await setAlertLastVideo(guild.id, name, newest.videoId);
+  }
+}
 
 async function runBirthdayTickForGuild(guild, logger) {
   const config = await getBirthdaysConfig(guild.id, { preferCache: false });
@@ -123,11 +174,40 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
     });
   });
 
-  // Ensure exactly one pending tick exists (dedupeKey replaces any old one).
+  scheduler.registerHandler("alerts_tick", async () => {
+    for (const guild of client.guilds.cache.values()) {
+      try {
+        await runAlertsTickForGuild(guild, logger);
+      } catch (error) {
+        logger?.warn("Alerts tick failed for guild", {
+          guildId: guild.id,
+          message: error?.message || String(error),
+        });
+      }
+    }
+
+    await scheduler.schedule({
+      type: "alerts_tick",
+      runAt: new Date(Date.now() + ALERTS_INTERVAL_MS),
+      dedupeKey: ALERTS_TICK_KEY,
+    });
+  });
+
+  // Ensure exactly one pending tick of each kind exists (dedupeKey replaces
+  // any old one).
   void scheduler
     .schedule({ type: "birthday_tick", runAt: nextUtcMidnight(), dedupeKey: BIRTHDAY_TICK_KEY })
     .catch((error) => {
       logger?.warn("Failed to schedule birthday tick", { message: error?.message || String(error) });
+    });
+  void scheduler
+    .schedule({
+      type: "alerts_tick",
+      runAt: new Date(Date.now() + ALERTS_INTERVAL_MS),
+      dedupeKey: ALERTS_TICK_KEY,
+    })
+    .catch((error) => {
+      logger?.warn("Failed to schedule alerts tick", { message: error?.message || String(error) });
     });
   scheduler.registerHandler("unban", async (job) => {
     const guild = await resolveGuild(client, job.guildId);

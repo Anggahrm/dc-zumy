@@ -163,6 +163,11 @@ Notes:
   - `/poll` — native Discord polls (2-5 answers, 1h-1w, optional multiselect)
   - `/afk` — away status with reason; mentions get a notice, your next message clears it
   - `/snipe` (Manage Messages) — peek at the most recently deleted message in a channel (5-minute window)
+  - `/sticky set|remove|list` (Manage Messages) — keep a message pinned to the bottom of up to 5 channels (debounced reposting)
+  - `/birthday set|remove|next|channel|role|message` — daily 00:00 UTC birthday announcements with an optional birthday role
+  - `/automessage add|remove|list` (Manage Server) — recurring scheduled posts (30m-7d intervals, restart-safe)
+  - `/ticket panel|category|role|list|close` (Manage Server) — support tickets: private channels with claim/close buttons and text transcripts
+  - `/alert add|remove|list` (Manage Server) — YouTube upload notifications via RSS polling every ~10 minutes (no API key needed)
 - `moderation` (each gated by the matching Discord permission, both in the client UI and at runtime):
   - `/purge` (Manage Messages) — subcommands `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`
   - `/kick` (Kick Members), `/ban` (Ban Members), `/tempban` (Ban Members, auto-unban via scheduler), `/unban` (Ban Members, by user ID) — kick/ban DM the target first
@@ -173,6 +178,8 @@ Notes:
   - `/case view|list|reason` (Moderate Members) — every mod action becomes a numbered case; external actions (manual bans, other bots) are attributed from the audit log
   - `/slowmode` (Manage Channels, 0-21600s), `/lock`, `/unlock` (Manage Channels)
   - `/automod` (Manage Server) — anti-invite, banned words (word-boundary + `*` wildcards), link filter with domain allowlist, mention spam, message/duplicate spam detection, exempt channels/roles, per-rule actions (`delete`/`warn`/`timeout`), and a warn-count escalation ladder (timeout → kick → ban)
+  - `/softban` (Ban Members) — kick + purge messages via ban/unban; `/massban` (Administrator) — up to 20 IDs for raid cleanup; `/note add|list` (Moderate Members) — staff notes on the case system
+  - `/joinguard show|age|surge|action` (Manage Server) — account-age gate and join-surge detection with alert/kick/quarantine/ban responses
   - `/autorole add/remove/show/blacklist/unblacklist` (Manage Roles)
 - `owner`: `/reloadcommands` (reload + redeploy), `/maintenance [enabled]` (block non-owner commands); both require user ID in `BOT_OWNERS`
 - `rpg` / leveling:

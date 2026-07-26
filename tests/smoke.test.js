@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { EventEmitter } from "node:events";
 import { loadCommands } from "#core/loader/commands.js";
 import { loadEvents } from "#core/loader/events.js";
+import { parseYoutubeChannelId, parseYoutubeFeed } from "#services/alerts.js";
 import { checkMessage, compileWordRegex, isAutomodActive, trackSpam } from "#services/automod.js";
+import { isBirthdayOn, isValidBirthday } from "#services/birthdays.js";
 import { renderGreeterTemplate } from "#services/greeter.js";
 import { sanitizeMenuName } from "#services/rolemenus.js";
 import { sanitizeTagName } from "#services/tags.js";
@@ -186,6 +188,45 @@ describe("rolemenus", () => {
     expect(sanitizeMenuName("Colors")).toBe("colors");
     expect(sanitizeMenuName("game-roles")).toBe("game-roles");
     expect(sanitizeMenuName("bad name")).toBeNull();
+  });
+});
+
+describe("youtube alerts", () => {
+  test("parses channel ids from raw ids and urls", () => {
+    expect(parseYoutubeChannelId("UC_x5XG1OV2P6uZZ5FSM9Ttw")).toBe("UC_x5XG1OV2P6uZZ5FSM9Ttw");
+    expect(parseYoutubeChannelId("https://www.youtube.com/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw")).toBe("UC_x5XG1OV2P6uZZ5FSM9Ttw");
+    expect(parseYoutubeChannelId("@somehandle")).toBeNull();
+  });
+
+  test("parses feed xml", () => {
+    const xml = `<feed><author><name>Test Channel</name></author>
+      <entry><yt:videoId>abc123DEF45</yt:videoId><title>Video &amp; One</title></entry>
+      <entry><yt:videoId>xyz789GHI01</yt:videoId><title>Video Two</title></entry></feed>`;
+    const feed = parseYoutubeFeed(xml);
+    expect(feed.channelName).toBe("Test Channel");
+    expect(feed.videos.length).toBe(2);
+    expect(feed.videos[0]).toEqual({
+      videoId: "abc123DEF45",
+      title: "Video & One",
+      url: "https://www.youtube.com/watch?v=abc123DEF45",
+      channelName: "Test Channel",
+    });
+  });
+});
+
+describe("birthdays", () => {
+  test("validates dates", () => {
+    expect(isValidBirthday(29, 2)).toBe(true);
+    expect(isValidBirthday(30, 2)).toBe(false);
+    expect(isValidBirthday(31, 4)).toBe(false);
+    expect(isValidBirthday(15, 8)).toBe(true);
+  });
+
+  test("celebrates Feb 29 on Feb 28 in non-leap years", () => {
+    const entry = { day: 29, month: 2 };
+    expect(isBirthdayOn(entry, new Date(Date.UTC(2026, 1, 28)))).toBe(true);
+    expect(isBirthdayOn(entry, new Date(Date.UTC(2028, 1, 28)))).toBe(false);
+    expect(isBirthdayOn(entry, new Date(Date.UTC(2028, 1, 29)))).toBe(true);
   });
 });
 
