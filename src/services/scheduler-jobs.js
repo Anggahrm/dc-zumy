@@ -1,3 +1,10 @@
+import {
+  getBirthdaysConfig,
+  isBirthdayOn,
+  nextUtcMidnight,
+  renderBirthdayMessage,
+  updateBirthdaysConfig,
+} from "#services/birthdays.js";
 import { recordCase } from "#services/cases.js";
 import { finishGiveaway } from "#services/giveaways.js";
 import { getModConfig } from "#services/mod-config.js";
@@ -35,7 +42,92 @@ async function resolveGuild(client, guildId) {
     ?? (await fetchOrNull(client.guilds.fetch(guildId), [UNKNOWN_GUILD]));
 }
 
+const BIRTHDAY_TICK_KEY = "birthday:tick";
+
+async function runBirthdayTickForGuild(guild, logger) {
+  const config = await getBirthdaysConfig(guild.id, { preferCache: false });
+  const hasEntries = Object.keys(config.entries).length > 0;
+  if (!config.channelId || !hasEntries) return;
+
+  const today = new Date();
+  const celebrating = Object.entries(config.entries)
+    .filter(([, entry]) => isBirthdayOn(entry, today))
+    .map(([userId]) => userId);
+
+  const role = config.roleId ? guild.roles.cache.get(config.roleId) : null;
+
+  // Remove yesterday's birthday role before assigning today's.
+  if (role) {
+    for (const userId of config.activeRoleUserIds) {
+      if (celebrating.includes(userId)) continue;
+      const member = await guild.members.fetch(userId).catch(() => null);
+      await member?.roles.remove(role, "Birthday over").catch(() => {});
+    }
+  }
+
+  const celebrated = [];
+  for (const userId of celebrating) {
+    const member = await guild.members.fetch(userId).catch(() => null);
+    if (!member) continue;
+    celebrated.push(userId);
+    if (role) {
+      await member.roles.add(role, "Birthday!").catch(() => {});
+    }
+  }
+
+  await updateBirthdaysConfig(guild.id, (stored) => {
+    stored.activeRoleUserIds = role ? celebrated : [];
+  });
+
+  if (celebrated.length === 0) return;
+
+  const channel = guild.channels.cache.get(config.channelId)
+    ?? (await guild.channels.fetch(config.channelId).catch(() => null));
+  if (!channel?.isTextBased() || typeof channel.send !== "function") return;
+
+  for (const userId of celebrated) {
+    await channel
+      .send({
+        content: renderBirthdayMessage(config.message, { userId, guildName: guild.name }),
+        allowedMentions: { users: [userId] },
+      })
+      .catch((error) => {
+        logger?.warn("Failed to send birthday message", {
+          guildId: guild.id,
+          userId,
+          message: error?.message || String(error),
+        });
+      });
+  }
+}
+
 export function registerDefaultJobs({ scheduler, client, logger }) {
+  scheduler.registerHandler("birthday_tick", async () => {
+    for (const guild of client.guilds.cache.values()) {
+      try {
+        await runBirthdayTickForGuild(guild, logger);
+      } catch (error) {
+        logger?.warn("Birthday tick failed for guild", {
+          guildId: guild.id,
+          message: error?.message || String(error),
+        });
+      }
+    }
+
+    // Self-perpetuating daily tick.
+    await scheduler.schedule({
+      type: "birthday_tick",
+      runAt: nextUtcMidnight(),
+      dedupeKey: BIRTHDAY_TICK_KEY,
+    });
+  });
+
+  // Ensure exactly one pending tick exists (dedupeKey replaces any old one).
+  void scheduler
+    .schedule({ type: "birthday_tick", runAt: nextUtcMidnight(), dedupeKey: BIRTHDAY_TICK_KEY })
+    .catch((error) => {
+      logger?.warn("Failed to schedule birthday tick", { message: error?.message || String(error) });
+    });
   scheduler.registerHandler("unban", async (job) => {
     const guild = await resolveGuild(client, job.guildId);
     if (!guild) return;
