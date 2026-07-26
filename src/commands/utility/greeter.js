@@ -7,6 +7,7 @@ import {
 import {
   getGreeterConfig,
   GREETER_MESSAGE_MAX_LENGTH,
+  setGreeterCardEnabled,
   setGreeterChannel,
   setGreeterMessage,
 } from "#services/greeter.js";
@@ -27,6 +28,7 @@ function configLines(config) {
     `- Leave channel: ${formatChannel(config.leaveChannelId)}`,
     `- Welcome message: ${formatMessage(config.welcomeMessage)}`,
     `- Leave message: ${formatMessage(config.leaveMessage)}`,
+    `- Image card: ${config.cardEnabled ? "✅ enabled" : "❌ disabled"}`,
   ];
 }
 
@@ -88,6 +90,14 @@ export default {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName("card")
+        .setDescription("Toggle rendered welcome/leave image cards")
+        .addBooleanOption((option) =>
+          option.setName("enabled").setDescription("Attach a generated image card").setRequired(true),
+        ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName("show")
         .setDescription("Show current greeter configuration"),
     ),
@@ -110,6 +120,23 @@ export default {
           "",
           "**Template variables**",
           "- `{user}` mention, `{username}` name, `{server}` server name, `{count}` member count",
+        ].join("\n"),
+      });
+      await replyCard(interaction, card, { ephemeral: true });
+      return;
+    }
+
+    if (subcommand === "card") {
+      const enabled = interaction.options.getBoolean("enabled", true);
+      const config = await setGreeterCardEnabled(guildId, enabled);
+      const card = createCard({
+        color: 0x57f287,
+        title: "Greeter",
+        body: [
+          `**Image card ${enabled ? "enabled" : "disabled"}**`,
+          ...(enabled ? ["- Welcome/leave messages now include a rendered card with the member's avatar."] : []),
+          "",
+          ...configLines(config),
         ].join("\n"),
       });
       await replyCard(interaction, card, { ephemeral: true });
