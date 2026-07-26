@@ -2,6 +2,7 @@ import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { getDb } from "#db/client.js";
 import { memberLevels } from "#db/schema.js";
 import { loadGuildFeature } from "#services/guild-config.js";
+import { getGuildLanguage, translate } from "#services/i18n.js";
 import { levelFromExp } from "#utils/level.js";
 
 export const MAX_LEVEL_REWARDS = 25;
@@ -267,8 +268,8 @@ export async function applyLevelRewards({ guild, member, config, level, logger }
   }
 }
 
-export function renderLevelUpMessage(template, { member, level, guild }) {
-  const text = template || "🎉 {user} reached level **{level}**!";
+export function renderLevelUpMessage(template, { member, level, guild, language = "en" }) {
+  const text = template || translate(language, "levels.levelup_default");
   return text
     .replaceAll("{user}", `<@${member.id}>`)
     .replaceAll("{username}", member.user?.username ?? member.id)
@@ -322,7 +323,12 @@ export async function runVoiceXpTick(client, logger) {
               if (channel?.isTextBased() && typeof channel.send === "function") {
                 await channel
                   .send({
-                    content: renderLevelUpMessage(config.levelUpMessage, { member, level: result.level, guild }),
+                    content: renderLevelUpMessage(config.levelUpMessage, {
+                      member,
+                      level: result.level,
+                      guild,
+                      language: await getGuildLanguage(guild.id),
+                    }),
                     allowedMentions: { users: [member.id] },
                   })
                   .catch(() => {});

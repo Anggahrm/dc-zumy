@@ -6,6 +6,7 @@ import { parseYoutubeChannelId, parseYoutubeFeed } from "#services/alerts.js";
 import { checkMessage, compileWordRegex, isAutomodActive, trackSpam } from "#services/automod.js";
 import { isBirthdayOn, isValidBirthday } from "#services/birthdays.js";
 import { renderGreeterTemplate } from "#services/greeter.js";
+import { translate } from "#services/i18n.js";
 import { sanitizeMenuName } from "#services/rolemenus.js";
 import { sanitizeTagName } from "#services/tags.js";
 import { expForLevel, levelFromExp, levelProgress } from "#utils/level.js";
@@ -246,6 +247,15 @@ describe("tags", () => {
     expect(sanitizeTagName("faq-1")).toBe("faq-1");
     expect(sanitizeTagName("bad name")).toBeNull();
     expect(sanitizeTagName("")).toBeNull();
+  });
+});
+
+describe("i18n", () => {
+  test("translates with variables and falls back to english", () => {
+    expect(translate("id", "handler.cooldown", { seconds: 5 })).toBe("Sabar dulu ya. Coba lagi dalam 5 detik.");
+    expect(translate("en", "handler.cooldown", { seconds: 5 })).toBe("You're a bit fast. Try again in 5s.");
+    expect(translate("xx", "handler.maintenance")).toBe("The bot is under maintenance right now. Please try again later.");
+    expect(translate("id", "greeter.welcome_default", { user: "@u", server: "S" })).toContain("selamat datang di S");
   });
 });
 

@@ -11,6 +11,7 @@ import {
 } from "discord.js";
 import { formatError } from "#utils/error.js";
 import { guildFeatureUtils, loadGuildFeature } from "#services/guild-config.js";
+import { getGuildLanguage, translate } from "#services/i18n.js";
 import { generateGreeterCard } from "#services/welcome-card.js";
 import { formatDiscordTimestamp } from "#utils/time.js";
 
@@ -67,7 +68,7 @@ function formatFooterTimestamp(now = new Date()) {
   return formatDiscordTimestamp(now, "F");
 }
 
-function createGreeterCard({ type, guild, user, template, imageAttachmentName = null }) {
+function createGreeterCard({ type, guild, user, template, language = "en", imageAttachmentName = null }) {
   const isWelcome = type === "welcome";
   const color = isWelcome ? 0x57f287 : 0xed4245;
   const title = isWelcome ? "Welcome To Server" : "Leave From Server";
@@ -76,9 +77,10 @@ function createGreeterCard({ type, guild, user, template, imageAttachmentName = 
 
   const description = template
     ? renderGreeterTemplate(template, { user, guild })
-    : (isWelcome
-      ? `Hi <@${user.id}> Welcome to ${guild.name}, Have a nice day`
-      : `Bye <@${user.id}> from ${guild.name}, Have a nice day`);
+    : translate(language, isWelcome ? "greeter.welcome_default" : "greeter.leave_default", {
+      user: `<@${user.id}>`,
+      server: guild.name,
+    });
 
   const headline = new TextDisplayBuilder().setContent([
     `## ${title}`,
@@ -173,6 +175,7 @@ async function sendGreeterMessage({ guild, user, type, channelId, template, card
     guild,
     user,
     template,
+    language: await getGuildLanguage(guild.id),
     imageAttachmentName,
   });
 

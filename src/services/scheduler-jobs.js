@@ -14,6 +14,7 @@ import {
 } from "#services/birthdays.js";
 import { recordCase } from "#services/cases.js";
 import { finishGiveaway } from "#services/giveaways.js";
+import { getGuildLanguage } from "#services/i18n.js";
 import { getModConfig } from "#services/mod-config.js";
 import { refreshStatcounters } from "#services/statcounters.js";
 
@@ -142,10 +143,11 @@ async function runBirthdayTickForGuild(guild, logger) {
     ?? (await guild.channels.fetch(config.channelId).catch(() => null));
   if (!channel?.isTextBased() || typeof channel.send !== "function") return;
 
+  const language = await getGuildLanguage(guild.id);
   for (const userId of celebrated) {
     await channel
       .send({
-        content: renderBirthdayMessage(config.message, { userId, guildName: guild.name }),
+        content: renderBirthdayMessage(config.message, { userId, guildName: guild.name, language }),
         allowedMentions: { users: [userId] },
       })
       .catch((error) => {

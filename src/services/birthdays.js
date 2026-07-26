@@ -1,4 +1,5 @@
 import { guildFeatureUtils, loadGuildFeature } from "#services/guild-config.js";
+import { translate } from "#services/i18n.js";
 
 export const MAX_BIRTHDAY_ENTRIES = 1000;
 
@@ -109,8 +110,8 @@ export function upcomingBirthdays(entries, now = new Date(), limit = 10) {
     .slice(0, limit);
 }
 
-export function renderBirthdayMessage(template, { userId, guildName }) {
-  const text = template || "🎂 Happy birthday {user}! Have a great day!";
+export function renderBirthdayMessage(template, { userId, guildName, language = "en" }) {
+  const text = template || translate(language, "birthday.default");
   return text
     .replaceAll("{user}", `<@${userId}>`)
     .replaceAll("{server}", guildName);

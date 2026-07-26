@@ -12,6 +12,7 @@ import {
   renderLevelUpMessage,
 } from "#services/levels.js";
 import { getHighlights, matchHighlights } from "#services/highlights.js";
+import { getGuildLanguage, translate } from "#services/i18n.js";
 import { sendGuildLog } from "#services/logging.js";
 import { getStickies, scheduleStickyRepost } from "#services/stickies.js";
 import { getTriggers, renderTriggerResponse, resolveTrigger } from "#services/triggers.js";
@@ -200,6 +201,7 @@ async function awardXp(message, logger) {
       member: member ?? { id: message.author.id, user: message.author },
       level: result.level,
       guild,
+      language: await getGuildLanguage(guild.id),
     });
 
     const channel = config.announceChannelId
@@ -253,12 +255,17 @@ async function handleAfk(message) {
   }
   if (Object.keys(afkMap).length === 0) return;
 
+  const language = await getGuildLanguage(message.guild.id);
+
   if (afkMap[message.author.id]) {
     const removed = await clearAfk(message.guild.id, message.author.id).catch(() => null);
     if (removed) {
       await message
         .reply({
-          content: `Welcome back <@${message.author.id}>! Your AFK is cleared (away since <t:${Math.floor(removed.since / 1000)}:R>).`,
+          content: translate(language, "afk.welcome_back", {
+            user: `<@${message.author.id}>`,
+            since: `<t:${Math.floor(removed.since / 1000)}:R>`,
+          }),
           allowedMentions: { users: [message.author.id], repliedUser: false },
         })
         .catch(() => {});
@@ -273,7 +280,11 @@ async function handleAfk(message) {
     .slice(0, 3)
     .map((id) => {
       const entry = afkMap[id];
-      return `💤 <@${id}> is AFK (<t:${Math.floor(entry.since / 1000)}:R>): ${entry.reason}`;
+      return translate(language, "afk.is_afk", {
+        user: `<@${id}>`,
+        since: `<t:${Math.floor(entry.since / 1000)}:R>`,
+        reason: entry.reason,
+      });
     });
 
   if (notices.length > 0) {

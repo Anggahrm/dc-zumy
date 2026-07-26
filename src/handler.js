@@ -1,4 +1,5 @@
 import { DEFAULT_COOLDOWN_SECONDS } from "#config/constants.js";
+import { t } from "#services/i18n.js";
 import { formatError } from "#utils/error.js";
 import { replyError as sendErrorReply } from "#utils/respond.js";
 
@@ -53,7 +54,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
   async function handleChatInput(interaction) {
     const command = registry.get(interaction.commandName);
     if (!command) {
-      await replyError(interaction, "I couldn't find that command.");
+      await replyError(interaction, await t(interaction.guildId, "handler.command_not_found"));
       return;
     }
 
@@ -64,14 +65,14 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
     }
 
     if (global.db?.bot?.maintenance && !permission.isOwner(interaction.user.id)) {
-      await replyError(interaction, "The bot is under maintenance right now. Please try again later.");
+      await replyError(interaction, await t(interaction.guildId, "handler.maintenance"));
       return;
     }
 
     const cooldownSeconds = command.cooldown ?? DEFAULT_COOLDOWN_SECONDS;
     const remaining = cooldowns.getRemaining(command.data.name, interaction.user.id);
     if (remaining > 0) {
-      await replyError(interaction, `You're a bit fast. Try again in ${remaining}s.`);
+      await replyError(interaction, await t(interaction.guildId, "handler.cooldown", { seconds: remaining }));
       return;
     }
 
@@ -94,7 +95,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
         return;
       }
 
-      await replyError(interaction, "Something went wrong while running that command.");
+      await replyError(interaction, await t(interaction.guildId, "handler.something_wrong"));
     }
   }
 
@@ -121,7 +122,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
   async function handleComponent(interaction) {
     const rateKey = `component:${interaction.customId}`;
     if (cooldowns.getRemaining(rateKey, interaction.user.id) > 0) {
-      await replyError(interaction, "You're clicking a bit fast. Try again in a second.");
+      await replyError(interaction, await t(interaction.guildId, "handler.click_fast"));
       return;
     }
     cooldowns.consume(rateKey, interaction.user.id, 1);
@@ -139,7 +140,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
           message: details.message,
           stack: details.stack,
         });
-        await replyError(interaction, "Something broke in this menu action.");
+        await replyError(interaction, await t(interaction.guildId, "handler.component_error"));
         return;
       }
     }
@@ -161,7 +162,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
           message: details.message,
           stack: details.stack,
         });
-        await replyError(interaction, "Something broke in this menu action.");
+        await replyError(interaction, await t(interaction.guildId, "handler.component_error"));
         return;
       }
     }
