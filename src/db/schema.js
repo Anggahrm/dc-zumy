@@ -61,6 +61,22 @@ export const starboardEntries = pgTable("starboard_entries", {
   primaryKey({ columns: [table.guildId, table.messageId] }),
 ]);
 
+export const giveaways = pgTable("giveaways", {
+  id: serial("id").primaryKey(),
+  guildId: text("guild_id").notNull(),
+  channelId: text("channel_id").notNull(),
+  messageId: text("message_id"),
+  prize: text("prize").notNull(),
+  winnerCount: integer("winner_count").notNull().default(1),
+  entrants: jsonb("entrants").notNull().default([]),
+  createdBy: text("created_by"),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  ended: integer("ended").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("giveaways_guild_idx").on(table.guildId),
+]);
+
 export const scheduledJobs = pgTable("scheduled_jobs", {
   id: serial("id").primaryKey(),
   guildId: text("guild_id"),

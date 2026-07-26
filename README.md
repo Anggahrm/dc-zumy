@@ -156,6 +156,8 @@ Notes:
   - `/tag show|list|add|remove` — custom text snippets with name autocomplete (add/remove need Manage Server)
   - `/say [channel]` — compose an announcement card via a modal form (Manage Server)
   - `/starboard channel|threshold|emoji|selfstar|ignore|show` (Manage Server) — community-curated highlights: reactions past the threshold repost the message to the starboard with a live star count, custom emoji support, self-star rule, and ignored channels
+  - `/suggest` + `/suggestion channel|approve|deny|consider` — numbered suggestion cards with 👍/👎 vote buttons and staff review states
+  - `/giveaway start|end|reroll|list` (Manage Server) — button-entry giveaways that survive restarts (scheduler-backed), random winner picks and rerolls
 - `moderation` (each gated by the matching Discord permission, both in the client UI and at runtime):
   - `/purge` (Manage Messages) — subcommands `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`
   - `/kick` (Kick Members), `/ban` (Ban Members), `/tempban` (Ban Members, auto-unban via scheduler), `/unban` (Ban Members, by user ID) — kick/ban DM the target first

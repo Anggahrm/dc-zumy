@@ -1,8 +1,13 @@
 import { recordCase } from "#services/cases.js";
+import { finishGiveaway } from "#services/giveaways.js";
 import { getModConfig } from "#services/mod-config.js";
 
 export function unbanJobKey(guildId, userId) {
   return `unban:${guildId}:${userId}`;
+}
+
+export function giveawayJobKey(giveawayId) {
+  return `giveaway:${giveawayId}`;
 }
 
 export function unmuteJobKey(guildId, userId) {
@@ -35,6 +40,16 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
       metadata: { source: "scheduler", caseNumber: job.payload?.caseNumber },
       logger,
     });
+  });
+
+  scheduler.registerHandler("giveaway_end", async (job) => {
+    const guild = await resolveGuild(client, job.guildId);
+    if (!guild) return;
+
+    const giveawayId = job.payload?.giveawayId;
+    if (!Number.isInteger(giveawayId)) return;
+
+    await finishGiveaway({ guild, giveawayId, logger });
   });
 
   scheduler.registerHandler("unmute", async (job) => {
