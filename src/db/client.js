@@ -2,6 +2,7 @@ import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "#db/schema.js";
+import { resolveSsl } from "#db/ssl.js";
 
 let pool = null;
 let db = null;
@@ -16,7 +17,7 @@ function ensureDbClient() {
     throw new Error("DATABASE_URL is not configured. Set it in .env before using database features.");
   }
 
-  pool = new Pool({ connectionString });
+  pool = new Pool({ connectionString, ssl: resolveSsl(connectionString) });
   db = drizzle({ client: pool, schema });
   return db;
 }
