@@ -12,6 +12,7 @@ import {
   renderLevelUpMessage,
 } from "#services/levels.js";
 import { sendGuildLog } from "#services/logging.js";
+import { getStickies, scheduleStickyRepost } from "#services/stickies.js";
 import { getTriggers, renderTriggerResponse, resolveTrigger } from "#services/triggers.js";
 import { addWarning } from "#services/warnings.js";
 import { formatError } from "#utils/error.js";
@@ -296,6 +297,19 @@ export default {
 
     await handleAfk(message);
     await runTriggers(message);
+    await handleSticky(message, logger);
     await awardXp(message, logger);
   },
 };
+
+async function handleSticky(message, logger) {
+  let stickies;
+  try {
+    stickies = await getStickies(message.guild.id, { preferCache: true });
+  } catch {
+    return;
+  }
+  if (!stickies[message.channelId]) return;
+
+  scheduleStickyRepost({ guild: message.guild, channelId: message.channelId, logger });
+}
