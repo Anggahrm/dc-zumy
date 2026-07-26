@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
-import { resolveSsl } from "./src/db/ssl.js";
+import { withSslMode } from "./src/db/ssl.js";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required to run Drizzle commands.");
@@ -11,7 +11,8 @@ export default defineConfig({
   schema: "./src/db/schema.js",
   out: "./drizzle",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
-    ssl: resolveSsl(process.env.DATABASE_URL),
+    // drizzle-kit ignores the `ssl` field when `url` is present, so the SSL
+    // mode must live inside the connection string.
+    url: withSslMode(process.env.DATABASE_URL),
   },
 });
