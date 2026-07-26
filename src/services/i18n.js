@@ -22,6 +22,16 @@ const STRINGS = {
     "birthday.default": "🎂 Happy birthday {user}! Have a great day!",
     "afk.welcome_back": "Welcome back {user}! Your AFK is cleared (away since {since}).",
     "afk.is_afk": "💤 {user} is AFK ({since}): {reason}",
+    "perm.owner_only": "This one is owner-only.",
+    "perm.guild_only": "This command only works in a server.",
+    "perm.admin_needed": "You need Administrator permission for this command.",
+    "perm.member_perm": "You need the **{permission}** permission for this command.",
+    "perm.unresolved": "I couldn't resolve your permissions here.",
+    "confirm.title": "Are you sure?",
+    "confirm.yes": "Confirm",
+    "confirm.no": "Cancel",
+    "confirm.cancelled": "Cancelled — nothing was changed.",
+    "confirm.timeout": "Confirmation timed out — nothing was changed.",
   },
   id: {
     "handler.command_not_found": "Command itu tidak ketemu.",
@@ -36,6 +46,16 @@ const STRINGS = {
     "birthday.default": "🎂 Selamat ulang tahun {user}! Semoga harimu menyenangkan!",
     "afk.welcome_back": "Selamat datang kembali {user}! Status AFK-mu dihapus (AFK sejak {since}).",
     "afk.is_afk": "💤 {user} lagi AFK ({since}): {reason}",
+    "perm.owner_only": "Command ini khusus owner bot.",
+    "perm.guild_only": "Command ini hanya bisa dipakai di server.",
+    "perm.admin_needed": "Kamu butuh permission Administrator untuk command ini.",
+    "perm.member_perm": "Kamu butuh permission **{permission}** untuk command ini.",
+    "perm.unresolved": "Aku tidak bisa membaca permission-mu di sini.",
+    "confirm.title": "Yakin?",
+    "confirm.yes": "Lanjutkan",
+    "confirm.no": "Batal",
+    "confirm.cancelled": "Dibatalkan — tidak ada yang berubah.",
+    "confirm.timeout": "Konfirmasi kedaluwarsa — tidak ada yang berubah.",
   },
 };
 
@@ -57,6 +77,19 @@ export async function setGuildLanguage(guildId, language) {
   config.language = language;
 }
 
+// Commands register their own strings at module load, co-located with the
+// command code, namespaced as `<namespace>.<key>`. Later registrations for
+// the same namespace replace earlier ones (hot reload safe).
+export function registerStrings(namespace, dictionaries) {
+  for (const lang of SUPPORTED_LANGUAGES) {
+    const entries = dictionaries[lang];
+    if (!entries) continue;
+    for (const [key, text] of Object.entries(entries)) {
+      STRINGS[lang][`${namespace}.${key}`] = text;
+    }
+  }
+}
+
 export function translate(language, key, vars = {}) {
   const lang = SUPPORTED_LANGUAGES.includes(language) ? language : "en";
   let text = STRINGS[lang][key] ?? STRINGS.en[key] ?? key;
@@ -64,6 +97,11 @@ export function translate(language, key, vars = {}) {
     text = text.replaceAll(`{${name}}`, String(value));
   }
   return text;
+}
+
+// Bound translator for one already-resolved language.
+export function makeTranslator(language) {
+  return (key, vars = {}) => translate(language, key, vars);
 }
 
 // Convenience: resolve the guild language and translate in one call.

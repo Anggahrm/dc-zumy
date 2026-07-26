@@ -1,5 +1,5 @@
 import { DEFAULT_COOLDOWN_SECONDS } from "#config/constants.js";
-import { t } from "#services/i18n.js";
+import { getGuildLanguage, makeTranslator, t } from "#services/i18n.js";
 import { formatError } from "#utils/error.js";
 import { replyError as sendErrorReply } from "#utils/respond.js";
 
@@ -36,10 +36,14 @@ async function createContext({ interaction }) {
     await global.db.loadUser(mentionId);
   }
 
+  const lang = await getGuildLanguage(guildId);
+
   return {
     user: userId,
     guild: guildId,
     mention: mentionId,
+    lang,
+    t: makeTranslator(lang),
     loadUser: (id) => global.db.loadUser(id),
     loadGuild: (id) => global.db.loadGuild(id),
     loadBot: () => global.db.loadBot(),
@@ -60,7 +64,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
 
     const perm = permission.hasAccess(interaction, command.permissions);
     if (!perm.ok) {
-      await replyError(interaction, perm.reason);
+      await replyError(interaction, await t(interaction.guildId, perm.reasonKey, perm.reasonVars ?? {}));
       return;
     }
 
@@ -127,10 +131,12 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
     }
     cooldowns.consume(rateKey, interaction.user.id, 1);
 
+    const componentT = makeTranslator(await getGuildLanguage(interaction.guildId));
+
     const handler = registry.getComponentHandler(interaction.customId);
     if (handler) {
       try {
-        await handler({ interaction, registry, logger });
+        await handler({ interaction, registry, logger, t: componentT });
         return;
       } catch (error) {
         const details = formatError(error);
@@ -149,7 +155,7 @@ export function createInteractionHandler({ registry, logger, cooldowns, permissi
       if (typeof command.onComponent !== "function") continue;
 
       try {
-        const handled = await command.onComponent({ interaction, registry, logger });
+        const handled = await command.onComponent({ interaction, registry, logger, t: componentT });
         if (handled) {
           return;
         }

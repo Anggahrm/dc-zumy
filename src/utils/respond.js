@@ -1,4 +1,7 @@
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   ContainerBuilder,
   MessageFlags,
   SectionBuilder,
@@ -6,6 +9,7 @@ import {
   SeparatorSpacingSize,
   TextDisplayBuilder,
 } from "discord.js";
+import { translate } from "#services/i18n.js";
 
 export function createCard({
   color,
@@ -99,6 +103,57 @@ export async function updateCard(interaction, cards, rows = []) {
   await interaction.update({
     components: [...cards, ...rows],
   });
+}
+
+// Ephemeral Danger/Cancel guard for destructive actions. Resolves once the
+// invoker clicks (or the timeout passes) with { confirmed }. On confirm the
+// prompt is acked via update, so follow-up responses should use replyCard
+// (which routes to followUp on replied interactions).
+export async function awaitConfirmation(interaction, { title, body, lang = "en", timeoutMs = 30_000 }) {
+  const yesId = `confirm:${interaction.id}:yes`;
+  const noId = `confirm:${interaction.id}:no`;
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(yesId).setLabel(translate(lang, "confirm.yes")).setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(noId).setLabel(translate(lang, "confirm.no")).setStyle(ButtonStyle.Secondary),
+  );
+
+  await interaction.reply({
+    components: [
+      createCard({ color: 0xf1c40f, title: title ?? translate(lang, "confirm.title"), body }),
+      row,
+    ],
+    flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+    allowedMentions: { parse: [] },
+  });
+
+  const message = await interaction.fetchReply();
+
+  try {
+    const click = await message.awaitMessageComponent({
+      filter: (i) => i.user.id === interaction.user.id && (i.customId === yesId || i.customId === noId),
+      time: timeoutMs,
+    });
+
+    const confirmed = click.customId === yesId;
+    await click.update({
+      components: [
+        createCard({
+          color: confirmed ? 0x57f287 : 0x99aab5,
+          title: title ?? translate(lang, "confirm.title"),
+          body: confirmed ? body : translate(lang, "confirm.cancelled"),
+        }),
+      ],
+    }).catch(() => {});
+    return { confirmed };
+  } catch {
+    await interaction.editReply({
+      components: [
+        createCard({ color: 0x99aab5, title: title ?? translate(lang, "confirm.title"), body: translate(lang, "confirm.timeout") }),
+      ],
+    }).catch(() => {});
+    return { confirmed: false };
+  }
 }
 
 export async function replyError(interaction, message) {
