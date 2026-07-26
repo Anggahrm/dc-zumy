@@ -11,6 +11,7 @@ import {
   randomXp,
   renderLevelUpMessage,
 } from "#services/levels.js";
+import { getHighlights, matchHighlights } from "#services/highlights.js";
 import { sendGuildLog } from "#services/logging.js";
 import { getStickies, scheduleStickyRepost } from "#services/stickies.js";
 import { getTriggers, renderTriggerResponse, resolveTrigger } from "#services/triggers.js";
@@ -297,10 +298,48 @@ export default {
 
     await handleAfk(message);
     await runTriggers(message);
+    await handleHighlights(message);
     await handleSticky(message, logger);
     await awardXp(message, logger);
   },
 };
+
+async function handleHighlights(message) {
+  if (!message.content?.trim()) return;
+
+  let highlights;
+  try {
+    highlights = await getHighlights(message.guild.id, { preferCache: true });
+  } catch {
+    return;
+  }
+  if (Object.keys(highlights).length === 0) return;
+
+  const hits = matchHighlights({
+    guildId: message.guild.id,
+    highlights,
+    content: message.content.slice(0, 2000),
+    authorId: message.author.id,
+    mentionedIds: message.mentions?.users ? new Set(message.mentions.users.keys()) : null,
+  });
+
+  for (const userId of hits) {
+    const member = await message.guild.members.fetch(userId).catch(() => null);
+    // Never leak content from channels the watcher can't see.
+    if (!member || !message.channel.permissionsFor(member)?.has("ViewChannel")) continue;
+
+    const user = member.user;
+    await user
+      .send({
+        content: [
+          `🔔 A highlight of yours was mentioned in **${message.guild.name}** → <#${message.channelId}>`,
+          `> ${message.content.slice(0, 200)}`,
+          message.url,
+        ].join("\n"),
+      })
+      .catch(() => {});
+  }
+}
 
 async function handleSticky(message, logger) {
   let stickies;
