@@ -1,5 +1,6 @@
 import { Events } from "discord.js";
 import { sendGuildLog } from "#services/logging.js";
+import { storeSnipe } from "#services/snipe.js";
 import { deleteEntry, getStarboardConfig } from "#services/starboard.js";
 
 function resolveAuthorTag(message) {
@@ -41,6 +42,7 @@ export default {
     if (!guild || !message.id) return;
 
     const logger = message.client.zumy?.logger;
+    storeSnipe(message);
     await cleanupStarboardEntry(guild, message.id);
     const author = message.author ?? null;
     await sendGuildLog({
