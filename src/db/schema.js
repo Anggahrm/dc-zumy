@@ -77,6 +77,21 @@ export const giveaways = pgTable("giveaways", {
   index("giveaways_guild_idx").on(table.guildId),
 ]);
 
+export const tickets = pgTable("tickets", {
+  id: serial("id").primaryKey(),
+  guildId: text("guild_id").notNull(),
+  ticketNumber: integer("ticket_number").notNull(),
+  channelId: text("channel_id").notNull(),
+  userId: text("user_id").notNull(),
+  claimedBy: text("claimed_by"),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+}, (table) => [
+  index("tickets_guild_status_idx").on(table.guildId, table.status),
+  index("tickets_channel_idx").on(table.channelId),
+]);
+
 export const scheduledJobs = pgTable("scheduled_jobs", {
   id: serial("id").primaryKey(),
   guildId: text("guild_id"),
