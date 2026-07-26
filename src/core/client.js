@@ -11,7 +11,8 @@ export function createBotClient() {
       GatewayIntentBits.GuildInvites,
       GatewayIntentBits.GuildVoiceStates,
       GatewayIntentBits.GuildEmojisAndStickers,
+      GatewayIntentBits.GuildMessageReactions,
     ],
-    partials: [Partials.Channel, Partials.Message, Partials.GuildMember, Partials.User],
+    partials: [Partials.Channel, Partials.Message, Partials.GuildMember, Partials.User, Partials.Reaction],
   });
 }

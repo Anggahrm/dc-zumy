@@ -49,6 +49,18 @@ export const memberLevels = pgTable("member_levels", {
   index("member_levels_guild_xp_idx").on(table.guildId, table.xp),
 ]);
 
+export const starboardEntries = pgTable("starboard_entries", {
+  guildId: text("guild_id").notNull(),
+  messageId: text("message_id").notNull(),
+  channelId: text("channel_id").notNull(),
+  authorId: text("author_id"),
+  starboardMessageId: text("starboard_message_id").notNull(),
+  starCount: integer("star_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.guildId, table.messageId] }),
+]);
+
 export const scheduledJobs = pgTable("scheduled_jobs", {
   id: serial("id").primaryKey(),
   guildId: text("guild_id"),

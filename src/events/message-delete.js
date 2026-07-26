@@ -1,5 +1,6 @@
 import { Events } from "discord.js";
 import { sendGuildLog } from "#services/logging.js";
+import { deleteEntry, getStarboardConfig } from "#services/starboard.js";
 
 function resolveAuthorTag(message) {
   return message.author?.tag ?? "Unknown user";
@@ -21,6 +22,18 @@ function resolveContentLabel(message) {
   return "(content unavailable: Message Content intent or cache miss)";
 }
 
+async function cleanupStarboardEntry(guild, messageId) {
+  const config = await getStarboardConfig(guild.id, { preferCache: true }).catch(() => null);
+  if (!config?.channelId) return;
+
+  const entry = await deleteEntry(guild.id, messageId).catch(() => null);
+  if (!entry) return;
+
+  const channel = guild.channels.cache.get(config.channelId);
+  const posted = await channel?.messages.fetch(entry.starboardMessageId).catch(() => null);
+  await posted?.delete().catch(() => {});
+}
+
 export default {
   name: Events.MessageDelete,
   async execute(message) {
@@ -28,6 +41,7 @@ export default {
     if (!guild || !message.id) return;
 
     const logger = message.client.zumy?.logger;
+    await cleanupStarboardEntry(guild, message.id);
     const author = message.author ?? null;
     await sendGuildLog({
       guild,

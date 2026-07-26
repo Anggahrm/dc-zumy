@@ -155,6 +155,7 @@ Notes:
   - `/rolemenu create|add|remove|post|delete|list` — persistent self-assign role menus: up to 25 roles per menu, buttons or select-menu mode, optional `unique` (one role at a time), editable after posting
   - `/tag show|list|add|remove` — custom text snippets with name autocomplete (add/remove need Manage Server)
   - `/say [channel]` — compose an announcement card via a modal form (Manage Server)
+  - `/starboard channel|threshold|emoji|selfstar|ignore|show` (Manage Server) — community-curated highlights: reactions past the threshold repost the message to the starboard with a live star count, custom emoji support, self-star rule, and ignored channels
 - `moderation` (each gated by the matching Discord permission, both in the client UI and at runtime):
   - `/purge` (Manage Messages) — subcommands `all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`
   - `/kick` (Kick Members), `/ban` (Ban Members), `/tempban` (Ban Members, auto-unban via scheduler), `/unban` (Ban Members, by user ID) — kick/ban DM the target first
