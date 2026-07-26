@@ -11,6 +11,7 @@ import {
   renderLevelUpMessage,
 } from "#services/levels.js";
 import { sendGuildLog } from "#services/logging.js";
+import { getTriggers, renderTriggerResponse, resolveTrigger } from "#services/triggers.js";
 import { addWarning } from "#services/warnings.js";
 import { formatError } from "#utils/error.js";
 
@@ -213,6 +214,33 @@ async function awardXp(message, logger) {
   }
 }
 
+async function runTriggers(message) {
+  if (!message.content?.trim()) return;
+
+  let triggers;
+  try {
+    triggers = await getTriggers(message.guild.id, { preferCache: true });
+  } catch {
+    return;
+  }
+  if (Object.keys(triggers).length === 0) return;
+
+  const hit = resolveTrigger(triggers, {
+    guildId: message.guild.id,
+    channelId: message.channelId,
+    parentChannelId: message.channel?.parentId ?? null,
+    content: message.content,
+  });
+  if (!hit) return;
+
+  await message
+    .reply({
+      content: renderTriggerResponse(hit.trigger.response, { message, guild: message.guild }),
+      allowedMentions: { users: [message.author.id], repliedUser: false },
+    })
+    .catch(() => {});
+}
+
 export default {
   name: Events.MessageCreate,
   async execute(message) {
@@ -223,6 +251,7 @@ export default {
     const violated = await runAutomod(message, logger);
     if (violated) return;
 
+    await runTriggers(message);
     await awardXp(message, logger);
   },
 };
