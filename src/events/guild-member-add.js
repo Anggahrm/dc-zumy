@@ -3,7 +3,7 @@ import { getAutoroleConfig } from "#services/autorole.js";
 import { recordCase } from "#services/cases.js";
 import { sendWelcomeGreeting } from "#services/greeter.js";
 import { checkJoin, getJoinguardConfig, isJoinguardActive } from "#services/joinguard.js";
-import { recordInviteJoin, resolveInviter } from "#services/invites.js";
+import { primeGuildInvites, recordInviteJoin, resolveInviter } from "#services/invites.js";
 import { sendGuildLog } from "#services/logging.js";
 import { getModConfig } from "#services/mod-config.js";
 import { takeRoleSnapshot } from "#services/rolepersist.js";
@@ -27,8 +27,10 @@ async function resolveRole(guild, roleId) {
   return guild.roles.fetch(roleId).catch(() => null);
 }
 
-// Returns true when the member was removed (kick/ban) and the rest of the
-// join flow should be skipped.
+// Returns true when the member was removed (kick/ban) or isolated
+// (quarantine) and the rest of the join flow should be skipped — otherwise
+// role-persist restore and autorole would hand a quarantined member roles
+// whose channel allows override the quarantine role's denies.
 async function runJoinGuard(member, logger) {
   let config;
   try {
@@ -101,7 +103,7 @@ async function runJoinGuard(member, logger) {
     logger,
   });
 
-  return outcome === "kicked" || outcome === "banned";
+  return ["kicked", "banned", "quarantined"].includes(outcome);
 }
 
 export default {
@@ -111,7 +113,12 @@ export default {
 
     try {
       const removed = await runJoinGuard(member, logger);
-      if (removed) return;
+      if (removed) {
+        // The join still consumed an invite use — re-sync the cache so the
+        // next join isn't misattributed to this one's inviter.
+        await primeGuildInvites(member.guild).catch(() => {});
+        return;
+      }
     } catch (error) {
       const details = formatError(error);
       logger?.warn("Join guard failed", {

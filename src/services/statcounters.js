@@ -42,9 +42,14 @@ export async function removeStatcounter(guildId, channelId) {
   return true;
 }
 
-export function computeStat(guild, type) {
+export async function computeStat(guild, type) {
   if (type === "members") return guild.memberCount;
-  if (type === "bots") return guild.members.cache.filter((member) => member.user.bot).size;
+  if (type === "bots") {
+    // The member cache is partial in larger guilds — fetch the full list
+    // (chunked via the GuildMembers intent); fall back to cache on failure.
+    const members = await guild.members.fetch().catch(() => guild.members.cache);
+    return members.filter((member) => member.user.bot).size;
+  }
   if (type === "channels") return guild.channels.cache.size;
   if (type === "roles") return guild.roles.cache.size;
   return 0;
@@ -68,7 +73,7 @@ export async function refreshStatcounters(guild, logger) {
       continue;
     }
 
-    const name = renderCounterName(entry.template, computeStat(guild, entry.type));
+    const name = renderCounterName(entry.template, await computeStat(guild, entry.type));
     if (channel.name === name) continue;
 
     await channel.setName(name, "Stat counter refresh").catch((error) => {
@@ -85,7 +90,7 @@ export async function createCounterChannel(guild, { type, template }) {
   const me = guild.members.me;
   if (!me?.permissions.has(PermissionFlagsBits.ManageChannels)) return null;
 
-  const name = renderCounterName(template, computeStat(guild, type));
+  const name = renderCounterName(template, await computeStat(guild, type));
   return guild.channels
     .create({
       name,

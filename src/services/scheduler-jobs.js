@@ -162,6 +162,13 @@ async function runBirthdayTickForGuild(guild, logger) {
 
 export function registerDefaultJobs({ scheduler, client, logger }) {
   scheduler.registerHandler("birthday_tick", async () => {
+    // Reschedule first so the daily chain survives any per-guild failure.
+    await scheduler.schedule({
+      type: "birthday_tick",
+      runAt: nextUtcMidnight(),
+      dedupeKey: BIRTHDAY_TICK_KEY,
+    });
+
     for (const guild of client.guilds.cache.values()) {
       try {
         await runBirthdayTickForGuild(guild, logger);
@@ -172,49 +179,47 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
         });
       }
     }
-
-    // Self-perpetuating daily tick.
-    await scheduler.schedule({
-      type: "birthday_tick",
-      runAt: nextUtcMidnight(),
-      dedupeKey: BIRTHDAY_TICK_KEY,
-    });
-  });
+  }, { recurring: true, recurringResetMs: 60 * 60 * 1000 });
 
   scheduler.registerHandler("alerts_tick", async () => {
-    for (const guild of client.guilds.cache.values()) {
-      try {
-        await runAlertsTickForGuild(guild, logger);
-      } catch (error) {
-        logger?.warn("Alerts tick failed for guild", {
-          guildId: guild.id,
-          message: error?.message || String(error),
-        });
-      }
-
-      // Stat counters piggyback on the same 10-minute cadence, which also
-      // respects Discord's 2-renames-per-10-minutes channel limit.
-      try {
-        await refreshStatcounters(guild, logger);
-      } catch (error) {
-        logger?.warn("Stat counter refresh failed for guild", {
-          guildId: guild.id,
-          message: error?.message || String(error),
-        });
-      }
-    }
-
+    // Reschedule first and detach the slow polling work so RSS fetches never
+    // block time-sensitive jobs (unbans, unmutes, reminders) in the queue.
     await scheduler.schedule({
       type: "alerts_tick",
       runAt: new Date(Date.now() + ALERTS_INTERVAL_MS),
       dedupeKey: ALERTS_TICK_KEY,
     });
-  });
 
-  // Ensure exactly one pending tick of each kind exists (dedupeKey replaces
-  // any old one).
+    void (async () => {
+      for (const guild of client.guilds.cache.values()) {
+        try {
+          await runAlertsTickForGuild(guild, logger);
+        } catch (error) {
+          logger?.warn("Alerts tick failed for guild", {
+            guildId: guild.id,
+            message: error?.message || String(error),
+          });
+        }
+
+        // Stat counters piggyback on the same 10-minute cadence, which also
+        // respects Discord's 2-renames-per-10-minutes channel limit.
+        try {
+          await refreshStatcounters(guild, logger);
+        } catch (error) {
+          logger?.warn("Stat counter refresh failed for guild", {
+            guildId: guild.id,
+            message: error?.message || String(error),
+          });
+        }
+      }
+    })();
+  }, { recurring: true, recurringResetMs: ALERTS_INTERVAL_MS });
+
+  // Seed the recurring ticks only when absent: an overdue row left from
+  // downtime must fire (announcing the missed day) rather than be replaced
+  // with tomorrow's.
   void scheduler
-    .schedule({ type: "birthday_tick", runAt: nextUtcMidnight(), dedupeKey: BIRTHDAY_TICK_KEY })
+    .schedule({ type: "birthday_tick", runAt: nextUtcMidnight(), dedupeKey: BIRTHDAY_TICK_KEY, ifAbsent: true })
     .catch((error) => {
       logger?.warn("Failed to schedule birthday tick", { message: error?.message || String(error) });
     });
@@ -223,6 +228,7 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
       type: "alerts_tick",
       runAt: new Date(Date.now() + ALERTS_INTERVAL_MS),
       dedupeKey: ALERTS_TICK_KEY,
+      ifAbsent: true,
     })
     .catch((error) => {
       logger?.warn("Failed to schedule alerts tick", { message: error?.message || String(error) });
@@ -285,7 +291,7 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
       payload: { name },
       dedupeKey: automessageJobKey(guild.id, name),
     });
-  });
+  }, { recurring: true, recurringResetMs: 30 * 60 * 1000 });
 
   scheduler.registerHandler("reminder", async (job) => {
     const { userId, channelId, text } = job.payload ?? {};

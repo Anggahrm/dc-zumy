@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { MessageFlags } from "discord.js";
+import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import { getDb } from "#db/client.js";
 import { starboardEntries } from "#db/schema.js";
 import { guildFeatureUtils, loadGuildFeature } from "#services/guild-config.js";
@@ -70,15 +70,23 @@ export function formatEmoji(config, guild) {
 }
 
 // Counts qualifying reactions on a message: total users minus the author's
-// own star when self-star is disallowed and minus bots.
+// own star when self-star is disallowed and minus bots. Paginates past
+// Discord's 100-user page size.
 export async function countStars(reaction, message, config) {
-  const users = await reaction.users.fetch();
   let count = 0;
-  for (const user of users.values()) {
-    if (user.bot) continue;
-    if (!config.selfStar && user.id === message.author?.id) continue;
-    count += 1;
+  let after;
+
+  for (let page = 0; page < 20; page += 1) {
+    const users = await reaction.users.fetch({ limit: 100, after });
+    for (const user of users.values()) {
+      if (user.bot) continue;
+      if (!config.selfStar && user.id === message.author?.id) continue;
+      count += 1;
+    }
+    if (users.size < 100) break;
+    after = users.lastKey();
   }
+
   return count;
 }
 
@@ -207,6 +215,32 @@ export async function syncStarboardPost({ guild, message, count, config, logger 
   }
 }
 
+// Removes a source message's starboard post + entry (message deleted, purge).
+export async function cleanupStarboardEntry(guild, messageId) {
+  const config = await getStarboardConfig(guild.id, { preferCache: true }).catch(() => null);
+  if (!config?.channelId) return;
+
+  const entry = await deleteEntry(guild.id, messageId).catch(() => null);
+  if (!entry) return;
+
+  const channel = guild.channels.cache.get(config.channelId);
+  const posted = await channel?.messages.fetch(entry.starboardMessageId).catch(() => null);
+  await posted?.delete().catch(() => {});
+}
+
+// Per-source-message serialization: two reactions crossing the threshold in
+// the same REST window must not both post a starboard card.
+const syncChains = new Map();
+
+function withMessageLock(key, fn) {
+  const prev = syncChains.get(key) ?? Promise.resolve();
+  const task = prev.catch(() => {}).then(fn);
+  syncChains.set(key, task.finally(() => {
+    if (syncChains.get(key) === task) syncChains.delete(key);
+  }));
+  return task;
+}
+
 // Shared flow for reaction add/remove events.
 export async function handleStarReaction(reaction, logger) {
   if (reaction.partial) {
@@ -228,6 +262,18 @@ export async function handleStarReaction(reaction, logger) {
   if (message.channel?.parentId && config.ignoredChannels.includes(message.channel.parentId)) return;
   if (message.author?.bot) return;
 
-  const count = await countStars(reaction, message, config);
-  await syncStarboardPost({ guild, message, count, config, logger });
+  // Never repost private-channel content to a starboard a wider audience can
+  // see: if @everyone can't view the source but can view the board, skip.
+  const everyone = guild.roles.everyone;
+  const sourceVisible = message.channel?.permissionsFor(everyone)?.has(PermissionFlagsBits.ViewChannel) ?? false;
+  if (!sourceVisible) {
+    const board = guild.channels.cache.get(config.channelId);
+    const boardVisible = board?.permissionsFor(everyone)?.has(PermissionFlagsBits.ViewChannel) ?? false;
+    if (boardVisible) return;
+  }
+
+  await withMessageLock(`${guild.id}:${message.id}`, async () => {
+    const count = await countStars(reaction, message, config);
+    await syncStarboardPost({ guild, message, count, config, logger });
+  });
 }

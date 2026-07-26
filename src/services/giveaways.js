@@ -45,20 +45,31 @@ export async function setGiveawayMessage(id, messageId) {
 
 export async function toggleEntrant(id, userId) {
   const db = getDb();
-  const row = await getGiveaway(id);
-  if (!row || row.ended) return null;
 
-  const entrants = Array.isArray(row.entrants) ? row.entrants : [];
-  const entered = entrants.includes(userId);
-  const next = entered ? entrants.filter((entry) => entry !== userId) : [...entrants, userId];
+  // Row-locked transaction: concurrent button presses serialize instead of
+  // losing entries to a read-modify-write race.
+  return db.transaction(async (tx) => {
+    const [row] = await tx.select().from(giveaways).where(eq(giveaways.id, id)).for("update").limit(1);
+    if (!row || row.ended) return null;
 
-  await db.update(giveaways).set({ entrants: next }).where(eq(giveaways.id, id));
-  return { entered: !entered, count: next.length, row: { ...row, entrants: next } };
+    const entrants = Array.isArray(row.entrants) ? row.entrants : [];
+    const entered = entrants.includes(userId);
+    const next = entered ? entrants.filter((entry) => entry !== userId) : [...entrants, userId];
+
+    await tx.update(giveaways).set({ entrants: next }).where(eq(giveaways.id, id));
+    return { entered: !entered, count: next.length, row: { ...row, entrants: next } };
+  });
 }
 
+// Conditional claim: only the caller that flips ended 0->1 gets the row back,
+// so a scheduled end and a manual /giveaway end can never both announce.
 export async function markEnded(id) {
   const db = getDb();
-  const [row] = await db.update(giveaways).set({ ended: 1 }).where(eq(giveaways.id, id)).returning();
+  const [row] = await db
+    .update(giveaways)
+    .set({ ended: 1 })
+    .where(and(eq(giveaways.id, id), eq(giveaways.ended, 0)))
+    .returning();
   return row ?? null;
 }
 
@@ -132,17 +143,20 @@ async function resolveGiveawayMessage(guild, row) {
 // Ends a giveaway: picks winners, updates the card, announces. Reused by the
 // scheduler job, /giveaway end, and reroll (with rerollOnly).
 export async function finishGiveaway({ guild, giveawayId, logger, reroll = false }) {
-  const row = await getGiveaway(giveawayId);
+  let row = await getGiveaway(giveawayId);
   if (!row || row.guildId !== guild.id) return { ok: false, reason: "not_found" };
-  if (!reroll && row.ended) return { ok: false, reason: "already_ended" };
   if (reroll && !row.ended) return { ok: false, reason: "not_ended" };
+
+  if (!reroll) {
+    // Claim before picking winners: whoever loses the ended 0->1 race backs
+    // off instead of announcing a second winner set.
+    const claimed = await markEnded(giveawayId);
+    if (!claimed) return { ok: false, reason: "already_ended" };
+    row = claimed;
+  }
 
   const entrants = Array.isArray(row.entrants) ? row.entrants : [];
   const winners = entrants.length > 0 ? pickWinners(entrants, row.winnerCount) : [];
-
-  if (!reroll) {
-    await markEnded(giveawayId);
-  }
 
   const { channel, message } = await resolveGiveawayMessage(guild, row);
 

@@ -6,13 +6,11 @@ import { guildFeatureUtils, loadGuildFeature } from "#services/guild-config.js";
 const TICKETS_DEFAULTS = {
   categoryId: null,
   supportRoleId: null,
-  counter: 0,
 };
 
 function normalizeTickets(config) {
   if (typeof config.categoryId !== "string") config.categoryId = null;
   config.supportRoleId = typeof config.supportRoleId === "string" ? config.supportRoleId : null;
-  if (!Number.isInteger(config.counter) || config.counter < 0) config.counter = 0;
   // Older shapes stored channel ids through the sanitizer; keep behavior.
   config.categoryId = guildFeatureUtils.sanitizeChannelId(config.categoryId);
 }
@@ -22,7 +20,6 @@ export async function getTicketsConfig(guildId, options = {}) {
   return {
     categoryId: config.categoryId,
     supportRoleId: config.supportRoleId,
-    counter: config.counter,
   };
 }
 
@@ -33,20 +30,32 @@ export async function updateTicketsConfig(guildId, mutate) {
   return result;
 }
 
-export async function nextTicketNumber(guildId) {
-  return updateTicketsConfig(guildId, (config) => {
-    config.counter += 1;
-    return config.counter;
-  });
-}
-
-export async function createTicketRow({ guildId, ticketNumber, channelId, userId }) {
+// Allocates the per-guild ticket number inside the INSERT (like cases.js) so
+// numbers survive crashes and never repeat — the debounced JSONB counter
+// used previously could.
+export async function createTicketRow({ guildId, channelId, userId }) {
   const db = getDb();
-  const [row] = await db
-    .insert(tickets)
-    .values({ guildId, ticketNumber, channelId, userId })
-    .returning();
-  return row;
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const [row] = await db
+        .insert(tickets)
+        .values({
+          guildId,
+          ticketNumber: sql`(select coalesce(max(${tickets.ticketNumber}), 0) + 1 from ${tickets} where ${tickets.guildId} = ${guildId})`,
+          channelId,
+          userId,
+        })
+        .returning();
+      return row;
+    } catch (error) {
+      const code = error?.code ?? error?.cause?.code;
+      if (code === "23505" && attempt < 3) continue;
+      throw error;
+    }
+  }
+
+  throw new Error("Failed to allocate a ticket number.");
 }
 
 export async function getTicketByChannel(channelId) {

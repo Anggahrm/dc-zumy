@@ -139,7 +139,16 @@ export default {
         return;
       }
 
-      user.money = balance - price;
+      // Debit the live balance: it may have changed during the role API call.
+      const current = Number(user.money ?? 0);
+      if (current < price) {
+        await member.roles.remove(role, "Role shop purchase reverted — insufficient funds").catch(() => {});
+        await replyCard(interaction, errorCard("Purchase failed — your balance changed while buying."), {
+          ephemeral: true,
+        });
+        return;
+      }
+      user.money = current - price;
       await replyCard(
         interaction,
         successCard([

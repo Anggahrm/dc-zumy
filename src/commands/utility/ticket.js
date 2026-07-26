@@ -21,7 +21,6 @@ import {
   getTicketById,
   getTicketsConfig,
   listOpenTickets,
-  nextTicketNumber,
   updateTicketsConfig,
 } from "#services/tickets.js";
 import { createCard, replyCard, replyError } from "#utils/respond.js";
@@ -118,7 +117,6 @@ async function handleOpen(interaction) {
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const ticketNumber = await nextTicketNumber(guild.id);
   const overwrites = [
     { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
     {
@@ -154,11 +152,11 @@ async function handleOpen(interaction) {
   let channel;
   try {
     channel = await guild.channels.create({
-      name: `ticket-${String(ticketNumber).padStart(4, "0")}`,
+      name: "ticket-new",
       type: ChannelType.GuildText,
       parent: config.categoryId && guild.channels.cache.has(config.categoryId) ? config.categoryId : null,
       permissionOverwrites: overwrites,
-      reason: `Ticket #${ticketNumber} opened by ${interaction.user.tag}`,
+      reason: `Ticket opened by ${interaction.user.tag}`,
     });
   } catch {
     await replyCard(interaction, errorCard("I couldn't create the ticket channel. Check my permissions (Manage Channels)."), {
@@ -167,12 +165,21 @@ async function handleOpen(interaction) {
     return true;
   }
 
-  const ticket = await createTicketRow({
-    guildId: guild.id,
-    ticketNumber,
-    channelId: channel.id,
-    userId: interaction.user.id,
-  });
+  let ticket;
+  try {
+    // The DB allocates the ticket number atomically; rename to match.
+    ticket = await createTicketRow({
+      guildId: guild.id,
+      channelId: channel.id,
+      userId: interaction.user.id,
+    });
+  } catch {
+    await channel.delete("Ticket allocation failed").catch(() => {});
+    await replyCard(interaction, errorCard("Ticket creation failed. Please try again."), { ephemeral: true });
+    return true;
+  }
+
+  await channel.setName(`ticket-${String(ticket.ticketNumber).padStart(4, "0")}`).catch(() => {});
 
   await channel.send(ticketIntroPayload(ticket, {
     userId: interaction.user.id,

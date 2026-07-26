@@ -43,6 +43,13 @@
       "when": 1785090204780,
       "tag": "0005_early_korvac",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785095389515,
+      "tag": "0006_easy_anita_blake",
+      "breakpoints": true
     }
   ]
 }

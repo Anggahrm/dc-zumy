@@ -28,6 +28,13 @@ export default {
         : [];
       if (roleIds.length > 0) {
         await saveRoleSnapshot(member.guild.id, member.id, roleIds);
+      } else if (member.partial) {
+        // Partial member: role data unavailable here — the snapshot kept by
+        // guildMemberUpdate (if any) remains the restore source.
+        logger?.debug?.("Role persist: partial member on leave, keeping last snapshot", {
+          guildId: member.guild.id,
+          userId: member.id,
+        });
       }
     } catch (error) {
       const details = formatError(error);

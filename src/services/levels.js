@@ -140,8 +140,10 @@ export function randomXp(config) {
 }
 
 // Adds XP atomically and returns the new totals plus whether a level was
-// gained. Level is derived from XP with the shared curve in utils/level.js.
-export async function addMemberXp(guildId, userId, amount) {
+// gained. Level is derived from XP with the shared curve in utils/level.js;
+// leveledUp comes from the atomic XP transition so concurrent awards report
+// exactly one level-up per threshold crossed.
+export async function addMemberXp(guildId, userId, amount, { countMessage = true } = {}) {
   const db = getDb();
   const [row] = await db
     .insert(memberLevels)
@@ -150,29 +152,31 @@ export async function addMemberXp(guildId, userId, amount) {
       userId,
       xp: amount,
       level: levelFromExp(amount),
-      messages: 1,
+      messages: countMessage ? 1 : 0,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [memberLevels.guildId, memberLevels.userId],
       set: {
         xp: sql`${memberLevels.xp} + ${amount}`,
-        messages: sql`${memberLevels.messages} + 1`,
+        messages: sql`${memberLevels.messages} + ${countMessage ? 1 : 0}`,
         updatedAt: new Date(),
       },
     })
     .returning();
 
+  const previousLevel = levelFromExp(row.xp - amount);
   const newLevel = levelFromExp(row.xp);
-  const leveledUp = newLevel > row.level;
+  const leveledUp = newLevel > previousLevel;
   if (row.level !== newLevel) {
+    // Monotonic write: an interleaved stale update can never lower the level.
     await db
       .update(memberLevels)
-      .set({ level: newLevel })
+      .set({ level: sql`GREATEST(${memberLevels.level}, ${newLevel})` })
       .where(and(eq(memberLevels.guildId, guildId), eq(memberLevels.userId, userId)));
   }
 
-  return { xp: row.xp, level: newLevel, previousLevel: row.level, leveledUp, messages: row.messages };
+  return { xp: row.xp, level: newLevel, previousLevel, leveledUp, messages: row.messages };
 }
 
 export async function setMemberXp(guildId, userId, xp) {
@@ -297,6 +301,7 @@ export async function runVoiceXpTick(client, logger) {
     const byChannel = new Map();
     for (const state of guild.voiceStates.cache.values()) {
       if (!state.channelId || !state.member || state.member.user.bot) continue;
+      if (state.channelId === guild.afkChannelId) continue;
       if (state.selfDeaf || state.deaf) continue;
       if (config.noXpChannels.includes(state.channelId)) continue;
       if (config.noXpRoles.some((roleId) => state.member.roles.cache.has(roleId))) continue;
@@ -315,7 +320,7 @@ export async function runVoiceXpTick(client, logger) {
 
       for (const member of members) {
         try {
-          const result = await addMemberXp(guild.id, member.id, amount);
+          const result = await addMemberXp(guild.id, member.id, amount, { countMessage: false });
           if (result.leveledUp) {
             await applyLevelRewards({ guild, member, config, level: result.level, logger });
             if (config.announce && config.announceChannelId) {

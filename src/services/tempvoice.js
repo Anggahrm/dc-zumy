@@ -68,17 +68,25 @@ export async function createTempChannel(guild, member, triggerChannel) {
 }
 
 // Deletes empty temp channels; also lazily cleans orphans (deleted or empty
-// channels left over from a restart).
-export async function cleanupTempChannels(guild) {
+// channels left over from a restart). `excludeId` protects a channel created
+// in the current event, and the grace period protects channels whose member
+// move hasn't reached the voice-state cache yet.
+const CLEANUP_GRACE_MS = 15_000;
+
+export async function cleanupTempChannels(guild, excludeId = null) {
   const config = await getTempvoiceConfig(guild.id, { preferCache: true });
   if (config.active.length === 0) return;
 
   for (const channelId of config.active) {
+    if (channelId === excludeId) continue;
+
     const channel = guild.channels.cache.get(channelId);
     if (!channel) {
       await removeActiveTempChannel(guild.id, channelId);
       continue;
     }
+
+    if (channel.createdTimestamp && Date.now() - channel.createdTimestamp < CLEANUP_GRACE_MS) continue;
 
     const humans = channel.members?.filter((member) => !member.user.bot).size ?? 0;
     if (humans === 0) {
@@ -102,11 +110,13 @@ export async function handleTempvoiceUpdate(oldState, newState, logger) {
   }
   if (!config.triggerChannelId) return;
 
+  let createdChannelId = null;
   if (newState.channelId === config.triggerChannelId && newState.member && !newState.member.user.bot) {
     const trigger = guild.channels.cache.get(config.triggerChannelId);
     if (trigger) {
       const channel = await createTempChannel(guild, newState.member, trigger);
       if (channel) {
+        createdChannelId = channel.id;
         await newState.setChannel(channel, "Temp voice created").catch(() => {
           channel.delete("Move failed").catch(() => {});
           removeActiveTempChannel(guild.id, channel.id).catch(() => {});
@@ -118,6 +128,8 @@ export async function handleTempvoiceUpdate(oldState, newState, logger) {
   }
 
   if (oldState.channelId && oldState.channelId !== newState.channelId) {
-    await cleanupTempChannels(guild);
+    // Exclude the just-created channel: the REST move completes before the
+    // gateway voice-state update lands in cache, so it would look empty.
+    await cleanupTempChannels(guild, createdChannelId);
   }
 }

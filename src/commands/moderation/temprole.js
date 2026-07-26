@@ -60,6 +60,20 @@ export default {
       return;
     }
 
+    // Invoker hierarchy: a mod may only grant roles below their own highest,
+    // otherwise /temprole is a self-escalation path for anyone with
+    // Manage Roles.
+    const actorMember = await guild.members.fetch(interaction.user.id).catch(() => null);
+    if (
+      interaction.user.id !== guild.ownerId
+      && (!actorMember || role.position >= actorMember.roles.highest.position)
+    ) {
+      await replyCard(interaction, errorCard("You can only grant roles below your own highest role."), {
+        ephemeral: true,
+      });
+      return;
+    }
+
     const member = await guild.members.fetch(target.id).catch(() => null);
     if (!member) {
       await replyCard(interaction, errorCard("That user is not in this server."), { ephemeral: true });

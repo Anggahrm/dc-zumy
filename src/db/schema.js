@@ -90,6 +90,7 @@ export const tickets = pgTable("tickets", {
 }, (table) => [
   index("tickets_guild_status_idx").on(table.guildId, table.status),
   index("tickets_channel_idx").on(table.channelId),
+  uniqueIndex("tickets_guild_number_idx").on(table.guildId, table.ticketNumber),
 ]);
 
 export const scheduledJobs = pgTable("scheduled_jobs", {

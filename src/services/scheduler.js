@@ -9,31 +9,46 @@ const RETRY_BASE_MS = 60_000;
 
 export function createScheduler({ logger }) {
   const handlers = new Map();
+  const handlerOptions = new Map();
   let timer = null;
   let ticking = false;
 
-  function registerHandler(type, fn) {
+  function registerHandler(type, fn, options = {}) {
     handlers.set(type, fn);
+    handlerOptions.set(type, options);
   }
 
-  async function schedule({ type, runAt, guildId = null, payload = {}, dedupeKey = null }) {
+  async function schedule({ type, runAt, guildId = null, payload = {}, dedupeKey = null, ifAbsent = false }) {
     const db = getDb();
 
-    if (dedupeKey) {
-      await db.delete(scheduledJobs).where(eq(scheduledJobs.dedupeKey, dedupeKey));
-    }
+    // Delete+insert must be atomic: a failed insert would otherwise sever a
+    // recurring chain by leaving no row behind.
+    return db.transaction(async (tx) => {
+      if (dedupeKey) {
+        if (ifAbsent) {
+          const [existing] = await tx
+            .select()
+            .from(scheduledJobs)
+            .where(eq(scheduledJobs.dedupeKey, dedupeKey))
+            .limit(1);
+          if (existing) return existing;
+        } else {
+          await tx.delete(scheduledJobs).where(eq(scheduledJobs.dedupeKey, dedupeKey));
+        }
+      }
 
-    const [row] = await db
-      .insert(scheduledJobs)
-      .values({
-        type,
-        guildId,
-        dedupeKey,
-        runAt: runAt instanceof Date ? runAt : new Date(runAt),
-        payload,
-      })
-      .returning();
-    return row;
+      const [row] = await tx
+        .insert(scheduledJobs)
+        .values({
+          type,
+          guildId,
+          dedupeKey,
+          runAt: runAt instanceof Date ? runAt : new Date(runAt),
+          payload,
+        })
+        .returning();
+      return row;
+    });
   }
 
   async function cancelByKey(dedupeKey) {
@@ -57,15 +72,34 @@ export function createScheduler({ logger }) {
 
       for (const job of due) {
         const attempts = Number(job.payload?._attempts ?? 0);
+        const options = handlerOptions.get(job.type) ?? {};
 
         if (attempts >= MAX_ATTEMPTS) {
-          await db.delete(scheduledJobs).where(eq(scheduledJobs.id, job.id));
-          logger?.error("Scheduled job gave up after max attempts", {
-            jobId: job.id,
-            type: job.type,
-            guildId: job.guildId,
-            attempts,
-          });
+          if (options.recurring) {
+            // Recurring ticks must never die permanently: reset the attempt
+            // counter and push the next try out instead of deleting the row.
+            const resetMs = options.recurringResetMs ?? 30 * 60 * 1000;
+            await db
+              .update(scheduledJobs)
+              .set({
+                runAt: new Date(Date.now() + resetMs),
+                payload: { ...job.payload, _attempts: 0 },
+              })
+              .where(eq(scheduledJobs.id, job.id));
+            logger?.error("Recurring job reset after max attempts", {
+              jobId: job.id,
+              type: job.type,
+              retryInMs: resetMs,
+            });
+          } else {
+            await db.delete(scheduledJobs).where(eq(scheduledJobs.id, job.id));
+            logger?.error("Scheduled job gave up after max attempts", {
+              jobId: job.id,
+              type: job.type,
+              guildId: job.guildId,
+              attempts,
+            });
+          }
           continue;
         }
 
@@ -79,13 +113,16 @@ export function createScheduler({ logger }) {
         // Claim by pushing runAt into the future: a crash mid-handler leaves
         // the row behind for a retry instead of dropping the job, and a
         // successful run deletes it below. At-least-once, not exactly-once.
-        await db
+        // The returning() check skips jobs cancelled between SELECT and claim.
+        const claimed = await db
           .update(scheduledJobs)
           .set({
             runAt: new Date(Date.now() + RETRY_BASE_MS * (attempts + 1)),
             payload: { ...job.payload, _attempts: attempts + 1 },
           })
-          .where(eq(scheduledJobs.id, job.id));
+          .where(eq(scheduledJobs.id, job.id))
+          .returning({ id: scheduledJobs.id });
+        if (claimed.length === 0) continue;
 
         try {
           await handler(job);

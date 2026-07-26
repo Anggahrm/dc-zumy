@@ -87,16 +87,39 @@ async function primeGuildInvitesFresh(guild) {
 
 // --- persistent per-inviter stats ---
 
+const MAX_JOINEDBY_ENTRIES = 5000;
+const MAX_COUNT_ENTRIES = 2000;
+
 export async function recordInviteJoin(guildId, userId, inviterId) {
   const config = await loadGuildFeature(guildId, "invites", INVITES_DEFAULTS, normalizeInvites);
 
   if (inviterId) {
     const current = config.counts[inviterId] ?? { joins: 0, leaves: 0 };
-    config.counts = {
+
+    // Bound the JSONB ledger: evict the oldest joinedBy entry and the
+    // smallest-net counts entry once the caps are hit.
+    const nextJoinedBy = { ...config.joinedBy, [userId]: inviterId };
+    const joinedKeys = Object.keys(nextJoinedBy);
+    if (joinedKeys.length > MAX_JOINEDBY_ENTRIES) {
+      delete nextJoinedBy[joinedKeys[0]];
+    }
+
+    const nextCounts = {
       ...config.counts,
       [inviterId]: { joins: current.joins + 1, leaves: current.leaves },
     };
-    config.joinedBy = { ...config.joinedBy, [userId]: inviterId };
+    const countKeys = Object.keys(nextCounts);
+    if (countKeys.length > MAX_COUNT_ENTRIES) {
+      const smallest = countKeys.reduce((min, key) => {
+        const net = nextCounts[key].joins - nextCounts[key].leaves;
+        const minNet = nextCounts[min].joins - nextCounts[min].leaves;
+        return net < minNet ? key : min;
+      });
+      if (smallest !== inviterId) delete nextCounts[smallest];
+    }
+
+    config.counts = nextCounts;
+    config.joinedBy = nextJoinedBy;
   }
 }
 
