@@ -10,8 +10,8 @@ registerStrings("lock", {
     cannot_lock: "That channel can't be locked.",
     need_manage_roles: "I need **Manage Roles** permission in that channel.",
     audit_reason: "Locked by {user}: {reason}",
-    lock_failed: "Lock failed. Please check my channel permissions.",
-    locked_body: "🔒 <#{channel}> is now locked.\n- Reason: {reason}",
+    lock_failed: "The lock didn't go through. Check my permissions in that channel.",
+    locked_body: "<#{channel}> is now locked.\n- Reason: {reason}",
   },
   id: {
     title: "Moderasi",
@@ -20,7 +20,7 @@ registerStrings("lock", {
     need_manage_roles: "Aku butuh permission **Manage Roles** di channel itu.",
     audit_reason: "Dikunci oleh {user}: {reason}",
     lock_failed: "Gagal mengunci. Cek permission-ku di channel itu ya.",
-    locked_body: "🔒 <#{channel}> sekarang dikunci.\n- Alasan: {reason}",
+    locked_body: "<#{channel}> sekarang dikunci.\n- Alasan: {reason}",
   },
 });
 
@@ -37,7 +37,7 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("lock")
-    .setDescription("Lock a channel (deny @everyone from sending messages)")
+    .setDescription("Lock a channel so members can't send messages")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
     .setContexts(InteractionContextType.Guild)
     .addChannelOption((option) =>

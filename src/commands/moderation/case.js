@@ -6,7 +6,7 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("case", {
   en: {
     title: "Cases",
-    not_found: "Case #{number} does not exist.",
+    not_found: "Couldn't find case #{number}.",
     case_title: "Case #{number}",
     line_action: "- Action: **{action}**",
     line_target: "- Target: **{tag}** (`{id}`)",
@@ -16,8 +16,8 @@ registerStrings("case", {
     line_duration: "- Duration: {duration}",
     line_reason: "- Reason: {reason}",
     no_reason: "No reason provided.",
-    no_cases_user: "No cases for **{tag}**.",
-    no_cases: "No cases recorded yet.",
+    no_cases_user: "No cases for **{tag}** yet.",
+    no_cases: "No cases yet.",
     list_line: "**#{number}** {action} — **{tag}** · <t:{at}:R>",
     list_title_user: "Cases for {tag}",
     list_title_recent: "Recent cases",
@@ -25,7 +25,7 @@ registerStrings("case", {
   },
   id: {
     title: "Kasus",
-    not_found: "Kasus #{number} tidak ada.",
+    not_found: "Kasus #{number} tidak ketemu.",
     case_title: "Kasus #{number}",
     line_action: "- Aksi: **{action}**",
     line_target: "- Target: **{tag}** (`{id}`)",
@@ -40,7 +40,7 @@ registerStrings("case", {
     list_line: "**#{number}** {action} — **{tag}** · <t:{at}:R>",
     list_title_user: "Kasus untuk {tag}",
     list_title_recent: "Kasus terbaru",
-    reason_updated: "**Kasus #{number} diupdate**\n- Alasan baru: {reason}",
+    reason_updated: "**Kasus #{number} diperbarui**\n- Alasan baru: {reason}",
   },
 });
 

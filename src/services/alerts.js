@@ -129,7 +129,7 @@ export function parseYoutubeFeed(xml) {
 }
 
 export function renderAlertMessage(template, { video, guildName }) {
-  const text = template || "📺 **{channel}** uploaded a new video: **{title}**\n{url}";
+  const text = template || "**{channel}** uploaded a new video: **{title}**\n{url}";
   return text
     .replaceAll("{channel}", video.channelName)
     .replaceAll("{title}", video.title)

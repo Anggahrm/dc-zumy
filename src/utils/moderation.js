@@ -15,9 +15,9 @@ export async function dmModerationNotice(user, { guildName, actionLabel, color =
           color,
           title: actionLabel,
           body: [
-            `You received a moderation action in **${guildName}**.`,
+            `A notice from the moderators of **${guildName}**.`,
             `- Action: **${actionLabel}**`,
-            `- Reason: ${reason || "No reason provided."}`,
+            `- Reason: ${reason || "No reason given."}`,
             ...lines,
           ].join("\n"),
         }),

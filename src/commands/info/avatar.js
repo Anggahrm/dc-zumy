@@ -26,7 +26,7 @@ export default {
     .setName("avatar")
     .setDescription("Show a user's avatar")
     .addUserOption((option) =>
-      option.setName("target").setDescription("User to inspect").setRequired(false),
+      option.setName("target").setDescription("Whose avatar to show").setRequired(false),
     ),
   async execute({ interaction, ctx }) {
     const target = interaction.options.getUser("target") ?? interaction.user;

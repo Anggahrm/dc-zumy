@@ -97,7 +97,7 @@ function messageLink(guildId, channelId, messageId) {
 export function buildStarboardCard({ message, count, config, guild }) {
   const content = message.content?.trim()
     ? message.content.trim().slice(0, 900)
-    : "(no text content)";
+    : "(no text)";
   const image = message.attachments?.find((attachment) => attachment.contentType?.startsWith("image/"));
 
   const lines = [

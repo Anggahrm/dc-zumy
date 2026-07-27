@@ -123,14 +123,14 @@ export async function closeTicketRow(id) {
 // chronological order).
 export async function buildTranscript(channel) {
   const fetched = await channel.messages.fetch({ limit: 100 }).catch(() => null);
-  if (!fetched) return "Transcript unavailable.";
+  if (!fetched) return "Couldn't load the transcript.";
 
   const lines = [...fetched.values()]
     .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
     .map((message) => {
       const time = new Date(message.createdTimestamp).toISOString().replace("T", " ").slice(0, 19);
       const author = message.author?.tag ?? "unknown";
-      const content = message.content || "(no text content)";
+      const content = message.content || "(no text)";
       const attachments = message.attachments?.size > 0
         ? ` [${message.attachments.size} attachment(s)]`
         : "";

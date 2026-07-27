@@ -7,9 +7,9 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("untimeout", {
   en: {
     title: "Moderation",
-    not_in_server: "That user is not in this server.",
-    not_timed_out: "**{user}** is not timed out.",
-    untimeout_failed: "Failed to remove the timeout. Please check role hierarchy and bot permissions.",
+    not_in_server: "That user isn't in this server.",
+    not_timed_out: "**{user}** isn't timed out.",
+    untimeout_failed: "I couldn't remove the timeout. Check my role position and permissions.",
     case_suffix: " — Case #{caseNumber}",
     removed_title: "**Timeout Removed**{caseSuffix}",
     target_line: "- Target: **{user}** (`{id}`)",
@@ -20,7 +20,7 @@ registerStrings("untimeout", {
     title: "Moderasi",
     not_in_server: "User itu tidak ada di server ini.",
     not_timed_out: "**{user}** tidak sedang kena timeout.",
-    untimeout_failed: "Gagal mencabut timeout. Cek hierarki role dan permission bot ya.",
+    untimeout_failed: "Gagal mencabut timeout. Cek posisi role dan permission-ku ya.",
     case_suffix: " — Case #{caseNumber}",
     removed_title: "**Timeout Dicabut**{caseSuffix}",
     target_line: "- Target: **{user}** (`{id}`)",

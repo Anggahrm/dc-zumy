@@ -6,18 +6,18 @@ import { formatDuration } from "#utils/time.js";
 
 registerStrings("daily", {
   en: {
-    not_ready_title: "Daily Not Ready",
-    already_claimed: "You already claimed daily reward.",
+    not_ready_title: "Daily Not Ready Yet",
+    already_claimed: "You've already claimed today's reward.",
     try_again_line: "- Try again in: **{remaining}**",
     available_line: "- Available: <t:{timestamp}:R>",
     claimed_title: "Daily Claimed",
-    received: "You received your daily reward.",
+    received: "Here's your daily reward!",
     money_line: "- Money: **+{money}**",
     money_line_bonus: "- Money: **+{money}** (+**{bonus}** streak bonus)",
     exp_line: "- EXP: **+{exp}**",
     streak_line_one: "- 🔥 Streak: **{streak}** day",
     streak_line_many: "- 🔥 Streak: **{streak}** days",
-    level_up_line: "- 🎉 Level up! You are now level **{level}**",
+    level_up_line: "- Level up! You're now level **{level}**",
     totals_title: "**Your Totals**",
     total_money_line: "- Money: **{money}**",
     total_exp_line: "- EXP: **{exp}**",
@@ -26,17 +26,17 @@ registerStrings("daily", {
   },
   id: {
     not_ready_title: "Daily Belum Siap",
-    already_claimed: "Kamu sudah klaim daily reward.",
+    already_claimed: "Kamu sudah klaim reward hari ini.",
     try_again_line: "- Coba lagi dalam: **{remaining}**",
     available_line: "- Tersedia: <t:{timestamp}:R>",
     claimed_title: "Daily Diklaim",
-    received: "Kamu menerima daily reward-mu.",
+    received: "Ini dia daily reward kamu!",
     money_line: "- Uang: **+{money}**",
     money_line_bonus: "- Uang: **+{money}** (+**{bonus}** bonus streak)",
     exp_line: "- EXP: **+{exp}**",
     streak_line_one: "- 🔥 Streak: **{streak}** hari",
     streak_line_many: "- 🔥 Streak: **{streak}** hari",
-    level_up_line: "- 🎉 Level up! Sekarang kamu level **{level}**",
+    level_up_line: "- Level up! Sekarang kamu level **{level}**",
     totals_title: "**Total Kamu**",
     total_money_line: "- Uang: **{money}**",
     total_exp_line: "- EXP: **{exp}**",
@@ -53,7 +53,7 @@ function randomInt(min, max) {
 
 export default {
   category: "economy",
-  data: new SlashCommandBuilder().setName("daily").setDescription("Claim daily reward"),
+  data: new SlashCommandBuilder().setName("daily").setDescription("Claim your daily reward"),
   async execute({ interaction, ctx }) {
     const user = global.db.data.users[ctx.user];
     const now = Date.now();

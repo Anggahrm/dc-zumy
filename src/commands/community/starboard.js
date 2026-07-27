@@ -12,15 +12,15 @@ registerStrings("starboard", {
   en: {
     title: "Starboard",
     show_body: "**Current settings**\n- Channel: {channel}\n- Emoji: {emoji}\n- Threshold: **{threshold}**\n- Self-star: {selfstar}\n- Ignored channels: {ignored}",
-    show_disabled: "(disabled)",
-    show_selfstar_allowed: "✅ allowed",
-    show_selfstar_not_counted: "❌ not counted",
-    show_none: "(none)",
+    show_disabled: "not set yet",
+    show_selfstar_allowed: "counted",
+    show_selfstar_not_counted: "not counted",
+    show_none: "none",
     channel_set: "Starboard channel set to <#{channel_id}>.",
-    channel_disabled: "Starboard disabled.",
+    channel_disabled: "The starboard is off.",
     threshold_set: "Messages now need **{count}** star(s) to be posted.",
-    emoji_missing: "Please provide an emoji.",
-    emoji_not_from_server: "That custom emoji is not from this server.",
+    emoji_missing: "That doesn't look like an emoji — use a standard emoji or a custom one from this server.",
+    emoji_not_from_server: "That custom emoji isn't from this server — pick one that is.",
     emoji_set: "Trigger emoji set to {emoji}.",
     selfstar_on: "Self-stars now count.",
     selfstar_off: "Self-stars are no longer counted.",
@@ -30,15 +30,15 @@ registerStrings("starboard", {
   id: {
     title: "Starboard",
     show_body: "**Pengaturan saat ini**\n- Channel: {channel}\n- Emoji: {emoji}\n- Threshold: **{threshold}**\n- Self-star: {selfstar}\n- Channel yang diabaikan: {ignored}",
-    show_disabled: "(nonaktif)",
-    show_selfstar_allowed: "✅ boleh",
-    show_selfstar_not_counted: "❌ tidak dihitung",
-    show_none: "(tidak ada)",
+    show_disabled: "belum diatur",
+    show_selfstar_allowed: "dihitung",
+    show_selfstar_not_counted: "tidak dihitung",
+    show_none: "tidak ada",
     channel_set: "Channel starboard diatur ke <#{channel_id}>.",
-    channel_disabled: "Starboard dinonaktifkan.",
+    channel_disabled: "Starboard dimatikan.",
     threshold_set: "Pesan sekarang butuh **{count}** star untuk diposting.",
-    emoji_missing: "Tolong masukkan emoji.",
-    emoji_not_from_server: "Custom emoji itu bukan dari server ini.",
+    emoji_missing: "Itu sepertinya bukan emoji — pakai emoji standar atau custom emoji dari server ini.",
+    emoji_not_from_server: "Custom emoji itu bukan dari server ini — pilih yang dari sini ya.",
     emoji_set: "Emoji pemicu diatur ke {emoji}.",
     selfstar_on: "Self-star sekarang dihitung.",
     selfstar_off: "Self-star tidak lagi dihitung.",
@@ -64,7 +64,7 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("starboard")
-    .setDescription("Configure the starboard")
+    .setDescription("Set up the starboard")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .setContexts(InteractionContextType.Guild)
     .addSubcommand((sub) => sub.setName("show").setDescription("Show starboard settings"))
@@ -107,11 +107,11 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("ignore")
-        .setDescription("Toggle a channel's starboard eligibility")
+        .setDescription("Ignore or un-ignore a channel for the starboard")
         .addChannelOption((option) =>
           option
             .setName("channel")
-            .setDescription("Channel to toggle")
+            .setDescription("Channel to ignore or un-ignore")
             .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
             .setRequired(true),
         ),

@@ -13,14 +13,14 @@ function resolveChannelLabel(message) {
 
 function formatContent(content) {
   const text = content?.trim();
-  return text ? text.slice(0, 900) : "(no text content)";
+  return text ? text.slice(0, 900) : "(no text)";
 }
 
 function resolveContentLabel(message) {
   if (typeof message.content === "string") {
     return formatContent(message.content);
   }
-  return "(content unavailable: Message Content intent or cache miss)";
+  return "(I couldn't see what this message said)";
 }
 
 export default {

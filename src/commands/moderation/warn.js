@@ -8,10 +8,10 @@ import { awaitConfirmation, createCard, replyCard } from "#utils/respond.js";
 
 registerStrings("warn", {
   en: {
-    confirm_clear: "Clear **all** warnings for **{user}**? This cannot be undone.",
+    confirm_clear: "Remove **all** warnings for **{user}**? This cannot be undone.",
     title: "Moderation",
     dm_title: "Warning",
-    cannot_warn_bot: "You cannot warn a bot.",
+    cannot_warn_bot: "You can't warn a bot.",
     dm_intro: "You received a warning in **{guild}**.",
     reason_line: "- Reason: {reason}",
     total_line: "- Total warnings: **{count}**",
@@ -19,17 +19,17 @@ registerStrings("warn", {
     issued_title: "**Warning Issued**{caseSuffix}",
     target_line: "- Target: **{user}** (`{id}`)",
     warning_id_line: "- Warning ID: `{id}`",
-    escalation_line: "- ⚖️ Escalation triggered: **{action}**",
-    dm_failed_note: "- Note: could not DM the member.",
+    escalation_line: "- Escalation triggered: **{action}**",
+    dm_failed_note: "- Note: I couldn't DM them.",
     no_warnings: "**{user}** has no warnings.",
     list_header: "**Warnings for {user}** ({count} total{suffix})",
     list_truncated_suffix: ", showing latest 15",
     entry_line: "**{index}.** `{id}` — {reason}",
     entry_meta: "-# by <@{moderator}> · <t:{at}:R>",
     removed: "Warning `{id}` removed from **{user}**.",
-    remove_not_found: "No warning with that id found for **{user}**.",
-    cleared: "Cleared **{count}** warning(s) for **{user}**.",
-    clear_none: "**{user}** has no warnings to clear.",
+    remove_not_found: "Couldn't find that warning on **{user}** — check the ID with `/warn list`.",
+    cleared: "Removed **{count}** warning(s) from **{user}**.",
+    clear_none: "**{user}** has no warnings to remove.",
   },
   id: {
     confirm_clear: "Hapus **semua** peringatan milik **{user}**? Tidak bisa dibatalkan.",
@@ -43,15 +43,15 @@ registerStrings("warn", {
     issued_title: "**Peringatan Diberikan**{caseSuffix}",
     target_line: "- Target: **{user}** (`{id}`)",
     warning_id_line: "- ID Peringatan: `{id}`",
-    escalation_line: "- ⚖️ Eskalasi terpicu: **{action}**",
-    dm_failed_note: "- Catatan: tidak bisa mengirim DM ke member itu.",
+    escalation_line: "- Eskalasi terpicu: **{action}**",
+    dm_failed_note: "- Catatan: aku tidak bisa DM member itu.",
     no_warnings: "**{user}** tidak punya peringatan.",
     list_header: "**Peringatan untuk {user}** ({count} total{suffix})",
     list_truncated_suffix: ", menampilkan 15 terbaru",
     entry_line: "**{index}.** `{id}` — {reason}",
     entry_meta: "-# oleh <@{moderator}> · <t:{at}:R>",
     removed: "Peringatan `{id}` dihapus dari **{user}**.",
-    remove_not_found: "Tidak ada peringatan dengan id itu untuk **{user}**.",
+    remove_not_found: "Peringatan itu tidak ketemu di **{user}** — cek ID-nya lewat `/warn list` ya.",
     cleared: "Berhasil menghapus **{count}** peringatan untuk **{user}**.",
     clear_none: "**{user}** tidak punya peringatan untuk dihapus.",
   },
@@ -106,20 +106,20 @@ export default {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("remove")
-        .setDescription("Remove one warning by id")
+        .setDescription("Remove one warning by its ID")
         .addUserOption((option) =>
           option.setName("target").setDescription("Member whose warning to remove").setRequired(true),
         )
         .addStringOption((option) =>
-          option.setName("id").setDescription("Warning id (from /warn list)").setAutocomplete(true).setRequired(true),
+          option.setName("id").setDescription("Warning ID (from /warn list)").setAutocomplete(true).setRequired(true),
         ),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("clear")
-        .setDescription("Clear all warnings for a member")
+        .setDescription("Remove all warnings from a member")
         .addUserOption((option) =>
-          option.setName("target").setDescription("Member whose warnings to clear").setRequired(true),
+          option.setName("target").setDescription("Member whose warnings to remove").setRequired(true),
         ),
     ),
   async autocomplete({ interaction }) {

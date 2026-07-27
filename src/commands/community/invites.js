@@ -6,14 +6,14 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("invites", {
   en: {
     show_title: "Invites",
-    show_body: "- Member: <@{user_id}>\n- Invites: **{net}**\n- Joined: **{joins}** · Left again: **{leaves}**\n-# Tracked since the bot joined; vanity URLs and app-directory joins can't be attributed.",
+    show_body: "- Member: <@{user_id}>\n- Invites: **{net}**\n- Joined: **{joins}** · Left again: **{leaves}**\n-# Counted since I joined the server; joins through vanity URLs and the app directory can't be tracked.",
     leaderboard_title: "Invite leaderboard",
     leaderboard_empty: "No tracked invites yet. Counts appear as members join through tracked invites.",
     leaderboard_line: "**#{rank}** <@{user_id}> — **{net}** ({joins} joined, {leaves} left)",
   },
   id: {
     show_title: "Invites",
-    show_body: "- Member: <@{user_id}>\n- Invite: **{net}**\n- Masuk: **{joins}** · Keluar lagi: **{leaves}**\n-# Dihitung sejak bot bergabung; join lewat vanity URL dan app directory tidak bisa dilacak.",
+    show_body: "- Member: <@{user_id}>\n- Invite: **{net}**\n- Masuk: **{joins}** · Keluar lagi: **{leaves}**\n-# Dihitung sejak aku bergabung ke server; join lewat vanity URL dan app directory tidak bisa dilacak.",
     leaderboard_title: "Leaderboard invite",
     leaderboard_empty: "Belum ada invite yang terlacak. Hitungan muncul saat member bergabung lewat invite yang terlacak.",
     leaderboard_line: "**#{rank}** <@{user_id}> — **{net}** ({joins} masuk, {leaves} keluar)",

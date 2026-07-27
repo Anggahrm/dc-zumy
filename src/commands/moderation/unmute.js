@@ -9,10 +9,10 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("unmute", {
   en: {
     title: "Moderation",
-    no_mute_role: "No mute role configured.",
-    not_in_server: "That user is not in this server.",
-    not_muted: "**{user}** is not muted.",
-    unmute_failed: "Unmute failed. Check my role position and permissions.",
+    no_mute_role: "No mute role set up yet.",
+    not_in_server: "That user isn't in this server.",
+    not_muted: "**{user}** isn't muted.",
+    unmute_failed: "The unmute didn't go through. Check my role position and permissions.",
     case_suffix: " — Case #{caseNumber}",
     removed_title: "**Mute Removed**{caseSuffix}",
     target_line: "- Target: **{user}** (`{id}`)",
@@ -24,7 +24,7 @@ registerStrings("unmute", {
     no_mute_role: "Role mute belum diatur.",
     not_in_server: "User itu tidak ada di server ini.",
     not_muted: "**{user}** tidak sedang di-mute.",
-    unmute_failed: "Unmute gagal. Cek posisi role-ku dan permission bot ya.",
+    unmute_failed: "Unmute-nya tidak berhasil. Cek posisi role-ku dan permission-ku ya.",
     case_suffix: " — Case #{caseNumber}",
     removed_title: "**Mute Dicabut**{caseSuffix}",
     target_line: "- Target: **{user}** (`{id}`)",

@@ -13,17 +13,17 @@ import { createCard, replyCard, replyError } from "#utils/respond.js";
 registerStrings("leaderboard", {
   en: {
     title: "Leaderboard",
-    leveling_disabled: "Leveling is disabled here. An admin can enable it with `/levelconfig toggle`.",
+    leveling_disabled: "Leveling is off in this server. An admin can turn it on with `/levelconfig toggle`.",
     empty_first_page: "Nobody has XP yet. Start chatting!",
     empty_page: "This page is empty.",
     row_line: "{badge} <@{user_id}> — level **{level}**, {xp} XP",
     board_title: "{guild} Leaderboard",
-    footer: "Page {page}/{total_pages} · {total} ranked member(s)",
+    footer: "Page {page}/{total_pages} · {total} members ranked",
     page_gone: "That page no longer exists.",
   },
   id: {
     title: "Leaderboard",
-    leveling_disabled: "Leveling dimatikan di sini. Admin bisa menyalakannya lagi dengan `/levelconfig toggle`.",
+    leveling_disabled: "Leveling sedang mati di server ini. Admin bisa menyalakannya dengan `/levelconfig toggle`.",
     empty_first_page: "Belum ada yang punya XP. Ayo mulai ngobrol!",
     empty_page: "Halaman ini kosong.",
     row_line: "{badge} <@{user_id}> — level **{level}**, {xp} XP",

@@ -8,7 +8,7 @@ registerStrings("ping", {
   en: {
     title: "{bot} Live Status",
     runtime_section:
-      "**Runtime**\n- Gateway ping: **{ping} ms**\n- Uptime: **{uptime}**\n- Checked at: <t:{timestamp}:T>",
+      "**Status**\n- Ping: **{ping} ms**\n- Uptime: **{uptime}**\n- Checked at: <t:{timestamp}:T>",
     quick_read_title: "**Quick Read**",
     quality_great: "- Connection quality looks great.",
     quality_stable: "- Connection is stable but could be faster.",
@@ -16,7 +16,7 @@ registerStrings("ping", {
   id: {
     title: "Status Live {bot}",
     runtime_section:
-      "**Runtime**\n- Ping gateway: **{ping} ms**\n- Uptime: **{uptime}**\n- Dicek pada: <t:{timestamp}:T>",
+      "**Status**\n- Ping: **{ping} ms**\n- Uptime: **{uptime}**\n- Dicek pada: <t:{timestamp}:T>",
     quick_read_title: "**Ringkasan Cepat**",
     quality_great: "- Kualitas koneksi bagus banget.",
     quality_stable: "- Koneksi stabil, tapi masih bisa lebih cepat.",

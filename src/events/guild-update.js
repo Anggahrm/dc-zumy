@@ -5,7 +5,7 @@ export default {
   name: Events.GuildUpdate,
   async execute(oldGuild, newGuild) {
     const logger = newGuild.client.zumy?.logger;
-    const lines = [`- Guild ID: \`${newGuild.id}\``];
+    const lines = [`- Server ID: \`${newGuild.id}\``];
 
     if (oldGuild.name !== newGuild.name) {
       lines.push(`- Name: ${oldGuild.name} -> ${newGuild.name}`);

@@ -7,23 +7,23 @@ registerStrings("tempvoice", {
   en: {
     title: "Temp Voice",
     create_failed: "I couldn't create the trigger channel. I need **Manage Channels**.",
-    enabled: "Join-to-create enabled: **{channel}**",
-    enabled_line_spawn: "- Joining it spawns a personal voice channel (creator can rename/manage it).",
+    enabled: "Join-to-create is on: **{channel}**",
+    enabled_line_spawn: "- Joining it creates a personal voice channel (its creator can rename and manage it).",
     enabled_line_cleanup: "- Channels are deleted automatically when everyone leaves.",
-    disabled: "Temp voice disabled. Existing temp channels clean up as they empty.",
-    show_trigger: "- Trigger: {trigger}",
-    show_trigger_disabled: "(disabled)",
+    disabled: "Temp voice is off. Existing temp channels will be removed once they're empty.",
+    show_trigger: "- Join-to-create channel: {trigger}",
+    show_trigger_disabled: "not set yet",
     show_active: "- Active temp channels: **{count}**",
   },
   id: {
     title: "Temp Voice",
     create_failed: "Aku tidak bisa membuat channel trigger-nya. Aku butuh permission **Manage Channels**.",
     enabled: "Join-to-create aktif: **{channel}**",
-    enabled_line_spawn: "- Kalau ada yang join, voice channel pribadi langsung dibuat (pembuatnya bisa rename/mengaturnya).",
+    enabled_line_spawn: "- Kalau ada yang join, voice channel pribadi langsung dibuat (pembuatnya bisa rename dan mengaturnya).",
     enabled_line_cleanup: "- Channel dihapus otomatis saat semua orang keluar.",
     disabled: "Temp voice dimatikan. Temp channel yang masih ada akan terhapus sendiri saat kosong.",
-    show_trigger: "- Trigger: {trigger}",
-    show_trigger_disabled: "(nonaktif)",
+    show_trigger: "- Channel join-to-create: {trigger}",
+    show_trigger_disabled: "belum diatur",
     show_active: "- Temp channel aktif: **{count}**",
   },
 });
@@ -51,12 +51,12 @@ export default {
         .addChannelOption((option) =>
           option
             .setName("channel")
-            .setDescription("Existing voice channel to use as trigger")
+            .setDescription("Existing voice channel members join to get their own")
             .addChannelTypes(ChannelType.GuildVoice)
             .setRequired(false),
         ),
     )
-    .addSubcommand((sub) => sub.setName("off").setDescription("Disable temp voice channels"))
+    .addSubcommand((sub) => sub.setName("off").setDescription("Turn off temp voice channels"))
     .addSubcommand((sub) => sub.setName("show").setDescription("Show temp voice status")),
   async execute({ interaction, ctx }) {
     const guild = interaction.guild;

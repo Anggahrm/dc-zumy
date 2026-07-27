@@ -3,7 +3,7 @@ import { sendGuildLog } from "#services/logging.js";
 
 function formatContent(value) {
   const text = value?.trim();
-  return text ? text.slice(0, 900) : "(no text content)";
+  return text ? text.slice(0, 900) : "(no text)";
 }
 
 function resolveContent(value) {
@@ -38,7 +38,7 @@ export default {
         `- Author: **${newMessage.author?.tag ?? oldMessage.author?.tag ?? "Unknown user"}**`,
         `- Channel: ${newMessage.channelId ? `<#${newMessage.channelId}>` : "Unknown channel"}`,
         `- Message ID: \`${newMessage.id}\``,
-        `- Before: ${oldContent == null ? "(content unavailable: not cached)" : formatContent(oldContent)}`,
+        `- Before: ${oldContent == null ? "(I didn't see the older version)" : formatContent(oldContent)}`,
         `- After: ${formatContent(nextContent)}`,
       ],
       actorId: author?.id ?? null,

@@ -20,7 +20,7 @@ export default {
       color: 0xed4245,
       lines: [
         `- Channel: ${channel?.id ? `<#${channel.id}>` : "Unknown channel"}`,
-        `- Deleted count: **${messages.size}**`,
+        `- Messages deleted: **${messages.size}**`,
       ],
       logger,
     });

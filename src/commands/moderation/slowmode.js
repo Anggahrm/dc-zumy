@@ -9,8 +9,8 @@ registerStrings("slowmode", {
   en: {
     title: "Moderation",
     unsupported_channel: "That channel doesn't support slowmode.",
-    update_failed: "Slowmode update failed. I need **Manage Channels** permission there.",
-    disabled: "Slowmode disabled in <#{channelId}>.",
+    update_failed: "I couldn't change slowmode. I need **Manage Channels** permission there.",
+    disabled: "Slowmode is off in <#{channelId}>.",
     set: "Slowmode in <#{channelId}> set to **{duration}**.",
   },
   id: {
@@ -31,7 +31,7 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("slowmode")
-    .setDescription("Set channel slowmode (0 to disable)")
+    .setDescription("Set channel slowmode (0 to turn it off)")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
     .setContexts(InteractionContextType.Guild)
     .addIntegerOption((option) =>

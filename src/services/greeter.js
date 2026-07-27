@@ -71,7 +71,7 @@ function formatFooterTimestamp(now = new Date()) {
 function createGreeterCard({ type, guild, user, template, language = "en", imageAttachmentName = null }) {
   const isWelcome = type === "welcome";
   const color = isWelcome ? 0x57f287 : 0xed4245;
-  const title = isWelcome ? "Welcome To Server" : "Leave From Server";
+  const title = isWelcome ? "Welcome!" : "Goodbye";
   const unixCreatedAt = Math.floor(user.createdTimestamp / 1000);
   const avatarUrl = user.displayAvatarURL({ extension: "png", size: 1024 });
 
@@ -106,10 +106,10 @@ function createGreeterCard({ type, guild, user, template, language = "en", image
   const detailsSection = new SectionBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent([
-        "**Details Info**",
-        `Username : ${user.tag}`,
-        `UserID : ${user.id}`,
-        `Since at : <t:${unixCreatedAt}:F>`,
+        "**Member details**",
+        `Username: ${user.tag}`,
+        `User ID: ${user.id}`,
+        `On Discord since: <t:${unixCreatedAt}:F>`,
       ].join("\n")),
     )
     .setThumbnailAccessory((thumbnail) =>

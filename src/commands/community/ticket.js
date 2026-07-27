@@ -34,7 +34,7 @@ const MAX_OPEN_TICKETS = 50;
 registerStrings("ticket", {
   en: {
     title: "Tickets",
-    panel_title: "🎫 Support",
+    panel_title: "Support",
     panel_line_help: "Need help from the staff team?",
     panel_line_button: "Press the button below to open a private ticket — only you and the staff can see it.",
     panel_button: "Open Ticket",
@@ -53,29 +53,29 @@ registerStrings("ticket", {
     claim_staff_only: "Only staff can claim tickets.",
     not_open: "This ticket is no longer open.",
     already_claimed: "Already claimed by <@{user_id}>.",
-    claimed_by: "🙋 <@{user_id}> claimed this ticket.",
+    claimed_by: "<@{user_id}> claimed this ticket.",
     close_not_allowed: "Only the ticket owner or staff can close this ticket.",
     transcript_unavailable: "Transcript unavailable.",
     transcript_header: "Ticket #{number} — {guild}\nOpened by: {opened_by}\nClosed by: {closed_by}",
-    log_closed: "🎫 Ticket **#{number}** closed by **{closed_by}** (opened by <@{opened_by}>).",
-    dm_closed: "Your ticket **#{number}** in **{guild}** was closed. Transcript attached.",
-    closed_deleting: "🔒 Ticket closed. This channel will be deleted in a few seconds.",
+    log_closed: "Ticket **#{number}** closed by **{closed_by}** (opened by <@{opened_by}>).",
+    dm_closed: "Your ticket **#{number}** in **{guild}** was closed. The transcript is attached.",
+    closed_deleting: "Ticket closed. This channel will be deleted in a few seconds.",
     pick_text_channel: "Pick a text channel I can post in.",
     post_failed: "I couldn't post in that channel. Check my permissions.",
     panel_posted: "Ticket panel posted in <#{channel_id}>.",
     category_set: "Ticket channels will be created under **{category}**.",
-    category_cleared: "Ticket category cleared.",
+    category_cleared: "Ticket category removed.",
     role_set: "<@&{role_id}> can now see and claim tickets.",
-    role_cleared: "Support role cleared.",
+    role_cleared: "Support role removed.",
     list_title: "Open tickets",
     list_line: "**#{number}** <#{channel_id}> — <@{user_id}>",
     list_line_claimed: "**#{number}** <#{channel_id}> — <@{user_id}> (claimed by <@{claimed_by}>)",
     list_empty: "No open tickets.",
-    not_a_ticket: "This channel is not an open ticket.",
+    not_a_ticket: "This channel isn't an open ticket.",
   },
   id: {
     title: "Ticket",
-    panel_title: "🎫 Support",
+    panel_title: "Support",
     panel_line_help: "Butuh bantuan dari tim staff?",
     panel_line_button: "Tekan tombol di bawah untuk membuka ticket pribadi — hanya kamu dan staff yang bisa melihatnya.",
     panel_button: "Buka Ticket",
@@ -94,13 +94,13 @@ registerStrings("ticket", {
     claim_staff_only: "Hanya staff yang bisa claim ticket.",
     not_open: "Ticket ini sudah tidak terbuka.",
     already_claimed: "Sudah di-claim oleh <@{user_id}>.",
-    claimed_by: "🙋 <@{user_id}> meng-claim ticket ini.",
+    claimed_by: "<@{user_id}> meng-claim ticket ini.",
     close_not_allowed: "Hanya pemilik ticket atau staff yang bisa menutup ticket ini.",
     transcript_unavailable: "Transkrip tidak tersedia.",
     transcript_header: "Ticket #{number} — {guild}\nDibuka oleh: {opened_by}\nDitutup oleh: {closed_by}",
-    log_closed: "🎫 Ticket **#{number}** ditutup oleh **{closed_by}** (dibuka oleh <@{opened_by}>).",
+    log_closed: "Ticket **#{number}** ditutup oleh **{closed_by}** (dibuka oleh <@{opened_by}>).",
     dm_closed: "Ticket-mu **#{number}** di **{guild}** sudah ditutup. Transkripnya terlampir.",
-    closed_deleting: "🔒 Ticket ditutup. Channel ini akan dihapus dalam beberapa detik.",
+    closed_deleting: "Ticket ditutup. Channel ini akan dihapus dalam beberapa detik.",
     pick_text_channel: "Pilih text channel yang bisa aku pakai untuk posting.",
     post_failed: "Aku tidak bisa posting di channel itu. Cek permission-ku ya.",
     panel_posted: "Panel ticket sudah diposting di <#{channel_id}>.",
@@ -407,7 +407,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("category")
-        .setDescription("Category for ticket channels (empty clears)")
+        .setDescription("Category for ticket channels (empty removes it)")
         .addChannelOption((option) =>
           option
             .setName("category")
@@ -419,7 +419,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("role")
-        .setDescription("Support role that sees tickets (empty clears)")
+        .setDescription("Support role that sees tickets (empty removes it)")
         .addRoleOption((option) =>
           option.setName("role").setDescription("Support role").setRequired(false),
         ),

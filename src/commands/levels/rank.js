@@ -7,7 +7,7 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("rank", {
   en: {
     title: "Rank",
-    leveling_disabled: "Leveling is disabled here. An admin can enable it with `/levelconfig toggle`.",
+    leveling_disabled: "Leveling is off in this server. An admin can turn it on with `/levelconfig toggle`.",
     no_xp: "**{tag}** has no XP here yet. Time to start chatting!",
     line_member: "- Member: <@{user_id}>",
     line_rank: "- Rank: **#{rank}**",
@@ -18,7 +18,7 @@ registerStrings("rank", {
   },
   id: {
     title: "Rank",
-    leveling_disabled: "Leveling dimatikan di sini. Admin bisa menyalakannya lagi dengan `/levelconfig toggle`.",
+    leveling_disabled: "Leveling sedang mati di server ini. Admin bisa menyalakannya dengan `/levelconfig toggle`.",
     no_xp: "**{tag}** belum punya XP di sini. Ayo mulai ngobrol!",
     line_member: "- Member: <@{user_id}>",
     line_rank: "- Rank: **#{rank}**",
@@ -47,7 +47,7 @@ export default {
     .setDescription("Show a member's level and server rank")
     .setContexts(InteractionContextType.Guild)
     .addUserOption((option) =>
-      option.setName("target").setDescription("Member to inspect").setRequired(false),
+      option.setName("target").setDescription("Whose rank to check").setRequired(false),
     ),
   async execute({ interaction, ctx }) {
     const guild = interaction.guild;

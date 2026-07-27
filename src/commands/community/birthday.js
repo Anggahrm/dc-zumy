@@ -39,14 +39,14 @@ registerStrings("birthday", {
     none_yet: "No birthdays saved yet. Be the first with `/birthday set`!",
     upcoming_title: "Upcoming birthdays",
     upcoming_line: "- <@{user_id}> — **{day} {month}** (<t:{timestamp}:R>)",
-    need_manage_guild: "You need **Manage Server** for this subcommand.",
+    need_manage_guild: "You need the **Manage Server** permission for this.",
     channel_set: "Birthdays will be announced in <#{channel_id}> (daily at 00:00 UTC).",
-    channel_disabled: "Birthday announcements disabled.",
+    channel_disabled: "Birthday announcements are off.",
     role_invalid: "That role can't be used (managed, @everyone, or above my highest role).",
     role_set: "Members get <@&{role_id}> on their birthday (removed the day after).",
-    role_disabled: "Birthday role disabled.",
-    template_updated: "Template updated: {template}",
-    template_reset: "Template reset to default.",
+    role_disabled: "The birthday role is off.",
+    template_updated: "New birthday message: {template}",
+    template_reset: "Back to the default message.",
   },
   id: {
     title: "Ulang Tahun",
@@ -71,14 +71,14 @@ registerStrings("birthday", {
     none_yet: "Belum ada ulang tahun yang tersimpan. Jadilah yang pertama dengan `/birthday set`!",
     upcoming_title: "Ulang tahun terdekat",
     upcoming_line: "- <@{user_id}> — **{day} {month}** (<t:{timestamp}:R>)",
-    need_manage_guild: "Kamu butuh permission **Manage Server** untuk subcommand ini.",
+    need_manage_guild: "Kamu butuh permission **Manage Server** untuk ini.",
     channel_set: "Ulang tahun akan diumumkan di <#{channel_id}> (tiap hari jam 00:00 UTC).",
     channel_disabled: "Pengumuman ulang tahun dimatikan.",
     role_invalid: "Role itu tidak bisa dipakai (managed, @everyone, atau di atas role tertinggiku).",
     role_set: "Member dapat <@&{role_id}> saat ulang tahun (dilepas keesokan harinya).",
     role_disabled: "Role ulang tahun dimatikan.",
-    template_updated: "Template diperbarui: {template}",
-    template_reset: "Template dikembalikan ke default.",
+    template_updated: "Pesan ulang tahun baru: {template}",
+    template_reset: "Pesan kembali ke bawaan.",
   },
 });
 
@@ -144,7 +144,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("message")
-        .setDescription("Set the announcement template (Manage Server)")
+        .setDescription("Set the birthday announcement message (Manage Server)")
         .addStringOption((option) =>
           option
             .setName("template")

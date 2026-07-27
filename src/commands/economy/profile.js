@@ -42,7 +42,7 @@ export default {
     .addUserOption((option) =>
       option
         .setName("target")
-        .setDescription("User to inspect")
+        .setDescription("Whose profile to show")
         .setRequired(false),
     ),
   async execute({ interaction, ctx }) {
