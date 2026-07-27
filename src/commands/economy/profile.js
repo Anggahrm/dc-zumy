@@ -6,7 +6,7 @@ import { formatDuration } from "#utils/time.js";
 
 registerStrings("profile", {
   en: {
-    title: "RPG Profile",
+    title: "Profile",
     daily_ready: "Ready now",
     daily_ready_in: "Ready in **{duration}** (<t:{timestamp}:R>)",
     line_user: "- User: <@{user_id}>",
@@ -16,7 +16,7 @@ registerStrings("profile", {
     line_daily: "- Daily: {status}",
   },
   id: {
-    title: "Profil RPG",
+    title: "Profil",
     daily_ready: "Siap sekarang",
     daily_ready_in: "Siap dalam **{duration}** (<t:{timestamp}:R>)",
     line_user: "- User: <@{user_id}>",
@@ -38,7 +38,7 @@ export default {
   cooldown: 2,
   data: new SlashCommandBuilder()
     .setName("profile")
-    .setDescription("Show RPG profile")
+    .setDescription("Show your server profile")
     .addUserOption((option) =>
       option
         .setName("target")

@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   ContainerBuilder,
   MessageFlags,
+  PermissionFlagsBits,
   SectionBuilder,
   SeparatorBuilder,
   SeparatorSpacingSize,
@@ -22,16 +23,18 @@ registerStrings("help", {
     home_title: "## {bot} Command Hub",
     home_stats: "-# {total} commands · {categories} categories",
     categories_section: "### Categories\n{lines}",
-    get_started_section:
+    get_started_admin:
       "### Get started\n- {setup} — guided server setup\n- {language} — switch the bot language (EN/ID)\n- {help} — pick a category below, or look up one command with `/help command:`",
+    get_started_member:
+      "### Get started\n- {rank} — check your level\n- {daily} — claim your daily reward\n- {help} — pick a category below, or look up one command with `/help command:`",
     category_title: "## {emoji} {category}",
     category_hint: "-# Tip: `/help command:<name>` shows a command's subcommands.",
     subcommand_suffix: " ({count} subcommands)",
+    subcommand_suffix_one: " (1 subcommand)",
     no_description: "No description",
     no_commands: "- No commands here yet.",
     back_home: "Back to Home",
     unknown_command: "I don't know that command. Pick one from the autocomplete list.",
-    detail_description: "{description}",
     detail_category: "- Category: {emoji} {label}",
     detail_cooldown: "- Cooldown: {seconds}s",
     detail_guild_only: "- Server only",
@@ -62,16 +65,18 @@ registerStrings("help", {
     home_title: "## Pusat Command {bot}",
     home_stats: "-# {total} command · {categories} kategori",
     categories_section: "### Kategori\n{lines}",
-    get_started_section:
+    get_started_admin:
       "### Mulai dari sini\n- {setup} — setup server terpandu\n- {language} — ganti bahasa bot (EN/ID)\n- {help} — pilih kategori di bawah, atau cari detail satu command lewat `/help command:`",
+    get_started_member:
+      "### Mulai dari sini\n- {rank} — cek level kamu\n- {daily} — klaim hadiah harianmu\n- {help} — pilih kategori di bawah, atau cari detail satu command lewat `/help command:`",
     category_title: "## {emoji} {category}",
     category_hint: "-# Tip: `/help command:<nama>` menampilkan subcommand sebuah command.",
     subcommand_suffix: " ({count} subcommand)",
+    subcommand_suffix_one: " (1 subcommand)",
     no_description: "Tanpa deskripsi",
     no_commands: "- Belum ada command di sini.",
     back_home: "Kembali ke Beranda",
     unknown_command: "Command itu tidak ada. Pilih dari daftar autocomplete ya.",
-    detail_description: "{description}",
     detail_category: "- Kategori: {emoji} {label}",
     detail_cooldown: "- Cooldown: {seconds}s",
     detail_guild_only: "- Khusus server",
@@ -102,42 +107,56 @@ registerStrings("help", {
 const DESCRIPTION_MAX = 70;
 const SELECT_DESCRIPTION_MAX = 100;
 const ID_CACHE_TTL_MS = 15 * 60 * 1000;
+const ID_RETRY_MS = 60 * 1000;
+const ID_COLD_WAIT_MS = 2000;
 
 // Command IDs are needed to render clickable </name:id> mentions. They are
 // fetched lazily (global first, current guild as fallback for guild-mode
-// deploys) and cached; unknown IDs degrade to inline-code /name.
-const idCache = { map: null, fetchedAt: 0, promise: null };
+// deploys) and cached; unknown IDs degrade to inline-code /name. A stale map
+// is served immediately while a refresh runs in the background, and a cold
+// start waits at most ID_COLD_WAIT_MS so the fetch can never eat the 3-second
+// interaction ack window.
+const idCache = { map: new Map(), fetchedAt: 0, nextRetryAt: 0, promise: null };
+
+async function fetchCommandIds(interaction) {
+  const map = new Map();
+  try {
+    const globalCommands = await interaction.client.application.commands.fetch();
+    for (const command of globalCommands.values()) map.set(command.name, command.id);
+  } catch {
+    // fall through to guild fetch
+  }
+  if (map.size === 0 && interaction.guild) {
+    try {
+      const guildCommands = await interaction.guild.commands.fetch();
+      for (const command of guildCommands.values()) map.set(command.name, command.id);
+    } catch {
+      // mentions degrade to inline code
+    }
+  }
+  if (map.size > 0) {
+    idCache.map = map;
+    idCache.fetchedAt = Date.now();
+  }
+  return idCache.map;
+}
 
 async function getCommandIds(interaction) {
-  if (idCache.map && Date.now() - idCache.fetchedAt < ID_CACHE_TTL_MS) {
+  const now = Date.now();
+  const fresh = idCache.fetchedAt > 0 && now - idCache.fetchedAt < ID_CACHE_TTL_MS;
+  if (!fresh && !idCache.promise && now >= idCache.nextRetryAt) {
+    idCache.nextRetryAt = now + ID_RETRY_MS;
+    idCache.promise = fetchCommandIds(interaction).finally(() => {
+      idCache.promise = null;
+    });
+  }
+  if (idCache.map.size > 0 || !idCache.promise) {
     return idCache.map;
   }
-  if (!idCache.promise) {
-    idCache.promise = (async () => {
-      const map = new Map();
-      try {
-        const globalCommands = await interaction.client.application.commands.fetch();
-        for (const command of globalCommands.values()) map.set(command.name, command.id);
-      } catch {
-        // fall through to guild fetch
-      }
-      if (map.size === 0 && interaction.guild) {
-        try {
-          const guildCommands = await interaction.guild.commands.fetch();
-          for (const command of guildCommands.values()) map.set(command.name, command.id);
-        } catch {
-          // mentions degrade to inline code
-        }
-      }
-      if (map.size > 0) {
-        idCache.map = map;
-        idCache.fetchedAt = Date.now();
-      }
-      idCache.promise = null;
-      return map.size > 0 ? map : (idCache.map ?? map);
-    })();
-  }
-  return idCache.promise;
+  return Promise.race([
+    idCache.promise,
+    new Promise((resolve) => setTimeout(resolve, ID_COLD_WAIT_MS, idCache.map)),
+  ]);
 }
 
 function mention(ids, name, subPath = null) {
@@ -251,11 +270,19 @@ function buildHomeContainer(categories, commandIds, interaction, t) {
     )
     .addSeparatorComponents(new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small))
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(t("help.get_started_section", {
-        setup: mention(commandIds, "setup"),
-        language: mention(commandIds, "language"),
-        help: mention(commandIds, "help"),
-      })),
+      new TextDisplayBuilder().setContent(
+        interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)
+          ? t("help.get_started_admin", {
+            setup: mention(commandIds, "setup"),
+            language: mention(commandIds, "language"),
+            help: mention(commandIds, "help"),
+          })
+          : t("help.get_started_member", {
+            rank: mention(commandIds, "rank"),
+            daily: mention(commandIds, "daily"),
+            help: mention(commandIds, "help"),
+          }),
+      ),
     );
 }
 
@@ -266,7 +293,11 @@ function buildCategoryContainer(categories, key, commandIds, t) {
       .map((command) => {
         const description = truncate(command.data.description || t("help.no_description"), DESCRIPTION_MAX);
         const subCount = subcommandEntries(command).length;
-        const suffix = subCount > 0 ? t("help.subcommand_suffix", { count: subCount }) : "";
+        const suffix = subCount === 0
+          ? ""
+          : subCount === 1
+            ? t("help.subcommand_suffix_one")
+            : t("help.subcommand_suffix", { count: subCount });
         return `- ${mention(commandIds, command.data.name)} — ${description}${suffix}`;
       })
       .join("\n")

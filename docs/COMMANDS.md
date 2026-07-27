@@ -12,21 +12,24 @@
 bun run deploy:guild
 ```
 
-## Default categories
+## Categories
 
-- `info`
-- `utility`
-- `owner`
-- `moderation`
-- `rpg`
+Categories are defined in `src/config/categories.js` (browse order, emoji, accent color) and double as the folder names under `src/commands/`:
 
-## Current built-in commands
+- `info` — help plus user/server lookups
+- `levels` — XP, ranks, leaderboards
+- `economy` — currency, gambling, shop
+- `utility` — everyday member tools (polls, reminders, AFK, tags)
+- `community` — giveaways, starboard, suggestions, tickets, birthdays
+- `roles` — role menus, autoroles, timed/persistent roles
+- `moderation` — manual mod actions and cases
+- `automod` — automatic filtering and raid protection
+- `server` — setup, greeter, logging, announcements
+- `owner` — owner-only bot administration
 
-- `info`: `/ping`, `/help`, `/serverinfo`, `/avatar`
-- `utility`: `/userinfo`, `/set` (`welcome/leave/welcome-message/leave-message/show`), `/log` (`channel/config`), `/rolemenu` (`create/add/remove/post/delete/list`), `/tag` (`show/list/add/remove`), `/say`
-- `moderation`: `/purge` (`all/bot/contains/embeds/emoji/files/human/images/link/mentions/reactions/user`), `/kick`, `/ban`, `/tempban`, `/unban`, `/timeout`, `/untimeout`, `/mute`, `/unmute`, `/muterole` (`set/create/show`), `/quarantine` (`role/add/remove`), `/warn` (`add/list/remove/clear`), `/case` (`view/list/reason`), `/slowmode`, `/lock`, `/unlock`, `/automod` (rules, actions, exemptions, escalation), `/autorole` (`add/remove/show/blacklist/unblacklist`)
-- `owner`: `/reloadcommands`, `/maintenance`
-- `rpg`: `/daily`, `/profile`
+A command's `category` field must match its folder name and appear in `CATEGORY_KEYS` — the smoke tests enforce both. To add a new category, register it in `src/config/categories.js` and add `cat_<key>`/`blurb_<key>` strings (en + id) to the help namespace in `src/commands/info/help.js`.
+
+The full per-command reference lives in the README ("Built-in commands").
 
 Moderation commands declare `setDefaultMemberPermissions` on the builder (client-side gating) **and** a matching `permissions.member` array (runtime gating).
 
