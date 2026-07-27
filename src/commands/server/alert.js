@@ -15,11 +15,11 @@ registerStrings("alert", {
     title: "Alerts",
     invalid_channel_id: "That doesn't look like a YouTube channel ID.\n- Use the `UC...` id from the channel URL (`youtube.com/channel/UC...`).\n-# Tip: on a channel page, Share → Copy channel ID.",
     pick_text_channel: "Pick a text channel in this server.",
-    feed_fetch_failed: "I couldn't fetch that channel's feed. Double-check the channel ID.",
+    feed_fetch_failed: "I couldn't reach that YouTube channel. Double-check the channel ID.",
     reason_invalid_name: "Alert names must be 1-32 chars: lowercase letters, numbers, `-`, `_`.",
     reason_exists: "An alert with that name already exists.",
-    reason_full: "Alert limit reached (max {max}).",
-    create_failed: "Could not create the alert.",
+    reason_full: "You've reached the alert limit (max {max}).",
+    create_failed: "Couldn't create the alert.",
     watch_created: "Watching **{channel_name}** for new uploads.\n- Announcements in <#{channel_id}>\n- Checked every ~10 minutes.",
     removed: "Alert removed.",
     not_found: "No alert with that name.",
@@ -30,10 +30,10 @@ registerStrings("alert", {
     title: "Alert",
     invalid_channel_id: "Itu sepertinya bukan channel ID YouTube.\n- Pakai id `UC...` dari URL channel-nya (`youtube.com/channel/UC...`).\n-# Tip: di halaman channel, Share → Copy channel ID.",
     pick_text_channel: "Pilih text channel di server ini.",
-    feed_fetch_failed: "Aku tidak bisa mengambil feed channel itu. Cek lagi channel ID-nya.",
+    feed_fetch_failed: "Aku tidak bisa menghubungi channel YouTube itu. Cek lagi channel ID-nya.",
     reason_invalid_name: "Nama alert harus 1-32 karakter: huruf kecil, angka, `-`, `_`.",
     reason_exists: "Alert dengan nama itu sudah ada.",
-    reason_full: "Limit alert tercapai (maksimal {max}).",
+    reason_full: "Batas alert sudah tercapai (maksimal {max}).",
     create_failed: "Tidak bisa membuat alert-nya.",
     watch_created: "Memantau **{channel_name}** untuk upload baru.\n- Pengumuman di <#{channel_id}>\n- Dicek setiap ~10 menit.",
     removed: "Alert dihapus.",
@@ -87,7 +87,7 @@ export default {
         .addStringOption((option) =>
           option
             .setName("message")
-            .setDescription("Template: {channel} {title} {url} {server} (empty = default)")
+            .setDescription("Your message: {channel} {title} {url} {server} (empty = default)")
             .setMaxLength(300)
             .setRequired(false),
         ),
@@ -100,7 +100,7 @@ export default {
           option.setName("name").setDescription("Alert name").setMaxLength(32).setAutocomplete(true).setRequired(true),
         ),
     )
-    .addSubcommand((sub) => sub.setName("list").setDescription("List configured alerts")),
+    .addSubcommand((sub) => sub.setName("list").setDescription("List your alerts")),
   async autocomplete({ interaction }) {
     if (!interaction.guildId) {
       await interaction.respond([]);

@@ -22,33 +22,33 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("log", {
   en: {
     title: "Logging",
-    not_set: "- (not set)",
-    channel_cleared: "**Log channel cleared**\n- Logging channel: - (not set)",
-    channel_updated: "**Log channel updated**\n- Logging channel: <#{channel_id}>",
+    not_set: "not set yet",
+    channel_cleared: "**Log channel removed**\n- Log channel: not set yet",
+    channel_updated: "**Log channel updated**\n- Logs now go to <#{channel_id}>",
     current_settings_header: "**Current settings**",
     channel_line: "- Channel: {channel}",
-    invalid_event_key: "Invalid logging event key.",
-    event_updated: "**Logging event updated**\n- {label}: {state}",
-    state_enabled: "✅ Enabled",
-    state_disabled: "❌ Disabled",
+    invalid_event_key: "That event doesn't exist — pick one from the suggestions.",
+    event_updated: "**Log event updated**\n- {label}: {state}",
+    state_enabled: "On",
+    state_disabled: "Off",
     panel_title: "Logging panel",
-    panel_body: "**Channel:** {channel}\nToggle events by picking them below — selected entries flip on/off instantly.",
+    panel_body: "**Channel:** {channel}\nPick events below to turn them on or off — changes apply right away.",
     panel_group_a: "Messages & members...",
     panel_group_b: "Server, voice & more...",
   },
   id: {
     title: "Logging",
-    not_set: "- (belum diatur)",
-    channel_cleared: "**Channel log dihapus**\n- Channel logging: - (belum diatur)",
-    channel_updated: "**Channel log diperbarui**\n- Channel logging: <#{channel_id}>",
+    not_set: "belum diatur",
+    channel_cleared: "**Channel log dihapus**\n- Channel log: belum diatur",
+    channel_updated: "**Channel log diperbarui**\n- Log sekarang dikirim ke <#{channel_id}>",
     current_settings_header: "**Pengaturan saat ini**",
     channel_line: "- Channel: {channel}",
-    invalid_event_key: "Key event logging tidak valid.",
-    event_updated: "**Event logging diperbarui**\n- {label}: {state}",
-    state_enabled: "✅ Aktif",
-    state_disabled: "❌ Nonaktif",
+    invalid_event_key: "Event itu tidak ada — pilih dari daftar saran.",
+    event_updated: "**Event log diperbarui**\n- {label}: {state}",
+    state_enabled: "Aktif",
+    state_disabled: "Nonaktif",
     panel_title: "Panel logging",
-    panel_body: "**Channel:** {channel}\nAktif/nonaktifkan event dengan memilihnya di bawah — pilihan langsung di-toggle.",
+    panel_body: "**Channel:** {channel}\nPilih event di bawah untuk menyalakan atau mematikannya — langsung berlaku.",
     panel_group_a: "Pesan & member...",
     panel_group_b: "Server, voice & lainnya...",
   },
@@ -58,11 +58,11 @@ function formatChannel(t, channelId) {
   return channelId ? `<#${channelId}>` : t("log.not_set");
 }
 
-function renderEventLines(config) {
+function renderEventLines(t, config) {
   return LOG_EVENT_ORDER.map((key) => {
     const meta = getLogEventMeta(key);
     const enabled = config.events[key] === true;
-    return `${enabled ? "✅" : "❌"} ${meta?.label ?? key}`;
+    return `- ${meta?.label ?? key}: ${t(enabled ? "log.state_enabled" : "log.state_disabled")}`;
   });
 }
 
@@ -142,11 +142,11 @@ export default {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("channel")
-        .setDescription("Set log channel (leave empty to clear)")
+        .setDescription("Pick the log channel (leave empty to remove it)")
         .addChannelOption((option) =>
           option
             .setName("channel")
-            .setDescription("Target log channel")
+            .setDescription("Where logs should go")
             .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
             .setRequired(false),
         ),
@@ -154,11 +154,11 @@ export default {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("config")
-        .setDescription("Show or toggle logging events")
+        .setDescription("See log events or turn one on or off")
         .addStringOption((option) =>
           option
             .setName("event")
-            .setDescription("Event to toggle (leave empty to show all)")
+            .setDescription("Event to turn on or off (leave empty to show all)")
             .setAutocomplete(true)
             .setRequired(false),
         ),
@@ -166,7 +166,7 @@ export default {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("panel")
-        .setDescription("Interactive panel to toggle all log events at once"),
+        .setDescription("A panel to turn log events on and off in one place"),
     ),
   async onComponent({ interaction, t }) {
     if (!interaction.isStringSelectMenu()) return false;
@@ -240,7 +240,7 @@ export default {
           ctx.t("log.current_settings_header"),
           ctx.t("log.channel_line", { channel: formatChannel(ctx.t, config.channelId) }),
           "",
-          ...renderEventLines(config),
+          ...renderEventLines(ctx.t, config),
         ].join("\n"),
       });
 

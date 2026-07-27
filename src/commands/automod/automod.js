@@ -38,28 +38,28 @@ registerStrings("automod", {
     exempt_roles_line: "- Roles: {list}",
     word_list_line: "**Word list**: {list}",
     link_allowlist_line: "**Link allowlist**: {list}",
-    footer_note: "-# Members with Manage Messages are always exempt. Enable the `Automod actions` log event to see actions.",
-    invite_enabled: "Anti-invite is now ✅ enabled.",
-    invite_disabled: "Anti-invite is now ❌ disabled.",
+    footer_note: "-# Members with Manage Messages are always exempt. Turn on the `Automod actions` log event to see what automod does.",
+    invite_enabled: "Anti-invite is now on.",
+    invite_disabled: "Anti-invite is now off.",
     mentions_set: "Messages with **{limit}+** mentions will be actioned.",
-    mentions_disabled: "Mention spam filter disabled.",
-    word_empty: "Please provide a non-empty word.",
+    mentions_disabled: "The mention spam filter is off.",
+    word_empty: "Type the word you want to ban.",
     word_exists: "That word is already banned.",
     word_list_full: "Word list is full (max {max}).",
     word_added: "Added `{word}` to the banned word list.",
     word_removed: "Word removed from the banned list.",
     word_not_found: "That word is not in the banned list.",
-    links_enabled: "Link filter is now ✅ enabled.",
-    links_disabled: "Link filter is now ❌ disabled.",
+    links_enabled: "The link filter is now on.",
+    links_disabled: "The link filter is now off.",
     links_empty_allowlist_note: "-# Allowlist is empty — every link will be actioned. Add domains with `/automod link-allow`.",
-    domain_invalid: "That doesn't look like a valid domain (e.g. `youtube.com`).",
+    domain_invalid: "That doesn't look like a domain — try something like `youtube.com`.",
     domain_exists: "That domain is already allowed.",
     allowlist_full: "Allowlist is full (max {max}).",
     domain_added: "Links to `{domain}` (and subdomains) are now allowed.",
     domain_removed: "Domain removed from the allowlist.",
     domain_not_found: "That domain is not in the allowlist.",
-    spam_enabled: "Spam detection ✅ enabled: **{max}** msgs per **{interval}s**, duplicates x**{duplicates}**.",
-    spam_disabled: "Spam detection ❌ disabled.",
+    spam_enabled: "Spam detection is on: **{max}** msgs per **{interval}s**, duplicates x**{duplicates}**.",
+    spam_disabled: "Spam detection is off.",
     channel_exempted: "<#{channel}> is now exempt from automod.",
     channel_unexempted: "<#{channel}> is no longer exempt from automod.",
     channel_already_exempt: "That channel is already exempt.",
@@ -74,7 +74,7 @@ registerStrings("automod", {
     escalation_set_kick: "**{count}** warns → kick",
     escalation_set_ban: "**{count}** warns → ban",
     escalation_ladder: "Escalation ladder: {parts}",
-    escalation_disabled: "Escalation disabled.",
+    escalation_disabled: "Escalation is off.",
   },
   id: {
     title: "Automod",
@@ -102,28 +102,28 @@ registerStrings("automod", {
     exempt_roles_line: "- Role: {list}",
     word_list_line: "**Daftar kata**: {list}",
     link_allowlist_line: "**Allowlist link**: {list}",
-    footer_note: "-# Member dengan permission Manage Messages selalu dikecualikan. Aktifkan log event `Automod actions` untuk melihat aksinya.",
-    invite_enabled: "Anti-invite sekarang ✅ aktif.",
-    invite_disabled: "Anti-invite sekarang ❌ nonaktif.",
+    footer_note: "-# Member dengan permission Manage Messages selalu dikecualikan. Nyalakan log event `Automod actions` untuk melihat aksi automod.",
+    invite_enabled: "Anti-invite sekarang aktif.",
+    invite_disabled: "Anti-invite sekarang nonaktif.",
     mentions_set: "Pesan dengan **{limit}+** mention akan ditindak.",
-    mentions_disabled: "Filter spam mention dinonaktifkan.",
-    word_empty: "Masukkan kata yang tidak kosong ya.",
+    mentions_disabled: "Filter spam mention sekarang nonaktif.",
+    word_empty: "Ketik kata yang mau kamu larang.",
     word_exists: "Kata itu sudah ada di daftar terlarang.",
     word_list_full: "Daftar kata sudah penuh (maksimal {max}).",
     word_added: "`{word}` ditambahkan ke daftar kata terlarang.",
     word_removed: "Kata dihapus dari daftar terlarang.",
     word_not_found: "Kata itu tidak ada di daftar terlarang.",
-    links_enabled: "Filter link sekarang ✅ aktif.",
-    links_disabled: "Filter link sekarang ❌ nonaktif.",
+    links_enabled: "Filter link sekarang aktif.",
+    links_disabled: "Filter link sekarang nonaktif.",
     links_empty_allowlist_note: "-# Allowlist masih kosong — semua link bakal ditindak. Tambahkan domain lewat `/automod link-allow`.",
-    domain_invalid: "Itu kayaknya bukan domain yang valid (contoh: `youtube.com`).",
+    domain_invalid: "Itu kayaknya bukan domain — coba yang seperti `youtube.com`.",
     domain_exists: "Domain itu sudah diizinkan.",
     allowlist_full: "Allowlist sudah penuh (maksimal {max}).",
     domain_added: "Link ke `{domain}` (termasuk subdomain) sekarang diizinkan.",
     domain_removed: "Domain dihapus dari allowlist.",
     domain_not_found: "Domain itu tidak ada di allowlist.",
-    spam_enabled: "Deteksi spam ✅ aktif: **{max}** pesan per **{interval} detik**, duplikat x**{duplicates}**.",
-    spam_disabled: "Deteksi spam ❌ nonaktif.",
+    spam_enabled: "Deteksi spam aktif: **{max}** pesan per **{interval} detik**, duplikat x**{duplicates}**.",
+    spam_disabled: "Deteksi spam sekarang nonaktif.",
     channel_exempted: "<#{channel}> sekarang dikecualikan dari automod.",
     channel_unexempted: "<#{channel}> tidak lagi dikecualikan dari automod.",
     channel_already_exempt: "Channel itu sudah dikecualikan.",
@@ -138,7 +138,7 @@ registerStrings("automod", {
     escalation_set_kick: "**{count}** peringatan → kick",
     escalation_set_ban: "**{count}** peringatan → ban",
     escalation_ladder: "Tangga eskalasi: {parts}",
-    escalation_disabled: "Eskalasi dinonaktifkan.",
+    escalation_disabled: "Eskalasi dimatikan.",
   },
 });
 
@@ -245,22 +245,22 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("automod")
-    .setDescription("Configure automatic moderation")
+    .setDescription("Set up automatic moderation")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .setContexts(InteractionContextType.Guild)
     .addSubcommand((sub) => sub.setName("show").setDescription("Show automod settings"))
     .addSubcommand((sub) =>
       sub
         .setName("invite")
-        .setDescription("Toggle deletion of Discord invite links")
+        .setDescription("Turn deleting Discord invite links on or off")
         .addBooleanOption((option) =>
-          option.setName("enabled").setDescription("Enable anti-invite").setRequired(true),
+          option.setName("enabled").setDescription("Turn anti-invite on or off").setRequired(true),
         ),
     )
     .addSubcommand((sub) =>
       sub
         .setName("mentions")
-        .setDescription("Set mention spam limit (0 disables)")
+        .setDescription("Set the mention spam limit (0 turns it off)")
         .addIntegerOption((option) =>
           option
             .setName("limit")
@@ -289,9 +289,9 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("links")
-        .setDescription("Toggle the link filter (blocks links not on the allowlist)")
+        .setDescription("Turn the link filter on or off (blocks links not on the allowlist)")
         .addBooleanOption((option) =>
-          option.setName("enabled").setDescription("Enable link filter").setRequired(true),
+          option.setName("enabled").setDescription("Turn the link filter on or off").setRequired(true),
         ),
     )
     .addSubcommand((sub) =>
@@ -313,9 +313,9 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("spam")
-        .setDescription("Configure message spam detection")
+        .setDescription("Set up message spam detection")
         .addBooleanOption((option) =>
-          option.setName("enabled").setDescription("Enable spam detection").setRequired(true),
+          option.setName("enabled").setDescription("Turn spam detection on or off").setRequired(true),
         )
         .addIntegerOption((option) =>
           option.setName("max_messages").setDescription("Messages allowed per window (3-30)").setMinValue(3).setMaxValue(30).setRequired(false),
@@ -374,7 +374,7 @@ export default {
         .addStringOption((option) =>
           option
             .setName("rule")
-            .setDescription("Rule to configure")
+            .setDescription("Which rule to change")
             .addChoices(...AUTOMOD_RULES.map((rule) => ({ name: RULE_LABELS[rule] ?? rule, value: rule })))
             .setRequired(true),
         )
@@ -397,7 +397,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("escalation")
-        .setDescription("Auto-punish at warning thresholds (0 disables a step)")
+        .setDescription("Auto-punish at warning thresholds (0 turns a step off)")
         .addIntegerOption((option) =>
           option.setName("timeout_at").setDescription("Warnings to trigger a timeout (0-50)").setMinValue(0).setMaxValue(50).setRequired(false),
         )
