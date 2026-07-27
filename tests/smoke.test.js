@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { EventEmitter } from "node:events";
+import path from "node:path";
+import { CATEGORY_KEYS } from "#config/categories.js";
 import { loadCommands } from "#core/loader/commands.js";
 import { loadEvents } from "#core/loader/events.js";
 import { parseYoutubeChannelId, parseYoutubeFeed } from "#services/alerts.js";
@@ -31,6 +33,20 @@ describe("command loading", () => {
     for (const command of registry.all()) {
       expect(typeof command.category).toBe("string");
       expect(typeof command.execute).toBe("function");
+    }
+  });
+
+  test("every command sits in a known category whose folder matches its field", async () => {
+    const registry = await loadCommands({ logger: noopLogger, rootDir: PROJECT_ROOT });
+    for (const { command, filePath } of registry.entries()) {
+      expect(CATEGORY_KEYS).toContain(command.category);
+      const folder = path.basename(path.dirname(filePath));
+      expect(folder).toBe(command.category);
+    }
+    // Every category in the browse order actually has at least one command.
+    const used = new Set(registry.all().map((command) => command.category));
+    for (const key of CATEGORY_KEYS) {
+      expect(used.has(key)).toBe(true);
     }
   });
 
