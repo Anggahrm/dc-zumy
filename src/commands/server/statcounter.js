@@ -17,11 +17,11 @@ registerStrings("statcounter", {
     template_bots: "🤖 Bots: {count}",
     template_channels: "📁 Channels: {count}",
     template_roles: "🏷️ Roles: {count}",
-    template_missing_count: "The template must contain `{count}`.",
-    limit_reached: "Counter limit reached (max {max}).",
+    template_missing_count: "The channel name needs `{count}` in it — that's where the number goes.",
+    limit_reached: "You've reached the counter limit (max {max}).",
     create_failed: "I couldn't create the channel. I need **Manage Channels**.",
     created: "Counter created: **{name}**\n- Updates every ~10 minutes (Discord limits channel renames).",
-    not_counter: "That channel is not a stat counter.",
+    not_counter: "That channel isn't a stat counter.",
     removed: "Counter removed.",
     list_empty: "No counters yet. Use `/statcounter add`.",
   },
@@ -31,8 +31,8 @@ registerStrings("statcounter", {
     template_bots: "🤖 Bot: {count}",
     template_channels: "📁 Channel: {count}",
     template_roles: "🏷️ Role: {count}",
-    template_missing_count: "Template harus mengandung `{count}`.",
-    limit_reached: "Batas counter tercapai (maksimal {max}).",
+    template_missing_count: "Nama channel harus mengandung `{count}` — di situ angkanya ditampilkan.",
+    limit_reached: "Batas counter sudah tercapai (maksimal {max}).",
     create_failed: "Aku tidak bisa membuat channel-nya. Aku butuh permission **Manage Channels**.",
     created: "Counter dibuat: **{name}**\n- Update tiap ~10 menit (Discord membatasi rename channel).",
     not_counter: "Channel itu bukan stat counter.",
@@ -75,7 +75,7 @@ export default {
         .addStringOption((option) =>
           option
             .setName("template")
-            .setDescription("Channel name template with {count} (default per type)")
+            .setDescription("Channel name with {count} in it (each stat has a default)")
             .setMaxLength(90)
             .setRequired(false),
         ),

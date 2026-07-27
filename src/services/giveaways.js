@@ -89,14 +89,14 @@ export function buildGiveawayCard(row, { endedWinners = null } = {}) {
   if (endedWinners) {
     return createCard({
       color: 0x99aab5,
-      title: "🎉 Giveaway Ended",
+      title: "Giveaway ended",
       body: [
         `**${row.prize}**`,
         "",
         endedWinners.length > 0
           ? `- Winner(s): ${endedWinners.map((id) => `<@${id}>`).join(", ")}`
-          : "- No valid entries — nobody won.",
-        `- Entries: **${entrants.length}**`,
+          : "- Nobody joined, so there's no winner.",
+        `- Joined: **${entrants.length}**`,
         `- Ended: <t:${endsAtUnix}:F>`,
       ].join("\n"),
       footer: `Giveaway #${row.id}`,
@@ -105,12 +105,12 @@ export function buildGiveawayCard(row, { endedWinners = null } = {}) {
 
   return createCard({
     color: 0xeb459e,
-    title: "🎉 Giveaway",
+    title: "Giveaway",
     body: [
       `**${row.prize}**`,
       "",
       `- Winners: **${row.winnerCount}**`,
-      `- Entries: **${entrants.length}**`,
+      `- Joined: **${entrants.length}**`,
       `- Ends: <t:${endsAtUnix}:F> (<t:${endsAtUnix}:R>)`,
       "",
       "Press the button below to enter (press again to leave).",
@@ -172,7 +172,7 @@ export async function finishGiveaway({ guild, giveawayId, logger, reroll = false
   if (channel && typeof channel.send === "function") {
     const text = winners.length > 0
       ? `🎉 ${reroll ? "Reroll!" : "Congratulations"} ${winners.map((id) => `<@${id}>`).join(", ")} — you won **${row.prize}**!`
-      : `🎉 Giveaway **${row.prize}** ended with no entries.`;
+      : `Giveaway **${row.prize}** ended — nobody joined.`;
     await channel
       .send({
         content: text,

@@ -10,9 +10,9 @@ const ID_PATTERN = /^\d{5,30}$/;
 registerStrings("unban", {
   en: {
     title: "Moderation",
-    invalid_id: "That doesn't look like a valid user ID.",
-    not_banned: "That user is not banned from this server.",
-    unban_failed: "Unban failed. Please check bot permissions.",
+    invalid_id: "That doesn't look like a user ID — it's a long number like `123456789012345678`.",
+    not_banned: "That user isn't banned from this server.",
+    unban_failed: "The unban didn't go through. Check my permissions.",
     case_suffix: " — Case #{caseNumber}",
     complete_title: "**Unban Complete**{caseSuffix}",
     target_line: "- Target: **{user}** (`{id}`)",
@@ -21,9 +21,9 @@ registerStrings("unban", {
   },
   id: {
     title: "Moderasi",
-    invalid_id: "Itu kelihatannya bukan user ID yang valid.",
+    invalid_id: "Itu sepertinya bukan user ID — bentuknya angka panjang seperti `123456789012345678`.",
     not_banned: "User itu tidak sedang di-ban di server ini.",
-    unban_failed: "Unban gagal. Cek permission bot ya.",
+    unban_failed: "Unban-nya tidak berhasil. Cek permission-ku ya.",
     case_suffix: " — Case #{caseNumber}",
     complete_title: "**Unban Selesai**{caseSuffix}",
     target_line: "- Target: **{user}** (`{id}`)",

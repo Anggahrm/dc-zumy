@@ -16,12 +16,12 @@ import { formatDuration, parseDuration } from "#utils/time.js";
 registerStrings("automessage", {
   en: {
     title: "Auto-messages",
-    interval_invalid: "Interval must be between **30m** and **7d** (e.g. `1h`, `12h`, `1d`).",
+    interval_invalid: "Pick how often between **30m** and **7d** — try `1h`, `12h`, or `1d`.",
     pick_text_channel: "Pick a text channel in this server.",
     reason_invalid_name: "Names must be 1-32 chars: lowercase letters, numbers, `-`, `_`.",
     reason_exists: "An auto-message with that name already exists.",
-    reason_full: "Limit reached (max {max}).",
-    create_failed: "Could not create it.",
+    reason_full: "You've reached the auto-message limit (max {max}).",
+    create_failed: "Couldn't create it.",
     created: "Auto-message `{name}` created.\n- Channel: <#{channel_id}>\n- Every: **{interval}** (first post in one interval)",
     deleted: "Auto-message deleted.",
     not_found: "No auto-message with that name.",
@@ -30,11 +30,11 @@ registerStrings("automessage", {
   },
   id: {
     title: "Pesan Otomatis",
-    interval_invalid: "Interval harus antara **30m** dan **7d** (contoh: `1h`, `12h`, `1d`).",
+    interval_invalid: "Pilih jarak waktu antara **30m** dan **7d** — coba `1h`, `12h`, atau `1d`.",
     pick_text_channel: "Pilih text channel di server ini.",
     reason_invalid_name: "Nama harus 1-32 karakter: huruf kecil, angka, `-`, `_`.",
     reason_exists: "Pesan otomatis dengan nama itu sudah ada.",
-    reason_full: "Limit tercapai (maksimal {max}).",
+    reason_full: "Batas pesan otomatis sudah tercapai (maksimal {max}).",
     create_failed: "Tidak bisa membuatnya.",
     created: "Pesan otomatis `{name}` dibuat.\n- Channel: <#{channel_id}>\n- Setiap: **{interval}** (post pertama setelah satu interval)",
     deleted: "Pesan otomatis dihapus.",
@@ -61,7 +61,7 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("automessage")
-    .setDescription("Recurring scheduled messages")
+    .setDescription("Post a message on a repeating schedule")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .setContexts(InteractionContextType.Guild)
     .addSubcommand((sub) =>

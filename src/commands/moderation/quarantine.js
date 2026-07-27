@@ -14,21 +14,21 @@ registerStrings("quarantine", {
   en: {
     title: "Quarantine",
     need_manage_server: "You need **Manage Server** to change the quarantine role.",
-    role_unusable: "That role can't be used (managed, @everyone, or above my highest role).",
+    role_unusable: "That role can't be used (it's managed, @everyone, or above my highest role).",
     role_set: "Quarantine role set to <@&{roleId}>.",
-    role_set_tip: "-# Tip: configure this role's channel overwrites so quarantined members only see your appeal channel.",
-    no_role_configured: "No quarantine role configured. Run `/quarantine role` first.",
-    not_in_server: "That user is not in this server.",
+    role_set_tip: "-# Tip: set this role's channel permissions so quarantined members only see your appeal channel.",
+    no_role_configured: "No quarantine role set up yet. Run `/quarantine role` first.",
+    not_in_server: "That user isn't in this server.",
     already_quarantined: "**{user}** is already quarantined.",
-    update_roles_failed: "Failed to update roles. Check my role position and permissions.",
+    update_roles_failed: "I couldn't update their roles. Check my role position and permissions.",
     dm_action_label: "Quarantine",
     case_suffix: " — Case #{caseNumber}",
     quarantined_title: "**Member Quarantined**{caseSuffix}",
     target_line: "- Target: **{user}** (`{id}`)",
-    stored_roles_line: "- Stored roles for restore: **{count}**",
+    stored_roles_line: "- Roles saved to restore later: **{count}**",
     reason_line: "- Reason: {reason}",
-    not_quarantined: "**{user}** is not quarantined.",
-    restore_failed: "Failed to restore roles. Check my role position and permissions, then retry.",
+    not_quarantined: "**{user}** isn't quarantined.",
+    restore_failed: "I couldn't restore their roles. Check my role position and permissions, then try again.",
     released_title: "**Member Released**{caseSuffix}",
     restored_roles_line: "- Roles restored: **{count}**{ofStored}",
     of_stored_suffix: " (of {total} stored)",
@@ -38,7 +38,7 @@ registerStrings("quarantine", {
     need_manage_server: "Kamu butuh permission **Manage Server** untuk mengubah role karantina.",
     role_unusable: "Role itu tidak bisa dipakai (managed, @everyone, atau di atas role tertinggiku).",
     role_set: "Role karantina diatur ke <@&{roleId}>.",
-    role_set_tip: "-# Tip: atur channel overwrites role ini supaya member yang dikarantina cuma bisa lihat channel appeal-mu.",
+    role_set_tip: "-# Tip: atur permission channel role ini supaya member yang dikarantina cuma bisa lihat channel appeal-mu.",
     no_role_configured: "Role karantina belum diatur. Jalankan `/quarantine role` dulu ya.",
     not_in_server: "User itu tidak ada di server ini.",
     already_quarantined: "**{user}** sudah dikarantina.",
@@ -47,7 +47,7 @@ registerStrings("quarantine", {
     case_suffix: " — Case #{caseNumber}",
     quarantined_title: "**Member Dikarantina**{caseSuffix}",
     target_line: "- Target: **{user}** (`{id}`)",
-    stored_roles_line: "- Role yang disimpan untuk dipulihkan: **{count}**",
+    stored_roles_line: "- Role disimpan untuk dipulihkan nanti: **{count}**",
     reason_line: "- Alasan: {reason}",
     not_quarantined: "**{user}** tidak sedang dikarantina.",
     restore_failed: "Gagal memulihkan role. Cek posisi role dan permission-ku, lalu coba lagi.",
@@ -70,7 +70,7 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("quarantine")
-    .setDescription("Isolate a member: strip roles, apply quarantine role, restore later")
+    .setDescription("Quarantine a member: remove their roles now, restore them later")
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
     .setContexts(InteractionContextType.Guild)
     .addSubcommand((subcommand) =>

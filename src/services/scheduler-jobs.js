@@ -297,7 +297,7 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
     const { userId, channelId, text } = job.payload ?? {};
     if (!userId || !text) return;
 
-    const content = `⏰ <@${userId}> Reminder: ${text}`;
+    const content = `<@${userId}> Here's your reminder: ${text}`;
     const channel = channelId
       ? await client.channels.fetch(channelId).catch(() => null)
       : null;
@@ -311,7 +311,7 @@ export function registerDefaultJobs({ scheduler, client, logger }) {
     }
 
     const user = await client.users.fetch(userId).catch(() => null);
-    await user?.send({ content: `⏰ Reminder: ${text}` }).catch(() => {});
+    await user?.send({ content: `Here's your reminder: ${text}` }).catch(() => {});
   });
 
   scheduler.registerHandler("giveaway_end", async (job) => {

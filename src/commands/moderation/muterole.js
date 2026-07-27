@@ -7,16 +7,16 @@ registerStrings("muterole", {
   en: {
     title: "Mute Role",
     current_role: "Current mute role: <@&{role}>",
-    role_missing: "Configured role `{roleId}` no longer exists. Run `/muterole set` or `/muterole create`.",
-    none_configured: "No mute role configured. Run `/muterole set` or `/muterole create`.",
+    role_missing: "The saved mute role `{roleId}` no longer exists. Run `/muterole set` or `/muterole create` again.",
+    none_configured: "No mute role set up yet. Run `/muterole set` or `/muterole create`.",
     need_manage_roles: "I need the **Manage Roles** permission for this.",
     role_unusable: "That role can't be used as a mute role.",
     role_too_high: "That role is equal to or higher than my highest role, so I can't assign it.",
     set_success: "Mute role set to <@&{role}>.",
-    set_tip: "-# Tip: make sure this role denies Send Messages in your channels, or use `/muterole create` to set overwrites automatically.",
-    create_failed: "Failed to create the role. Check my permissions.",
+    set_tip: "-# Tip: make sure this role denies Send Messages in your channels, or use `/muterole create` to set channel permissions automatically.",
+    create_failed: "I couldn't create the role. Check my permissions.",
     created: "Created <@&{role}> and set it as the mute role.",
-    overwrites_line: "- Channel overwrites applied: **{applied}/{total}**",
+    overwrites_line: "- Channel permissions updated: **{applied}/{total}**",
     skipped_channels_line: "- Some channels were skipped (missing permission there).",
   },
   id: {
@@ -28,10 +28,10 @@ registerStrings("muterole", {
     role_unusable: "Role itu tidak bisa dipakai sebagai role mute.",
     role_too_high: "Role itu posisinya sama atau lebih tinggi dari role tertinggiku, jadi aku tidak bisa memberikannya.",
     set_success: "Role mute diatur ke <@&{role}>.",
-    set_tip: "-# Tips: pastikan role ini menolak Send Messages di channel-mu, atau pakai `/muterole create` biar overwrites-nya diatur otomatis.",
+    set_tip: "-# Tips: pastikan role ini menolak Send Messages di channel-mu, atau pakai `/muterole create` biar permission channel diatur otomatis.",
     create_failed: "Gagal membuat role. Cek permission-ku ya.",
     created: "Berhasil membuat <@&{role}> dan mengaturnya sebagai role mute.",
-    overwrites_line: "- Channel overwrites diterapkan: **{applied}/{total}**",
+    overwrites_line: "- Permission channel diperbarui: **{applied}/{total}**",
     skipped_channels_line: "- Beberapa channel dilewati (aku tidak punya permission di sana).",
   },
 });
@@ -72,7 +72,7 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("muterole")
-    .setDescription("Configure the mute role used by /mute")
+    .setDescription("Set up the mute role used by /mute")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .setContexts(InteractionContextType.Guild)
     .addSubcommand((subcommand) =>
@@ -86,10 +86,10 @@ export default {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("create")
-        .setDescription("Create a Muted role and apply channel overwrites"),
+        .setDescription("Create a Muted role and set channel permissions for it"),
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName("show").setDescription("Show the configured mute role"),
+      subcommand.setName("show").setDescription("Show the current mute role"),
     ),
   async execute({ interaction, ctx }) {
     const guild = interaction.guild;

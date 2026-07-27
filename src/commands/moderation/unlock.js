@@ -10,8 +10,8 @@ registerStrings("unlock", {
     cannot_unlock: "That channel can't be unlocked.",
     need_manage_roles: "I need **Manage Roles** permission in that channel.",
     audit_reason: "Unlocked by {user}: {reason}",
-    unlock_failed: "Unlock failed. Please check my channel permissions.",
-    unlocked_body: "🔓 <#{channel}> is now unlocked.\n- Reason: {reason}",
+    unlock_failed: "The unlock didn't go through. Check my permissions in that channel.",
+    unlocked_body: "<#{channel}> is now unlocked.\n- Reason: {reason}",
   },
   id: {
     title: "Moderasi",
@@ -20,7 +20,7 @@ registerStrings("unlock", {
     need_manage_roles: "Aku butuh permission **Manage Roles** di channel itu.",
     audit_reason: "Dibuka oleh {user}: {reason}",
     unlock_failed: "Gagal membuka kunci. Cek permission-ku di channel itu ya.",
-    unlocked_body: "🔓 <#{channel}> sekarang dibuka kuncinya.\n- Alasan: {reason}",
+    unlocked_body: "<#{channel}> sekarang dibuka kuncinya.\n- Alasan: {reason}",
   },
 });
 

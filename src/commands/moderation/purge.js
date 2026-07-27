@@ -11,13 +11,13 @@ registerStrings("purge", {
     requested_line: "- Requested: **{requested}** message(s)",
     deleted_line: "- Deleted: **{deleted}** message(s)",
     filter_line: "- Filter: {detail}",
-    no_match: "No messages matched for **{mode}** in the latest {limit} messages.",
+    no_match: "Nothing matched **{mode}** in the last {limit} messages.",
     filter_line_plain: "Filter: {detail}",
-    need_manage_messages: "I need **Manage Messages** permission to purge in this channel.",
-    cannot_access_channel: "I can't access this channel to purge messages.",
-    empty_substring: "Please provide a non-empty substring filter.",
-    bulk_delete_unsupported: "This channel doesn't support bulk message deletion.",
-    detail_prefix: "prefix starts with `{value}`",
+    need_manage_messages: "I need **Manage Messages** permission to delete messages in this channel.",
+    cannot_access_channel: "I can't access this channel to delete messages.",
+    empty_substring: "Type some text to search for.",
+    bulk_delete_unsupported: "I can't bulk-delete messages in this channel.",
+    detail_prefix: "starts with `{value}`",
     detail_contains: "contains `{value}`",
     detail_member: "member **{user}**",
   },
@@ -31,11 +31,11 @@ registerStrings("purge", {
     filter_line: "- Filter: {detail}",
     no_match: "Tidak ada pesan yang cocok untuk **{mode}** di {limit} pesan terakhir.",
     filter_line_plain: "Filter: {detail}",
-    need_manage_messages: "Aku butuh permission **Manage Messages** untuk purge di channel ini.",
-    cannot_access_channel: "Aku tidak bisa mengakses channel ini untuk purge pesan.",
-    empty_substring: "Filter substring-nya tidak boleh kosong ya.",
-    bulk_delete_unsupported: "Channel ini tidak mendukung penghapusan pesan massal.",
-    detail_prefix: "prefix diawali `{value}`",
+    need_manage_messages: "Aku butuh permission **Manage Messages** untuk menghapus pesan di channel ini.",
+    cannot_access_channel: "Aku tidak bisa mengakses channel ini untuk menghapus pesan.",
+    empty_substring: "Ketik teks yang mau dicari ya.",
+    bulk_delete_unsupported: "Aku tidak bisa menghapus pesan secara massal di channel ini.",
+    detail_prefix: "diawali `{value}`",
     detail_contains: "mengandung `{value}`",
     detail_member: "member **{user}**",
   },
@@ -54,7 +54,7 @@ class PurgeUserError extends Error {
 function makeCountOption(option, required = true) {
   return option
     .setName("count")
-    .setDescription("How many messages to purge (1-100)")
+    .setDescription("How many messages to delete (1-100)")
     .setMinValue(1)
     .setMaxValue(100)
     .setRequired(required);
@@ -199,19 +199,19 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("purge")
-    .setDescription("Purge recent messages with filters")
+    .setDescription("Delete recent messages, with optional filters")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
     .setContexts(InteractionContextType.Guild)
     .addSubcommand((subcommand) =>
       subcommand
         .setName("all")
-        .setDescription("Purge recent messages")
+        .setDescription("Delete recent messages")
         .addIntegerOption((option) => makeCountOption(option, true)),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("bot")
-        .setDescription("Purge bot messages")
+        .setDescription("Delete bot messages")
         .addIntegerOption((option) => makeCountOption(option, true))
         .addStringOption((option) =>
           option
@@ -223,7 +223,7 @@ export default {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("contains")
-        .setDescription("Purge messages that contain a substring")
+        .setDescription("Delete messages that contain certain text")
         .addStringOption((option) =>
           option
             .setName("substring")
@@ -235,59 +235,59 @@ export default {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("embeds")
-        .setDescription("Purge messages containing embeds")
+        .setDescription("Delete messages containing embeds")
         .addIntegerOption((option) => makeCountOption(option, true)),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("emoji")
-        .setDescription("Purge messages containing emoji")
+        .setDescription("Delete messages containing emoji")
         .addIntegerOption((option) => makeCountOption(option, true)),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("files")
-        .setDescription("Purge messages containing file attachments")
+        .setDescription("Delete messages with file attachments")
         .addIntegerOption((option) => makeCountOption(option, true)),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("human")
-        .setDescription("Purge messages from non-bot users")
+        .setDescription("Delete messages from people (not bots)")
         .addIntegerOption((option) => makeCountOption(option, true)),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("images")
-        .setDescription("Purge messages containing images")
+        .setDescription("Delete messages containing images")
         .addIntegerOption((option) => makeCountOption(option, true)),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("link")
-        .setDescription("Purge messages containing links")
+        .setDescription("Delete messages containing links")
         .addIntegerOption((option) => makeCountOption(option, true)),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("mentions")
-        .setDescription("Purge messages containing mentions")
+        .setDescription("Delete messages containing mentions")
         .addIntegerOption((option) => makeCountOption(option, true)),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("reactions")
-        .setDescription("Purge messages with reactions")
+        .setDescription("Delete messages with reactions")
         .addIntegerOption((option) => makeCountOption(option, true)),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("user")
-        .setDescription("Purge messages from a specific user")
+        .setDescription("Delete messages from a specific user")
         .addUserOption((option) =>
           option
             .setName("member")
-            .setDescription("Member whose messages should be purged")
+            .setDescription("Member whose messages to delete")
             .setRequired(true),
         )
         .addIntegerOption((option) => makeCountOption(option, false)),

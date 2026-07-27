@@ -6,11 +6,11 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("levelconfig", {
   en: {
     title: "Leveling",
-    none: "(none)",
+    none: "none yet",
     default_placeholder: "(default)",
     current_settings: "**Current settings**",
-    status_enabled: "✅ Leveling enabled",
-    status_disabled: "❌ Leveling disabled",
+    status_enabled: "Leveling: **on**",
+    status_disabled: "Leveling: **off**",
     xp_per_message_line: "- XP per message: **{min}-{max}** (multiplier x{multiplier})",
     cooldown_line: "- Cooldown: **{seconds}s**",
     voice_on_line: "- Voice XP: **{perMinute}/min** (2+ members, not deafened)",
@@ -25,12 +25,12 @@ registerStrings("levelconfig", {
     no_xp_roles_header: "**No-XP roles**",
     role_rewards_header: "**Role rewards** ({count}/{max})",
     reward_row: "- Level {level} → <@&{role}>",
-    rewards_none_row: "- (none)",
-    toggle_enabled: "Leveling is now ✅ enabled.",
-    toggle_disabled: "Leveling is now ❌ disabled.",
+    rewards_none_row: "- none yet",
+    toggle_enabled: "Leveling is now on.",
+    toggle_disabled: "Leveling is now off.",
     rate_updated: "XP rate: **{min}-{max}** per message, cooldown **{seconds}s**, multiplier **x{multiplier}**.",
-    announce_enabled_line: "Level-up announcements ✅ enabled.",
-    announce_disabled_line: "Level-up announcements ❌ disabled.",
+    announce_enabled_line: "Level-up announcements are now on.",
+    announce_disabled_line: "Level-up announcements are now off.",
     announce_where_channel_line: "- Where: <#{channel}>",
     announce_where_same_line: "- Where: same channel as the message",
     announce_message_line: "- Message: {message}",
@@ -38,24 +38,24 @@ registerStrings("levelconfig", {
     channel_gives_xp: "<#{channel}> now gives XP.",
     role_no_xp: "Members with <@&{role}> no longer gain XP.",
     role_gains_xp: "Members with <@&{role}> now gain XP.",
-    role_unusable: "That role can't be used (managed, @everyone, or above my highest role).",
+    role_unusable: "I can't use that role — it's managed, @everyone, or above my highest role.",
     rewards_full: "Reward list is full (max {max}).",
     reward_added: "Level **{level}** now rewards <@&{role}>.",
     reward_removed: "Reward for level **{level}** removed.",
     reward_not_found: "No reward at that level.",
     stack_on: "Rewards now **stack** (members keep all earned roles).",
     stack_off: "Rewards now **replace** (only the highest earned role is kept).",
-    voice_enabled: "Voice XP ✅ enabled: **{perMinute}/min** for channels with 2+ members (deafened members earn nothing).",
-    voice_disabled: "Voice XP ❌ disabled.",
-    xp_set: "**{user}** set to **{xp}** XP (level **{level}**).",
+    voice_enabled: "Voice XP is on: **{perMinute}/min** for channels with 2+ members (deafened members earn nothing).",
+    voice_disabled: "Voice XP is off.",
+    xp_set: "**{user}** now has **{xp}** XP (level **{level}**).",
   },
   id: {
     title: "Leveling",
-    none: "(kosong)",
+    none: "belum ada",
     default_placeholder: "(bawaan)",
     current_settings: "**Pengaturan saat ini**",
-    status_enabled: "✅ Leveling aktif",
-    status_disabled: "❌ Leveling nonaktif",
+    status_enabled: "Leveling: **aktif**",
+    status_disabled: "Leveling: **nonaktif**",
     xp_per_message_line: "- XP per pesan: **{min}-{max}** (multiplier x{multiplier})",
     cooldown_line: "- Cooldown: **{seconds} detik**",
     voice_on_line: "- Voice XP: **{perMinute}/menit** (2+ member, tidak deafen)",
@@ -70,12 +70,12 @@ registerStrings("levelconfig", {
     no_xp_roles_header: "**Role tanpa XP**",
     role_rewards_header: "**Role reward** ({count}/{max})",
     reward_row: "- Level {level} → <@&{role}>",
-    rewards_none_row: "- (kosong)",
-    toggle_enabled: "Leveling sekarang ✅ aktif.",
-    toggle_disabled: "Leveling sekarang ❌ nonaktif.",
+    rewards_none_row: "- belum ada",
+    toggle_enabled: "Leveling sekarang aktif.",
+    toggle_disabled: "Leveling sekarang nonaktif.",
     rate_updated: "Rate XP: **{min}-{max}** per pesan, cooldown **{seconds} detik**, multiplier **x{multiplier}**.",
-    announce_enabled_line: "Pengumuman level-up ✅ aktif.",
-    announce_disabled_line: "Pengumuman level-up ❌ nonaktif.",
+    announce_enabled_line: "Pengumuman level-up sekarang aktif.",
+    announce_disabled_line: "Pengumuman level-up sekarang nonaktif.",
     announce_where_channel_line: "- Di mana: <#{channel}>",
     announce_where_same_line: "- Di mana: channel yang sama dengan pesannya",
     announce_message_line: "- Pesan: {message}",
@@ -83,16 +83,16 @@ registerStrings("levelconfig", {
     channel_gives_xp: "<#{channel}> sekarang memberi XP.",
     role_no_xp: "Member dengan <@&{role}> tidak lagi dapat XP.",
     role_gains_xp: "Member dengan <@&{role}> sekarang dapat XP.",
-    role_unusable: "Role itu tidak bisa dipakai (managed, @everyone, atau di atas role tertinggiku).",
+    role_unusable: "Aku tidak bisa pakai role itu — role-nya managed, @everyone, atau di atas role tertinggiku.",
     rewards_full: "Daftar reward sudah penuh (maksimal {max}).",
     reward_added: "Level **{level}** sekarang memberi reward <@&{role}>.",
     reward_removed: "Reward untuk level **{level}** dihapus.",
     reward_not_found: "Tidak ada reward di level itu.",
     stack_on: "Reward sekarang **stack** (member menyimpan semua role yang didapat).",
     stack_off: "Reward sekarang **replace** (hanya role tertinggi yang disimpan).",
-    voice_enabled: "Voice XP ✅ aktif: **{perMinute}/menit** untuk channel dengan 2+ member (member yang deafen tidak dapat apa-apa).",
-    voice_disabled: "Voice XP ❌ nonaktif.",
-    xp_set: "**{user}** diset ke **{xp}** XP (level **{level}**).",
+    voice_enabled: "Voice XP aktif: **{perMinute}/menit** untuk channel dengan 2+ member (member yang deafen tidak dapat apa-apa).",
+    voice_disabled: "Voice XP nonaktif.",
+    xp_set: "**{user}** sekarang punya **{xp}** XP (level **{level}**).",
   },
 });
 
@@ -154,22 +154,22 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("levelconfig")
-    .setDescription("Configure server leveling")
+    .setDescription("Set up leveling for this server")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .setContexts(InteractionContextType.Guild)
     .addSubcommand((sub) => sub.setName("show").setDescription("Show leveling settings"))
     .addSubcommand((sub) =>
       sub
         .setName("toggle")
-        .setDescription("Enable or disable leveling")
+        .setDescription("Turn leveling on or off")
         .addBooleanOption((option) =>
-          option.setName("enabled").setDescription("Enable leveling").setRequired(true),
+          option.setName("enabled").setDescription("True = on, False = off").setRequired(true),
         ),
     )
     .addSubcommand((sub) =>
       sub
         .setName("rate")
-        .setDescription("Tune XP amounts and cooldown")
+        .setDescription("Change XP amounts and cooldown")
         .addIntegerOption((option) =>
           option.setName("xp_min").setDescription("Min XP per message (1-100)").setMinValue(1).setMaxValue(100).setRequired(false),
         )
@@ -186,9 +186,9 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("announce")
-        .setDescription("Configure level-up announcements")
+        .setDescription("Set up level-up announcements")
         .addBooleanOption((option) =>
-          option.setName("enabled").setDescription("Announce level-ups").setRequired(true),
+          option.setName("enabled").setDescription("Turn announcements on or off").setRequired(true),
         )
         .addChannelOption((option) =>
           option
@@ -200,7 +200,7 @@ export default {
         .addStringOption((option) =>
           option
             .setName("message")
-            .setDescription("Template: {user} {username} {level} {server} (empty = default)")
+            .setDescription("Custom message — use {user} {username} {level} {server}. Empty = default")
             .setMaxLength(300)
             .setRequired(false),
         ),
@@ -208,11 +208,11 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("no-xp-channel")
-        .setDescription("Toggle a channel's XP gain")
+        .setDescription("Turn XP on or off for a channel")
         .addChannelOption((option) =>
           option
             .setName("channel")
-            .setDescription("Channel to toggle")
+            .setDescription("Which channel")
             .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
             .setRequired(true),
         ),
@@ -220,15 +220,15 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("no-xp-role")
-        .setDescription("Toggle a role's XP gain")
+        .setDescription("Turn XP on or off for a role")
         .addRoleOption((option) =>
-          option.setName("role").setDescription("Role to toggle").setRequired(true),
+          option.setName("role").setDescription("Which role").setRequired(true),
         ),
     )
     .addSubcommand((sub) =>
       sub
         .setName("reward-add")
-        .setDescription("Grant a role at a level")
+        .setDescription("Give a role when members reach a level")
         .addIntegerOption((option) =>
           option.setName("level").setDescription("Level to reward (2-500)").setMinValue(2).setMaxValue(500).setRequired(true),
         )
@@ -249,15 +249,15 @@ export default {
         .setName("stack")
         .setDescription("Choose whether rewards stack or replace")
         .addBooleanOption((option) =>
-          option.setName("enabled").setDescription("true = keep all earned roles, false = only highest").setRequired(true),
+          option.setName("enabled").setDescription("True = keep all earned roles, False = keep only the highest").setRequired(true),
         ),
     )
     .addSubcommand((sub) =>
       sub
         .setName("voice")
-        .setDescription("Configure voice XP")
+        .setDescription("Set up voice XP")
         .addBooleanOption((option) =>
-          option.setName("enabled").setDescription("Award XP for voice activity").setRequired(true),
+          option.setName("enabled").setDescription("Turn voice XP on or off").setRequired(true),
         )
         .addIntegerOption((option) =>
           option.setName("xp_per_minute").setDescription("XP per minute (1-20, default 2)").setMinValue(1).setMaxValue(20).setRequired(false),
@@ -266,7 +266,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("xp-set")
-        .setDescription("Set a member's XP (admin correction)")
+        .setDescription("Set a member's XP to an exact amount")
         .addUserOption((option) =>
           option.setName("target").setDescription("Member").setRequired(true),
         )

@@ -5,7 +5,7 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("coinflip", {
   en: {
     title: "Coinflip",
-    not_enough_money: "Not enough money. Your balance: **{balance}** 💰",
+    not_enough_money: "You don't have enough — your balance is **{balance}** 💰.",
     land_win: "🪙 The coin lands on **{result}** — you win!",
     land_lose: "🪙 The coin lands on **{result}** — you lose!",
     won_line: "- Won: **{amount}** 💰",
@@ -14,7 +14,7 @@ registerStrings("coinflip", {
   },
   id: {
     title: "Coinflip",
-    not_enough_money: "Uangmu tidak cukup. Saldomu: **{balance}** 💰",
+    not_enough_money: "Uangmu belum cukup — saldomu **{balance}** 💰.",
     land_win: "🪙 Koinnya mendarat di **{result}** — kamu menang!",
     land_lose: "🪙 Koinnya mendarat di **{result}** — kamu kalah!",
     won_line: "- Menang: **{amount}** 💰",

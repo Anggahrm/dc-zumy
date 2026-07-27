@@ -6,12 +6,12 @@ registerStrings("reloadcommands", {
   en: {
     title: "Owner",
     complete_body:
-      "**Reload Complete**\n- Active command count: **{count}**\n- Latest command modules are now live.\n- Slash command definitions re-deployed to Discord.",
+      "**Reload complete**\n- **{count}** commands active\n- The latest command code is live.\n- Slash commands re-deployed to Discord.",
   },
   id: {
     title: "Owner",
     complete_body:
-      "**Reload Selesai**\n- Jumlah command aktif: **{count}**\n- Modul command terbaru sudah live.\n- Definisi slash command sudah di-deploy ulang ke Discord.",
+      "**Reload selesai**\n- **{count}** command aktif\n- Kode command terbaru sudah live.\n- Slash command sudah di-deploy ulang ke Discord.",
   },
 });
 

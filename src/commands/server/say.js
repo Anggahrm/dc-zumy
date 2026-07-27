@@ -18,7 +18,7 @@ registerStrings("say", {
     guild_only_form: "This form only works in a server.",
     need_manage_server: "You need the **Manage Server** permission to post announcements.",
     channel_unavailable: "That channel is no longer available.",
-    empty_body: "The message body cannot be empty.",
+    empty_body: "Type the message you want to post.",
     send_failed: "I couldn't send the message to that channel. Check my permissions there.",
     posted_by: "Posted by {tag}",
     posted: "Announcement posted to <#{channel_id}>.",
@@ -32,7 +32,7 @@ registerStrings("say", {
     guild_only_form: "Form ini hanya bisa dipakai di server.",
     need_manage_server: "Kamu butuh permission **Manage Server** untuk memposting pengumuman.",
     channel_unavailable: "Channel itu sudah tidak tersedia.",
-    empty_body: "Isi pesan tidak boleh kosong.",
+    empty_body: "Ketik pesan yang mau kamu posting.",
     send_failed: "Aku tidak bisa mengirim pesan ke channel itu. Cek permission-ku di sana.",
     posted_by: "Diposting oleh {tag}",
     posted: "Pengumuman diposting ke <#{channel_id}>.",
@@ -54,7 +54,7 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("say")
-    .setDescription("Compose an announcement card via a form")
+    .setDescription("Write an announcement in a pop-up form")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .setContexts(InteractionContextType.Guild)
     .addChannelOption((option) =>

@@ -14,30 +14,30 @@ registerStrings("highlight", {
   en: {
     title: "Highlights",
     reason_invalid: "Keywords need at least 2 characters.",
-    reason_exists: "You're already watching that keyword.",
-    reason_full: "You can watch up to {max} keywords.",
+    reason_exists: "That keyword is already on your list.",
+    reason_full: "You can keep up to {max} keywords.",
     reason_guild_full: "This server's highlight list is full.",
-    add_failed: "Could not add that keyword.",
-    watching: "🔔 Watching `{word}` — I'll DM you when it's mentioned here.\n-# Max one DM per 5 minutes; your own messages and direct mentions don't trigger it.",
+    add_failed: "Couldn't add that keyword.",
+    watching: "Got it — I'll DM you when `{word}` is mentioned here.\n-# Max one DM per 5 minutes; your own messages and direct mentions don't count.",
     removed: "Keyword removed.",
-    not_watching: "You're not watching that keyword.",
+    not_watching: "That keyword isn't on your list.",
     your_title: "Your highlights",
-    list_empty: "You're not watching any keywords. Use `/highlight add`.",
+    list_empty: "No keywords yet. Add one with `/highlight add`.",
     cleared: "All keywords removed.",
     none_to_clear: "You had no keywords.",
   },
   id: {
     title: "Highlight",
     reason_invalid: "Keyword minimal 2 karakter.",
-    reason_exists: "Kamu sudah memantau keyword itu.",
-    reason_full: "Kamu bisa memantau maksimal {max} keyword.",
+    reason_exists: "Keyword itu sudah ada di daftarmu.",
+    reason_full: "Kamu bisa menyimpan maksimal {max} keyword.",
     reason_guild_full: "Daftar highlight server ini sudah penuh.",
     add_failed: "Tidak bisa menambahkan keyword itu.",
-    watching: "🔔 Memantau `{word}` — aku akan DM kamu kalau kata itu disebut di sini.\n-# Maksimal satu DM per 5 menit; pesanmu sendiri dan mention langsung tidak memicunya.",
+    watching: "Oke — aku akan DM kamu kalau `{word}` disebut di sini.\n-# Maksimal satu DM per 5 menit; pesanmu sendiri dan mention langsung tidak dihitung.",
     removed: "Keyword dihapus.",
-    not_watching: "Kamu tidak sedang memantau keyword itu.",
+    not_watching: "Keyword itu tidak ada di daftarmu.",
     your_title: "Highlight kamu",
-    list_empty: "Kamu tidak memantau keyword apa pun. Pakai `/highlight add`.",
+    list_empty: "Belum ada keyword. Tambahkan dengan `/highlight add`.",
     cleared: "Semua keyword dihapus.",
     none_to_clear: "Kamu tidak punya keyword.",
   },
@@ -64,7 +64,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("add")
-        .setDescription("Watch a keyword")
+        .setDescription("Add a keyword to your list")
         .addStringOption((option) =>
           option.setName("keyword").setDescription("Word or phrase (min 2 chars)").setMaxLength(MAX_KEYWORD_LENGTH).setRequired(true),
         ),
@@ -72,7 +72,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("remove")
-        .setDescription("Stop watching a keyword")
+        .setDescription("Remove a keyword from your list")
         .addStringOption((option) =>
           option.setName("keyword").setDescription("Keyword").setMaxLength(MAX_KEYWORD_LENGTH).setAutocomplete(true).setRequired(true),
         ),

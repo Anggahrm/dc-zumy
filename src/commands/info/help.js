@@ -34,7 +34,7 @@ registerStrings("help", {
     no_description: "No description",
     no_commands: "- No commands here yet.",
     back_home: "Back to Home",
-    unknown_command: "I don't know that command. Pick one from the autocomplete list.",
+    unknown_command: "Couldn't find that command — pick one from the suggestions.",
     detail_category: "- Category: {emoji} {label}",
     detail_cooldown: "- Cooldown: {seconds}s",
     detail_guild_only: "- Server only",
@@ -49,7 +49,7 @@ registerStrings("help", {
     cat_automod: "Automod",
     cat_server: "Server Settings",
     cat_owner: "Bot Owner",
-    blurb_info: "Bot help plus user and server lookups",
+    blurb_info: "The help menu plus user and server info",
     blurb_levels: "XP, ranks, leaderboards, and level rewards",
     blurb_economy: "Earn, gamble, and spend server currency",
     blurb_utility: "Everyday member tools: polls, reminders, AFK, and tags",
@@ -76,7 +76,7 @@ registerStrings("help", {
     no_description: "Tanpa deskripsi",
     no_commands: "- Belum ada command di sini.",
     back_home: "Kembali ke Beranda",
-    unknown_command: "Command itu tidak ada. Pilih dari daftar autocomplete ya.",
+    unknown_command: "Command itu tidak ketemu — pilih dari daftar saran ya.",
     detail_category: "- Kategori: {emoji} {label}",
     detail_cooldown: "- Cooldown: {seconds}s",
     detail_guild_only: "- Khusus server",
@@ -406,7 +406,7 @@ export default {
   cooldown: 2,
   data: new SlashCommandBuilder()
     .setName("help")
-    .setDescription("Open help menu")
+    .setDescription("Open the help menu")
     .addStringOption((option) =>
       option
         .setName("command")

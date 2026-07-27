@@ -24,7 +24,7 @@ registerStrings("tag", {
     list_count: "**{count}/{max} tags**",
     list_empty: "No tags yet. Create one with `/tag add`.",
     need_manage_guild: "You need the **Manage Server** permission to manage tags.",
-    reason_invalid_name: "Tag names must be 1-32 chars: lowercase letters, numbers, `-`, `_`.",
+    reason_invalid_name: "Tag names must be 1-32 characters: lowercase letters, numbers, `-`, `_`.",
     reason_empty_content: "Tag content cannot be empty.",
     reason_exists: "A tag with that name already exists.",
     reason_full: "Tag limit reached (max {max}).",

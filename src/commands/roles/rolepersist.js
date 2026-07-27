@@ -6,21 +6,21 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("rolepersist", {
   en: {
     title: "Role Persist",
-    enabled_body: "Role persist is now ✅ **enabled**.\n- Members who leave get their roles snapshotted and restored on rejoin.\n- This also stops mute evasion: the mute role comes back with them.",
-    disabled_body: "Role persist is now ❌ **disabled**. Stored snapshots were cleared.",
+    enabled_body: "Role persist is now **on**.\n- When members leave, their roles are saved and given back when they rejoin.\n- This also stops mute evasion: the mute role comes back with them.",
+    disabled_body: "Role persist is now **off**. The saved roles were deleted.",
     status_line: "- Status: {status}",
-    status_enabled: "✅ enabled",
-    status_disabled: "❌ disabled",
-    snapshots_line: "- Stored snapshots: **{count}**",
+    status_enabled: "on",
+    status_disabled: "off",
+    snapshots_line: "- Members with saved roles: **{count}**",
   },
   id: {
     title: "Role Persist",
-    enabled_body: "Role persist sekarang ✅ **aktif**.\n- Member yang keluar akan disimpan snapshot role-nya dan dipulihkan saat join lagi.\n- Ini juga mencegah kabur dari mute: role mute-nya ikut balik bareng mereka.",
-    disabled_body: "Role persist sekarang ❌ **nonaktif**. Snapshot yang tersimpan sudah dihapus.",
+    enabled_body: "Role persist sekarang **aktif**.\n- Saat member keluar, role-nya disimpan dan dikembalikan saat mereka join lagi.\n- Ini juga mencegah kabur dari mute: role mute-nya ikut balik bareng mereka.",
+    disabled_body: "Role persist sekarang **nonaktif**. Role yang tersimpan sudah dihapus.",
     status_line: "- Status: {status}",
-    status_enabled: "✅ aktif",
-    status_disabled: "❌ nonaktif",
-    snapshots_line: "- Snapshot tersimpan: **{count}**",
+    status_enabled: "aktif",
+    status_disabled: "nonaktif",
+    snapshots_line: "- Member dengan role tersimpan: **{count}**",
   },
 });
 
@@ -39,9 +39,9 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("toggle")
-        .setDescription("Enable or disable role persistence")
+        .setDescription("Turn role persist on or off")
         .addBooleanOption((option) =>
-          option.setName("enabled").setDescription("Enable role persist").setRequired(true),
+          option.setName("enabled").setDescription("Turn role persist on or off").setRequired(true),
         ),
     )
     .addSubcommand((sub) => sub.setName("show").setDescription("Show role persist status")),

@@ -5,7 +5,7 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("slots", {
   en: {
     title: "Slots",
-    not_enough_money: "Not enough money. Your balance: **{balance}** 💰",
+    not_enough_money: "You don't have enough — your balance is **{balance}** 💰.",
     reels_line: "🎰 {reels}",
     win_line: "You win **{amount}** 💰 (x{multiplier})!",
     lose_line: "No match — you lose **{amount}** 💰",
@@ -13,7 +13,7 @@ registerStrings("slots", {
   },
   id: {
     title: "Slots",
-    not_enough_money: "Uangmu kurang. Saldomu: **{balance}** 💰",
+    not_enough_money: "Uangmu belum cukup — saldomu **{balance}** 💰.",
     reels_line: "🎰 {reels}",
     win_line: "Kamu menang **{amount}** 💰 (x{multiplier})!",
     lose_line: "Tidak ada yang cocok — kamu kalah **{amount}** 💰",

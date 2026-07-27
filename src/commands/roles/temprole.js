@@ -9,8 +9,8 @@ const MAX_DURATION_MS = 90 * 24 * 60 * 60 * 1000;
 registerStrings("temprole", {
   en: {
     title: "Temp Role",
-    invalid_duration: "Duration must be between **1m** and **90d** (e.g. `1h`, `3d`).",
-    role_unassignable: "That role can't be assigned (managed, @everyone, or above my highest role).",
+    invalid_duration: "Pick a duration between **1m** and **90d** — try `1h` or `3d`.",
+    role_unassignable: "I can't give that role — it's @everyone, managed by an integration, or above my highest role.",
     role_above_actor: "You can only grant roles below your own highest role.",
     not_in_server: "That user is not in this server.",
     assign_failed: "I couldn't assign that role. Check my permissions.",
@@ -19,8 +19,8 @@ registerStrings("temprole", {
   },
   id: {
     title: "Role Sementara",
-    invalid_duration: "Durasi harus antara **1m** dan **90d** (contoh: `1h`, `3d`).",
-    role_unassignable: "Role itu tidak bisa diberikan (managed, @everyone, atau di atas role tertinggiku).",
+    invalid_duration: "Pilih durasi antara **1m** dan **90d** — coba `1h` atau `3d`.",
+    role_unassignable: "Aku tidak bisa memberikan role itu — @everyone, dikelola integrasi, atau di atas role tertinggiku.",
     role_above_actor: "Kamu hanya bisa memberikan role yang posisinya di bawah role tertinggimu.",
     not_in_server: "User itu tidak ada di server ini.",
     assign_failed: "Aku tidak bisa memberikan role itu. Cek permission-ku ya.",

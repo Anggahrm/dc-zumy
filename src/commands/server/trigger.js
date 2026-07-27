@@ -17,9 +17,9 @@ registerStrings("trigger", {
     title: "Triggers",
     reason_invalid_name: "Trigger names must be 1-32 chars: lowercase letters, numbers, `-`, `_`.",
     reason_exists: "A trigger with that name already exists.",
-    reason_full: "Trigger limit reached (max {max}).",
-    reason_empty: "Match and response cannot be empty.",
-    create_failed: "Could not create the trigger.",
+    reason_full: "You've reached the trigger limit (max {max}).",
+    reason_empty: "Type both the text to match and the reply.",
+    create_failed: "Couldn't create the trigger.",
     created: "Trigger `{name}` created.",
     deleted: "Trigger deleted.",
     not_found: "No trigger with that name.",
@@ -28,15 +28,15 @@ registerStrings("trigger", {
     channel_removed_all: "Channel restriction removed — trigger now fires everywhere.",
     channel_removed: "Trigger no longer fires in <#{channel_id}>.",
     scope_all_channels: "all channels",
-    list_line: "- `{name}` — {type} `{match}` ({chance}%, {cooldown}s cd, {scope})",
+    list_line: "- `{name}` — {type} `{match}` ({chance}%, {cooldown}s cooldown, {scope})",
     list_empty: "No triggers yet. Create one with `/trigger add`.",
   },
   id: {
     title: "Trigger",
     reason_invalid_name: "Nama trigger harus 1-32 karakter: huruf kecil, angka, `-`, `_`.",
     reason_exists: "Trigger dengan nama itu sudah ada.",
-    reason_full: "Batas trigger tercapai (maks {max}).",
-    reason_empty: "Match dan respons tidak boleh kosong.",
+    reason_full: "Batas trigger sudah tercapai (maksimal {max}).",
+    reason_empty: "Isi teks yang mau dicocokkan dan balasannya ya.",
     create_failed: "Tidak bisa membuat trigger itu.",
     created: "Trigger `{name}` dibuat.",
     deleted: "Trigger dihapus.",
@@ -46,7 +46,7 @@ registerStrings("trigger", {
     channel_removed_all: "Pembatasan channel dihapus — trigger sekarang aktif di mana saja.",
     channel_removed: "Trigger tidak lagi aktif di <#{channel_id}>.",
     scope_all_channels: "semua channel",
-    list_line: "- `{name}` — {type} `{match}` ({chance}%, {cooldown}s cd, {scope})",
+    list_line: "- `{name}` — {type} `{match}` ({chance}%, cooldown {cooldown}s, {scope})",
     list_empty: "Belum ada trigger. Buat satu dengan `/trigger add`.",
   },
 });
@@ -120,14 +120,14 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("channel")
-        .setDescription("Toggle a channel restriction on a trigger")
+        .setDescription("Limit a trigger to certain channels (pick again to undo)")
         .addStringOption((option) =>
           option.setName("name").setDescription("Trigger name").setMaxLength(32).setAutocomplete(true).setRequired(true),
         )
         .addChannelOption((option) =>
           option
             .setName("channel")
-            .setDescription("Channel to toggle")
+            .setDescription("Channel to add or remove")
             .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
             .setRequired(true),
         ),

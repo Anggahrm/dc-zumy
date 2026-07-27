@@ -8,7 +8,7 @@ registerStrings("note", {
     title: "Notes",
     case_suffix: " — Case #{caseNumber}",
     saved: "Note saved for **{user}**{caseSuffix}.",
-    none: "No notes for **{user}**.",
+    none: "No notes for **{user}** yet.",
     list_title: "Notes for {user}",
     list_line: "**#{caseNumber}** {reason} — by {moderator}, <t:{at}:R>",
     unknown_moderator: "unknown",

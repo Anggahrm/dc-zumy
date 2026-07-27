@@ -343,7 +343,7 @@ async function handleHighlights(message) {
     await user
       .send({
         content: [
-          `🔔 A highlight of yours was mentioned in **${message.guild.name}** → <#${message.channelId}>`,
+          `One of your highlight words came up in **${message.guild.name}** → <#${message.channelId}>`,
           `> ${message.content.slice(0, 200)}`,
           message.url,
         ].join("\n"),

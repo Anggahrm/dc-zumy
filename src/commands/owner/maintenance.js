@@ -5,17 +5,17 @@ import { createCard, replyCard } from "#utils/respond.js";
 registerStrings("maintenance", {
   en: {
     title: "Maintenance",
-    status_enabled: "Maintenance mode is **enabled**. Only owners can use commands.",
-    status_disabled: "Maintenance mode is **disabled**. The bot is public.",
-    now_enabled: "Maintenance mode **enabled**. Non-owner commands are now blocked.",
-    now_disabled: "Maintenance mode **disabled**. The bot is public again.",
+    status_enabled: "Maintenance mode is **on**. Only owners can use commands.",
+    status_disabled: "Maintenance mode is **off**. The bot is open to everyone.",
+    now_enabled: "Maintenance mode is now **on**. Only owners can use commands until it's turned off.",
+    now_disabled: "Maintenance mode is now **off**. The bot is open to everyone again.",
   },
   id: {
     title: "Maintenance",
     status_enabled: "Mode maintenance lagi **aktif**. Hanya owner yang bisa pakai command.",
-    status_disabled: "Mode maintenance **nonaktif**. Bot bisa dipakai publik.",
-    now_enabled: "Mode maintenance **diaktifkan**. Command non-owner sekarang diblokir.",
-    now_disabled: "Mode maintenance **dimatikan**. Bot bisa dipakai publik lagi.",
+    status_disabled: "Mode maintenance **nonaktif**. Bot bisa dipakai semua orang.",
+    now_enabled: "Mode maintenance sekarang **aktif**. Hanya owner yang bisa pakai command sampai dimatikan.",
+    now_disabled: "Mode maintenance sekarang **nonaktif**. Bot bisa dipakai semua orang lagi.",
   },
 });
 
@@ -27,11 +27,11 @@ export default {
   },
   data: new SlashCommandBuilder()
     .setName("maintenance")
-    .setDescription("Toggle maintenance mode (owner only)")
+    .setDescription("Turn maintenance mode on or off (owner only)")
     .addBooleanOption((option) =>
       option
         .setName("enabled")
-        .setDescription("Enable or disable maintenance mode (omit to check status)")
+        .setDescription("Turn maintenance mode on or off (leave empty to check)")
         .setRequired(false),
     ),
   async execute({ interaction, ctx }) {

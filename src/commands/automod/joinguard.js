@@ -8,34 +8,34 @@ registerStrings("joinguard", {
   en: {
     title: "Join Guard",
     current_settings: "**Current settings**",
-    age_line_on: "✅ Account age gate — minimum **{hours}h**",
-    age_line_off: "❌ Account age gate",
-    surge_line_on: "✅ Join-surge detection — **{joins}** joins per **{window}s**",
-    surge_line_off: "❌ Join-surge detection",
+    age_line_on: "Account age gate: **on** — minimum **{hours}h**",
+    age_line_off: "Account age gate: **off**",
+    surge_line_on: "Join-surge detection: **on** — **{joins}** joins per **{window}s**",
+    surge_line_off: "Join-surge detection: **off**",
     line_action: "- Action: **{action}**",
-    actions_footer: "-# Actions: alert (log only), kick, quarantine (needs /quarantine role), ban. Actions are logged to the `automod` log event and recorded as cases.",
+    actions_footer: "-# Actions: alert (log only), kick, quarantine (needs a `/quarantine role`), ban. Actions show up in the `automod` log event and as cases.",
     age_set: "Accounts younger than **{hours}h** now trigger the **{action}** action.",
-    age_disabled: "Account age gate disabled.",
+    age_disabled: "The account age gate is off.",
     surge_set: "**{joins}+** joins within **{window}s** now trigger the **{action}** action.",
-    surge_disabled: "Join-surge detection disabled.",
+    surge_disabled: "Join-surge detection is off.",
     action_set: "Flagged joiners will now be handled with: **{action}**.{warning}",
-    quarantine_warning: "\n-# ⚠️ No quarantine role configured — flagged joins will fall back to alert. Set one with `/quarantine role`.",
+    quarantine_warning: "\n-# No quarantine role set yet — flagged joins will only send an alert. Set one with `/quarantine role`.",
   },
   id: {
     title: "Join Guard",
     current_settings: "**Pengaturan saat ini**",
-    age_line_on: "✅ Filter umur akun — minimal **{hours} jam**",
-    age_line_off: "❌ Filter umur akun",
-    surge_line_on: "✅ Deteksi lonjakan join — **{joins}** join per **{window} detik**",
-    surge_line_off: "❌ Deteksi lonjakan join",
+    age_line_on: "Filter umur akun: **aktif** — minimal **{hours} jam**",
+    age_line_off: "Filter umur akun: **nonaktif**",
+    surge_line_on: "Deteksi lonjakan join: **aktif** — **{joins}** join per **{window} detik**",
+    surge_line_off: "Deteksi lonjakan join: **nonaktif**",
     line_action: "- Aksi: **{action}**",
-    actions_footer: "-# Aksi: alert (hanya log), kick, quarantine (butuh role dari `/quarantine role`), ban. Semua aksi dicatat ke log event `automod` dan direkam sebagai case.",
+    actions_footer: "-# Aksi: alert (hanya log), kick, quarantine (butuh role dari `/quarantine role`), ban. Semua aksi muncul di log event `automod` dan tercatat sebagai case.",
     age_set: "Akun yang umurnya di bawah **{hours} jam** sekarang memicu aksi **{action}**.",
     age_disabled: "Filter umur akun dimatikan.",
     surge_set: "**{joins}+** join dalam **{window} detik** sekarang memicu aksi **{action}**.",
     surge_disabled: "Deteksi lonjakan join dimatikan.",
     action_set: "Join yang terdeteksi sekarang akan ditangani dengan aksi: **{action}**.{warning}",
-    quarantine_warning: "\n-# ⚠️ Belum ada role quarantine yang diatur — join yang terdeteksi akan jatuh ke aksi alert. Atur dulu lewat `/quarantine role`.",
+    quarantine_warning: "\n-# Belum ada role quarantine — join yang terdeteksi cuma akan mengirim alert. Atur dulu lewat `/quarantine role`.",
   },
 });
 
@@ -74,7 +74,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("age")
-        .setDescription("Require a minimum account age to join (0 disables)")
+        .setDescription("Require a minimum account age to join (0 turns it off)")
         .addIntegerOption((option) =>
           option
             .setName("hours")
@@ -87,7 +87,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName("surge")
-        .setDescription("Detect join surges (0 disables)")
+        .setDescription("Detect join surges (0 turns it off)")
         .addIntegerOption((option) =>
           option
             .setName("joins")
